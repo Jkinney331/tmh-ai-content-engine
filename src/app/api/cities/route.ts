@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { supabase, hasRealCredentials } from '@/lib/supabase'
+import { callOpenRouter } from '@/lib/openrouter'
 
 interface ResearchCategories {
   slang: boolean
@@ -27,6 +28,132 @@ interface City {
 
 // Mock database for testing
 const mockCities: City[] = []
+
+/**
+ * Perform Perplexity research for a city and update its data
+ * This runs asynchronously after the city is created
+ */
+async function performCityResearch(cityId: string, cityName: string, categories: ResearchCategories, customPrompt?: string) {
+  try {
+    console.log(`[City Research] Starting research for ${cityName}...`)
+
+    // Update status to researching
+    if (hasRealCredentials) {
+      await supabase.from('cities').update({ status: 'researching' }).eq('id', cityId)
+    }
+
+    // Build comprehensive research prompt based on selected categories
+    const categoryPrompts: string[] = []
+    if (categories.slang) categoryPrompts.push('Local slang, expressions, and linguistic patterns (10-15 examples)')
+    if (categories.landmarks) categoryPrompts.push('Iconic landmarks, neighborhoods, and locations for streetwear photography (8-12 locations)')
+    if (categories.sports) categoryPrompts.push('Major sports teams, colors, rivalries, and how they influence local fashion')
+    if (categories.culture) categoryPrompts.push('Streetwear and sneaker culture, local brands, influential figures, and typical styles')
+    if (categories.visualIdentity) categoryPrompts.push('Visual identity elements: colors, symbols, architecture, murals, and aesthetic')
+    if (categories.areaCodes) categoryPrompts.push('Area codes and their cultural significance')
+
+    const researchPrompt = `Provide comprehensive cultural intelligence about ${cityName} for a streetwear brand targeting young adults (18-35). Research the following:
+
+${categoryPrompts.map((p, i) => `${i + 1}. ${p}`).join('\n')}
+${customPrompt ? `\nAdditional research focus: ${customPrompt}` : ''}
+
+Important: Also include things to AVOID (sensitive topics, rival cities, cultural missteps).
+
+Format your response as valid JSON with these fields:
+{
+  "slang": [{"term": "...", "meaning": "...", "usage": "..."}],
+  "landmarks": [{"name": "...", "description": "...", "significance": "..."}],
+  "sports": {"teams": [...], "colors": [...], "rivalries": [...], "fashionInfluence": "..."},
+  "culture": {"localBrands": [...], "influencers": [...], "styles": [...], "events": [...]},
+  "visualIdentity": {"colors": [...], "symbols": [...], "aesthetic": "..."},
+  "areaCodes": [{"code": "...", "area": "...", "significance": "..."}],
+  "avoid": [{"topic": "...", "reason": "..."}]
+}`
+
+    // Call Perplexity via OpenRouter for real-time web research
+    const response = await callOpenRouter({
+      model: 'perplexity/sonar-pro',
+      messages: [
+        {
+          role: 'system',
+          content: 'You are a cultural research assistant specializing in urban fashion and streetwear culture. Provide accurate, current information based on real data. Be specific and authentic to each city\'s unique culture. Always respond with valid JSON.'
+        },
+        {
+          role: 'user',
+          content: researchPrompt
+        }
+      ],
+      max_tokens: 4000,
+      temperature: 0.3,
+    })
+
+    const content = response.choices[0]?.message?.content || ''
+    console.log(`[City Research] Got response for ${cityName}, length: ${content.length}`)
+
+    // Parse the research results
+    let researchData = null
+    try {
+      // Try to extract JSON from the response
+      const jsonMatch = content.match(/\{[\s\S]*\}/)
+      if (jsonMatch) {
+        researchData = JSON.parse(jsonMatch[0])
+      }
+    } catch (parseError) {
+      console.warn(`[City Research] Failed to parse JSON for ${cityName}:`, parseError)
+      researchData = { rawContent: content }
+    }
+
+    // Update the city with research results
+    if (hasRealCredentials) {
+      const updateData: Record<string, unknown> = {
+        status: 'active', // Use 'active' which is guaranteed to be valid
+        updated_at: new Date().toISOString()
+      }
+
+      // Map research results to city fields
+      if (researchData) {
+        if (researchData.slang) updateData.slang = researchData.slang
+        if (researchData.landmarks) updateData.landmarks = researchData.landmarks
+        if (researchData.sports) updateData.sports_teams = researchData.sports
+        if (researchData.culture) updateData.culture = researchData.culture
+        if (researchData.visualIdentity) {
+          // Merge with existing visual_identity
+          updateData.visual_identity = researchData.visualIdentity
+        }
+        if (researchData.areaCodes) {
+          updateData.area_codes = researchData.areaCodes.map((ac: { code: string }) => ac.code)
+        }
+        if (researchData.avoid) updateData.avoid = researchData.avoid
+        // Store raw content for debugging
+        updateData.research_raw = content
+        updateData.research_completed_at = new Date().toISOString()
+      }
+
+      const { error: updateError } = await supabase
+        .from('cities')
+        .update(updateData)
+        .eq('id', cityId)
+
+      if (updateError) {
+        console.error(`[City Research] Failed to update ${cityName}:`, updateError)
+        // Try updating just the status to 'draft' (always valid)
+        await supabase.from('cities').update({
+          status: 'draft',
+          user_notes: `Research completed but failed to save: ${updateError.message}. Raw: ${content.slice(0, 500)}`
+        }).eq('id', cityId)
+      } else {
+        console.log(`[City Research] Successfully updated ${cityName} with research data`)
+      }
+    }
+
+    return researchData
+  } catch (error) {
+    console.error(`[City Research] Error researching ${cityName}:`, error)
+    if (hasRealCredentials) {
+      await supabase.from('cities').update({ status: 'error' }).eq('id', cityId)
+    }
+    throw error
+  }
+}
 
 export async function POST(request: NextRequest) {
   try {
@@ -110,10 +237,18 @@ export async function POST(request: NextRequest) {
         const responseCity = {
           id: (newCity as any)?.id || '',
           name: (newCity as any)?.name || cityName,
-          status: (newCity as any)?.status || 'draft',
+          status: 'researching', // Will be researching while Perplexity runs
           researchCategories: body.researchCategories,
           customPrompt: body.customPrompt,
           createdAt: (newCity as any)?.created_at || new Date().toISOString()
+        }
+
+        // Trigger research in the background (don't await)
+        const cityId = (newCity as any)?.id
+        if (cityId) {
+          performCityResearch(cityId, cityName, body.researchCategories, body.customPrompt)
+            .then(() => console.log(`[City Research] Completed for ${cityName}`))
+            .catch(err => console.error(`[City Research] Failed for ${cityName}:`, err))
         }
 
         return NextResponse.json(responseCity, { status: 201 })
