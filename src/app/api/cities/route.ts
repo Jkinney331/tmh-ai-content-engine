@@ -39,7 +39,7 @@ async function performCityResearch(cityId: string, cityName: string, categories:
 
     // Update status to researching
     if (hasRealCredentials) {
-      await supabase.from('cities').update({ status: 'researching' }).eq('id', cityId)
+      await supabase.from('cities').update({ status: 'researching' } as any).eq('id', cityId)
     }
 
     // Build comprehensive research prompt based on selected categories
@@ -130,7 +130,7 @@ Format your response as valid JSON with these fields:
 
       const { error: updateError } = await supabase
         .from('cities')
-        .update(updateData)
+        .update(updateData as any)
         .eq('id', cityId)
 
       if (updateError) {
@@ -139,7 +139,7 @@ Format your response as valid JSON with these fields:
         await supabase.from('cities').update({
           status: 'draft',
           user_notes: `Research completed but failed to save: ${updateError.message}. Raw: ${content.slice(0, 500)}`
-        }).eq('id', cityId)
+        } as any).eq('id', cityId)
       } else {
         console.log(`[City Research] Successfully updated ${cityName} with research data`)
       }
@@ -149,7 +149,7 @@ Format your response as valid JSON with these fields:
   } catch (error) {
     console.error(`[City Research] Error researching ${cityName}:`, error)
     if (hasRealCredentials) {
-      await supabase.from('cities').update({ status: 'error' }).eq('id', cityId)
+      await supabase.from('cities').update({ status: 'draft' } as any).eq('id', cityId)
     }
     throw error
   }
