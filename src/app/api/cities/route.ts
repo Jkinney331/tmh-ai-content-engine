@@ -30,6 +30,28 @@ interface City {
 const mockCities: City[] = []
 
 /**
+ * Helper to update city with error status
+ */
+async function updateCityError(cityId: string, errorMessage: string) {
+  if (!hasRealCredentials) return
+
+  try {
+    await (supabase as any).from('cities').update({
+      status: 'error',
+      error_message: errorMessage,
+      updated_at: new Date().toISOString()
+    }).eq('id', cityId)
+  } catch (e) {
+    // If error_message column doesn't exist, try without it
+    console.warn('[City Research] error_message column may not exist, updating status only')
+    await (supabase as any).from('cities').update({
+      status: 'draft',
+      updated_at: new Date().toISOString()
+    }).eq('id', cityId)
+  }
+}
+
+/**
  * Perform Perplexity research for a city and update its data
  * This runs asynchronously after the city is created
  */
@@ -37,9 +59,26 @@ async function performCityResearch(cityId: string, cityName: string, categories:
   try {
     console.log(`[City Research] Starting research for ${cityName}...`)
 
+    // Check if OpenRouter API key is configured
+    const apiKey = process.env.OPENROUTER_API_KEY
+    if (!apiKey) {
+      console.error(`[City Research] OPENROUTER_API_KEY is not set!`)
+      await updateCityError(cityId, 'API key not configured. Please set OPENROUTER_API_KEY in environment variables.')
+      return null
+    }
+
+    if (!apiKey.startsWith('sk-or-')) {
+      console.error(`[City Research] OPENROUTER_API_KEY has invalid format`)
+      await updateCityError(cityId, 'API key has invalid format. Should start with sk-or-')
+      return null
+    }
+
     // Update status to researching
     if (hasRealCredentials) {
-      await (supabase as any).from('cities').update({ status: 'researching' }).eq('id', cityId)
+      await (supabase as any).from('cities').update({
+        status: 'researching',
+        error_message: null // Clear any previous error
+      }).eq('id', cityId)
     }
 
     // Build comprehensive research prompt based on selected categories
@@ -69,22 +108,31 @@ Format your response as valid JSON with these fields:
   "avoid": [{"topic": "...", "reason": "..."}]
 }`
 
+    console.log(`[City Research] Calling OpenRouter for ${cityName}...`)
+
     // Call Perplexity via OpenRouter for real-time web research
-    const response = await callOpenRouter({
-      model: 'perplexity/sonar-pro',
-      messages: [
-        {
-          role: 'system',
-          content: 'You are a cultural research assistant specializing in urban fashion and streetwear culture. Provide accurate, current information based on real data. Be specific and authentic to each city\'s unique culture. Always respond with valid JSON.'
-        },
-        {
-          role: 'user',
-          content: researchPrompt
-        }
-      ],
-      max_tokens: 4000,
-      temperature: 0.3,
-    })
+    let response
+    try {
+      response = await callOpenRouter({
+        model: 'perplexity/sonar-pro',
+        messages: [
+          {
+            role: 'system',
+            content: 'You are a cultural research assistant specializing in urban fashion and streetwear culture. Provide accurate, current information based on real data. Be specific and authentic to each city\'s unique culture. Always respond with valid JSON.'
+          },
+          {
+            role: 'user',
+            content: researchPrompt
+          }
+        ],
+        max_tokens: 4000,
+        temperature: 0.3,
+      })
+    } catch (apiError: any) {
+      console.error(`[City Research] OpenRouter API call failed for ${cityName}:`, apiError.message)
+      await updateCityError(cityId, `Research API call failed: ${apiError.message}`)
+      return null
+    }
 
     const content = response.choices[0]?.message?.content || ''
     console.log(`[City Research] Got response for ${cityName}, length: ${content.length}`)
@@ -146,12 +194,11 @@ Format your response as valid JSON with these fields:
     }
 
     return researchData
-  } catch (error) {
+  } catch (error: any) {
     console.error(`[City Research] Error researching ${cityName}:`, error)
-    if (hasRealCredentials) {
-      await (supabase as any).from('cities').update({ status: 'draft' }).eq('id', cityId)
-    }
-    throw error
+    await updateCityError(cityId, `Research failed: ${error.message || 'Unknown error'}`)
+    // Don't throw - let the city be created with error status
+    return null
   }
 }
 

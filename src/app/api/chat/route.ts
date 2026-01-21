@@ -275,9 +275,17 @@ export async function POST(request: NextRequest) {
 
     const config = getOpenRouterConfig()
 
-    if (!config.apiKey || !config.apiKey.startsWith('sk-')) {
+    if (!config.apiKey) {
       return NextResponse.json(
-        { error: 'OpenRouter API key not configured' },
+        { error: 'OpenRouter API key not configured. Please add OPENROUTER_API_KEY to your environment variables.' },
+        { status: 500 }
+      )
+    }
+
+    // OpenRouter keys start with sk-or-, but some might start with sk-
+    if (!config.apiKey.startsWith('sk-or-') && !config.apiKey.startsWith('sk-')) {
+      return NextResponse.json(
+        { error: 'OpenRouter API key has invalid format. Should start with sk-or-' },
         { status: 500 }
       )
     }
