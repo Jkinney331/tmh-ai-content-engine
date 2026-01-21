@@ -130,7 +130,6 @@ export async function POST(request: NextRequest) {
 
         try {
           // Save to generated_content directly with mock/placeholder data
-          // Real generation would call the actual API
           const { data: imageRecord, error: imageError } = await supabase
             .from('generated_content')
             .insert({
@@ -140,14 +139,8 @@ export async function POST(request: NextRequest) {
               prompt: promptData.prompt,
               status: config.autoApprove ? 'approved' : 'pending',
               model_used: 'gpt-5-image',
-              // Use placeholder image for testing
               output_url: `https://placehold.co/1024x1024/1a1a2e/eee?text=${encodeURIComponent(cityName)}+${encodeURIComponent(promptData.type)}`,
-              metadata: {
-                cityName,
-                promptType: promptData.type,
-                generatedAt: new Date().toISOString(),
-                isTestContent: true
-              }
+              created_at: new Date().toISOString()
             })
             .select()
             .single();
@@ -182,16 +175,8 @@ export async function POST(request: NextRequest) {
                 prompt: promptData.prompt,
                 status: config.autoApprove ? 'approved' : 'pending',
                 model_used: 'sora-2',
-                // Use placeholder video for testing
                 output_url: `https://placehold.co/1920x1080/1a1a2e/eee?text=${encodeURIComponent(cityName)}+Video`,
-                metadata: {
-                  cityName,
-                  promptType: promptData.type,
-                  duration: promptData.duration,
-                  resolution: promptData.resolution,
-                  generatedAt: new Date().toISOString(),
-                  isTestContent: true
-                }
+                created_at: new Date().toISOString()
               })
               .select()
               .single();
