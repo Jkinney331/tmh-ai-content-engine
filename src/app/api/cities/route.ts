@@ -39,7 +39,7 @@ async function performCityResearch(cityId: string, cityName: string, categories:
 
     // Update status to researching
     if (hasRealCredentials) {
-      await supabase.from('cities').update({ status: 'researching' } as any).eq('id', cityId)
+      await (supabase as any).from('cities').update({ status: 'researching' }).eq('id', cityId)
     }
 
     // Build comprehensive research prompt based on selected categories
@@ -128,18 +128,18 @@ Format your response as valid JSON with these fields:
         updateData.research_completed_at = new Date().toISOString()
       }
 
-      const { error: updateError } = await supabase
+      const { error: updateError } = await (supabase as any)
         .from('cities')
-        .update(updateData as any)
+        .update(updateData)
         .eq('id', cityId)
 
       if (updateError) {
         console.error(`[City Research] Failed to update ${cityName}:`, updateError)
         // Try updating just the status to 'draft' (always valid)
-        await supabase.from('cities').update({
+        await (supabase as any).from('cities').update({
           status: 'draft',
           user_notes: `Research completed but failed to save: ${updateError.message}. Raw: ${content.slice(0, 500)}`
-        } as any).eq('id', cityId)
+        }).eq('id', cityId)
       } else {
         console.log(`[City Research] Successfully updated ${cityName} with research data`)
       }
@@ -149,7 +149,7 @@ Format your response as valid JSON with these fields:
   } catch (error) {
     console.error(`[City Research] Error researching ${cityName}:`, error)
     if (hasRealCredentials) {
-      await supabase.from('cities').update({ status: 'draft' } as any).eq('id', cityId)
+      await (supabase as any).from('cities').update({ status: 'draft' }).eq('id', cityId)
     }
     throw error
   }
