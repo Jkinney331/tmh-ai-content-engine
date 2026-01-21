@@ -31,7 +31,7 @@ interface City {
   name: string;
 }
 
-const contentTypeIcons: Record<string, JSX.Element> = {
+const contentTypeIcons: Record<string, React.ReactNode> = {
   product_shot: <Image className="w-4 h-4" />,
   lifestyle_shot: <Image className="w-4 h-4" />,
   social_post: <FileText className="w-4 h-4" />,
