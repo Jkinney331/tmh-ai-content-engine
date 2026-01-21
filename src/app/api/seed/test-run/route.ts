@@ -129,18 +129,18 @@ export async function POST(request: NextRequest) {
         const promptData = imagePrompts[i];
 
         try {
-          // Save to generated_content directly with mock/placeholder data
+          // Save to generated_content - use actual schema columns
           const { data: imageRecord, error: imageError } = await supabase
             .from('generated_content')
             .insert({
               city_id: city.id,
-              type: 'image',
-              content_type: promptData.type,
+              content_type: 'image',
+              title: `${cityName} ${promptData.type}`,
               prompt: promptData.prompt,
+              model: 'gpt-5-image',
               status: config.autoApprove ? 'approved' : 'pending',
-              model_used: 'gpt-5-image',
               output_url: `https://placehold.co/1024x1024/1a1a2e/eee?text=${encodeURIComponent(cityName)}+${encodeURIComponent(promptData.type)}`,
-              created_at: new Date().toISOString()
+              generation_cost_cents: 4
             })
             .select()
             .single();
@@ -165,18 +165,19 @@ export async function POST(request: NextRequest) {
           const promptData = videoPrompts[i];
 
           try {
-            // Save to generated_content directly with placeholder
+            // Save to generated_content - use actual schema columns
             const { data: videoRecord, error: videoError } = await supabase
               .from('generated_content')
               .insert({
                 city_id: city.id,
-                type: 'video',
-                content_type: promptData.type,
+                content_type: 'video',
+                title: `${cityName} Video Ad`,
                 prompt: promptData.prompt,
+                model: 'sora-2',
                 status: config.autoApprove ? 'approved' : 'pending',
-                model_used: 'sora-2',
                 output_url: `https://placehold.co/1920x1080/1a1a2e/eee?text=${encodeURIComponent(cityName)}+Video`,
-                created_at: new Date().toISOString()
+                generation_cost_cents: 80,
+                duration_seconds: promptData.duration
               })
               .select()
               .single();
@@ -216,8 +217,8 @@ export async function GET() {
   try {
     const [cities, images, videos, approved] = await Promise.all([
       supabase.from('cities').select('id', { count: 'exact' }),
-      supabase.from('generated_content').select('id', { count: 'exact' }).eq('type', 'image'),
-      supabase.from('generated_content').select('id', { count: 'exact' }).eq('type', 'video'),
+      supabase.from('generated_content').select('id', { count: 'exact' }).eq('content_type', 'image'),
+      supabase.from('generated_content').select('id', { count: 'exact' }).eq('content_type', 'video'),
       supabase.from('generated_content').select('id', { count: 'exact' }).eq('status', 'approved')
     ]);
 
