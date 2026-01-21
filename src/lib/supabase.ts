@@ -443,18 +443,26 @@ export async function upsertAnalytics(data: {
 
 // Content types helpers
 export async function getContentTypes(active?: boolean) {
-  let query = supabase
-    .from('content_types')
-    .select('*')
+  try {
+    let query = supabase
+      .from('content_types')
+      .select('*')
 
-  if (active !== undefined) {
-    query = query.eq('active', active)
+    if (active !== undefined) {
+      query = query.eq('active', active)
+    }
+
+    const { data, error } = await query.order('name')
+
+    if (error) {
+      console.error('Error fetching content types:', error)
+      return []
+    }
+    return data || []
+  } catch (err) {
+    console.error('Failed to fetch content types:', err)
+    return []
   }
-
-  const { data, error } = await query.order('name')
-
-  if (error) throw error
-  return data
 }
 
 export async function getContentTypeById(id: string) {

@@ -32,3 +32,35 @@ body {
 .animate-slide-in-up {
   animation: slide-in-up 0.3s ease-out;
 }
+
+/* Fix gray text in form inputs */
+input, textarea, select {
+  color: #1f2937 !important;
+}
+
+input::placeholder, textarea::placeholder {
+  color: #9ca3af !important;
+}
+
+/* Ensure input text is visible on light backgrounds */
+input[type="text"],
+input[type="email"],
+input[type="password"],
+input[type="number"],
+input[type="search"],
+textarea {
+  color: #1f2937;
+  background-color: #ffffff;
+}
+
+/* Dark mode support */
+@media (prefers-color-scheme: dark) {
+  input, textarea, select {
+    color: #f3f4f6 !important;
+    background-color: #1f2937;
+  }
+
+  input::placeholder, textarea::placeholder {
+    color: #6b7280 !important;
+  }
+}

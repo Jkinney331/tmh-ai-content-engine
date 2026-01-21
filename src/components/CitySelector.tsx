@@ -15,11 +15,12 @@ export default function CitySelector() {
     const loadCities = async () => {
       try {
         setIsLoading(true);
-        const response = await fetch('/api/cities?status=active');
+        const response = await fetch('/api/cities');
 
         if (response.ok) {
           const data = await response.json();
-          setCities(data.cities || []);
+          // API returns array directly, not { cities: [] }
+          setCities(Array.isArray(data) ? data : data.cities || []);
         } else {
           // Fallback to mock data if API is not ready
           const mockCities: City[] = [
@@ -124,8 +125,10 @@ export default function CitySelector() {
     }
   };
 
-  // Only show active/approved cities
-  const approvedCities = cities.filter(city => city.status === 'active');
+  // Show active, ready, and approved cities (not just 'active')
+  const approvedCities = cities.filter(city =>
+    city.status === 'active' || city.status === 'ready' || city.status === 'approved' || city.status === 'draft'
+  );
 
   return (
     <div className="w-full max-w-md">
