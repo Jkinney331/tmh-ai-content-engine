@@ -7,7 +7,7 @@
 
 export interface ImageGenerationOptions {
   prompt: string;
-  model?: 'flux-pro' | 'flux-max' | 'flux-klein' | 'gemini-flash';
+  model?: 'gpt-5-image' | 'gpt-5-image-mini' | 'gemini-flash' | 'gemini-pro';
   aspectRatio?: '1:1' | '4:3' | '3:4' | '16:9' | '9:16' | '2:3' | '3:2';
   quality?: 'standard' | 'high';
 }
@@ -19,12 +19,12 @@ export interface ImageGenerationResult {
   generatedAt: string;
 }
 
-// Model mapping
+// Model mapping - Updated with actual OpenRouter available models
 const MODEL_IDS: Record<string, string> = {
-  'flux-pro': 'black-forest-labs/flux-1.1-pro',
-  'flux-max': 'black-forest-labs/flux-1.1-pro', // Use pro for now, max may not be available
-  'flux-klein': 'black-forest-labs/flux-schnell', // Schnell is the fast model
-  'gemini-flash': 'google/gemini-2.0-flash-exp:free', // Free tier for testing
+  'gpt-5-image': 'openai/gpt-5-image',           // Best quality
+  'gpt-5-image-mini': 'openai/gpt-5-image-mini', // Faster, cheaper
+  'gemini-flash': 'google/gemini-2.5-flash-image', // Google fast model
+  'gemini-pro': 'google/gemini-3-pro-image-preview', // Google pro model
 };
 
 /**
@@ -34,7 +34,7 @@ const MODEL_IDS: Record<string, string> = {
 export async function generateImage(options: ImageGenerationOptions): Promise<ImageGenerationResult> {
   const {
     prompt,
-    model = 'flux-pro',
+    model = 'gpt-5-image-mini',
     aspectRatio = '1:1',
   } = options;
 
@@ -44,7 +44,7 @@ export async function generateImage(options: ImageGenerationOptions): Promise<Im
     throw new Error('OPENROUTER_API_KEY is not configured');
   }
 
-  const modelId = MODEL_IDS[model] || MODEL_IDS['flux-pro'];
+  const modelId = MODEL_IDS[model] || MODEL_IDS['gpt-5-image-mini'];
 
   // Build the request body
   const requestBody: Record<string, unknown> = {
