@@ -1,194 +1,154 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { generateProductShot, isImageGenerationConfigured } from '@/lib/image-generation';
+import { createClient } from '@supabase/supabase-js';
+
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
+const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
+
+function getSupabaseClient() {
+  if (!supabaseUrl || supabaseUrl.includes('your-project')) return null;
+  return createClient(supabaseUrl, supabaseKey);
+}
 
 interface ProductShotRequest {
-  designId: string;
-  shotType: string;
-  shotName: string;
+  designId?: string;
+  shotType: 'flat-front' | 'flat-back' | 'ghost' | 'hanging' | 'macro';
+  shotName?: string;
   designUrl?: string;
   cityName?: string;
   productType?: string;
   style?: string;
-}
-
-interface ModelResponse {
-  url: string;
-  model: string;
-}
-
-interface ProductShotResponse {
-  modelA: ModelResponse | null;
-  modelB: ModelResponse | null;
-  shotType: string;
-  prompt: string;
-}
-
-function generateProductShotPrompt(
-  shotType: string,
-  shotName: string,
-  productType: string,
-  style: string,
-  cityName?: string
-): string {
-  const productShotPrompts: Record<string, string> = {
-    'flat-front': `Professional flat lay photography of ${productType} front view, ${style} style, studio lighting, white background, top-down perspective, high detail, commercial product photography${cityName ? `, ${cityName} inspired design` : ''}`,
-    'flat-back': `Professional flat lay photography of ${productType} back view showing label and details, ${style} style, studio lighting, white background, top-down perspective, high detail, commercial product photography${cityName ? `, ${cityName} inspired` : ''}`,
-    'ghost': `Ghost mannequin photography of ${productType}, invisible mannequin effect showing 3D form, ${style} style, professional studio lighting, white background, front angle, commercial photography${cityName ? `, ${cityName} themed` : ''}`,
-    'hanging': `Professional hanger shot of ${productType} suspended on wooden hanger, ${style} style, studio lighting, white background, front view, commercial product photography${cityName ? `, ${cityName} inspired` : ''}`,
-    'macro': `Macro detail photography of ${productType} fabric texture and stitching, extreme close-up showing material quality, ${style} style, professional lighting, high detail${cityName ? `, ${cityName} design elements` : ''}`
-  };
-
-  return productShotPrompts[shotType] || `Professional product photography of ${productType}, ${shotName}, ${style} style, studio lighting`;
-}
-
-async function generateWithSora(prompt: string, shotType: string): Promise<ModelResponse> {
-  try {
-    const openRouterKey = process.env.OPENROUTER_API_KEY || 'sk-or-v1-test';
-
-    const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${openRouterKey}`,
-        'Content-Type': 'application/json',
-        'HTTP-Referer': process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000',
-        'X-Title': 'TMH Product Shot Generator'
-      },
-      body: JSON.stringify({
-        model: 'openai/sora',
-        messages: [{
-          role: 'user',
-          content: `Generate product shot: ${prompt}`
-        }],
-        max_tokens: 1
-      })
-    });
-
-    if (!response.ok) {
-      console.warn(`Sora API returned ${response.status}, using placeholder`);
-    }
-
-    const timestamp = Date.now();
-    const shotId = Math.random().toString(36).substr(2, 9);
-
-    const placeholderUrls: Record<string, string> = {
-      'flat-front': `https://via.placeholder.com/1024x1024/4A90E2/FFFFFF?text=Sora+Flat+Front+${shotId}`,
-      'flat-back': `https://via.placeholder.com/1024x1024/7B68EE/FFFFFF?text=Sora+Flat+Back+${shotId}`,
-      'ghost': `https://via.placeholder.com/1024x1024/9370DB/FFFFFF?text=Sora+Ghost+${shotId}`,
-      'hanging': `https://via.placeholder.com/1024x1024/8A2BE2/FFFFFF?text=Sora+Hanging+${shotId}`,
-      'macro': `https://via.placeholder.com/1024x1024/6A5ACD/FFFFFF?text=Sora+Macro+${shotId}`
-    };
-
-    return {
-      url: placeholderUrls[shotType] || `https://via.placeholder.com/1024x1024/4169E1/FFFFFF?text=Sora+Shot+${timestamp}`,
-      model: 'Sora'
-    };
-  } catch (error) {
-    console.error('Sora generation error:', error);
-    const fallbackId = Date.now();
-    return {
-      url: `https://via.placeholder.com/1024x1024/708090/FFFFFF?text=Sora+Error+${fallbackId}`,
-      model: 'Sora'
-    };
-  }
-}
-
-async function generateWithNanoBanana(prompt: string, shotType: string): Promise<ModelResponse> {
-  try {
-    const openRouterKey = process.env.OPENROUTER_API_KEY || 'sk-or-v1-test';
-
-    const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${openRouterKey}`,
-        'Content-Type': 'application/json',
-        'HTTP-Referer': process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000',
-        'X-Title': 'TMH Product Shot Generator'
-      },
-      body: JSON.stringify({
-        model: 'nano-banana/stable-diffusion',
-        messages: [{
-          role: 'user',
-          content: `Generate product shot: ${prompt}`
-        }],
-        max_tokens: 1
-      })
-    });
-
-    if (!response.ok) {
-      console.warn(`Nano Banana API returned ${response.status}, using placeholder`);
-    }
-
-    const timestamp = Date.now();
-    const shotId = Math.random().toString(36).substr(2, 9);
-
-    const placeholderUrls: Record<string, string> = {
-      'flat-front': `https://via.placeholder.com/1024x1024/FF6347/FFFFFF?text=NB+Flat+Front+${shotId}`,
-      'flat-back': `https://via.placeholder.com/1024x1024/FF7F50/FFFFFF?text=NB+Flat+Back+${shotId}`,
-      'ghost': `https://via.placeholder.com/1024x1024/FF8C00/FFFFFF?text=NB+Ghost+${shotId}`,
-      'hanging': `https://via.placeholder.com/1024x1024/FFA500/FFFFFF?text=NB+Hanging+${shotId}`,
-      'macro': `https://via.placeholder.com/1024x1024/FFB347/FFFFFF?text=NB+Macro+${shotId}`
-    };
-
-    return {
-      url: placeholderUrls[shotType] || `https://via.placeholder.com/1024x1024/FF4500/FFFFFF?text=NanoBanana+Shot+${timestamp}`,
-      model: 'Nano Banana'
-    };
-  } catch (error) {
-    console.error('Nano Banana generation error:', error);
-    const fallbackId = Date.now();
-    return {
-      url: `https://via.placeholder.com/1024x1024/CD5C5C/FFFFFF?text=NB+Error+${fallbackId}`,
-      model: 'Nano Banana'
-    };
-  }
+  model?: 'flux-pro' | 'flux-max' | 'flux-klein' | 'gemini-flash';
+  generateBothModels?: boolean;
 }
 
 export async function POST(request: NextRequest) {
   try {
     const body: ProductShotRequest = await request.json();
 
-    if (!body.designId || !body.shotType) {
+    if (!body.shotType) {
       return NextResponse.json(
-        { error: 'Design ID and shot type are required' },
+        { error: 'Shot type is required' },
         { status: 400 }
       );
     }
 
-    const prompt = generateProductShotPrompt(
-      body.shotType,
-      body.shotName,
-      body.productType || 'T-Shirt',
-      body.style || 'Urban',
-      body.cityName
-    );
+    // Check if image generation is configured
+    if (!isImageGenerationConfigured()) {
+      // Return placeholder for development
+      console.warn('[Product Shot] OpenRouter not configured, returning placeholder');
+      return NextResponse.json({
+        modelA: {
+          url: `https://placehold.co/1024x1024/1a1a2e/ffffff?text=${encodeURIComponent(body.shotType)}`,
+          model: 'placeholder',
+          prompt: 'Development mode - no API key',
+          generatedAt: new Date().toISOString()
+        },
+        shotType: body.shotType,
+        note: 'Using placeholder - configure OPENROUTER_API_KEY for real generation'
+      });
+    }
 
-    await new Promise(resolve => setTimeout(resolve, 500 + Math.random() * 500));
+    const productType = body.productType || 'premium streetwear hoodie';
+    const style = body.style || 'urban luxury streetwear';
+    const cityName = body.cityName;
 
-    const [soraResult, nanoBananaResult] = await Promise.allSettled([
-      generateWithSora(prompt, body.shotType),
-      generateWithNanoBanana(prompt, body.shotType)
-    ]);
+    // Generate with primary model (flux-pro by default)
+    const primaryModel = body.model || 'flux-pro';
 
-    const response: ProductShotResponse = {
-      modelA: soraResult.status === 'fulfilled' ? soraResult.value : null,
-      modelB: nanoBananaResult.status === 'fulfilled' ? nanoBananaResult.value : null,
+    console.log('[Product Shot] Generating with:', { shotType: body.shotType, productType, style, cityName, model: primaryModel });
+
+    const result = await generateProductShot({
+      productType,
+      style,
       shotType: body.shotType,
-      prompt: prompt
+      cityName,
+      model: primaryModel
+    });
+
+    const response: Record<string, unknown> = {
+      modelA: {
+        url: result.imageUrl,
+        model: result.model,
+        prompt: result.prompt,
+        generatedAt: result.generatedAt
+      },
+      shotType: body.shotType
     };
 
-    if (!response.modelA && !response.modelB) {
-      return NextResponse.json(
-        { error: 'Both models failed to generate product shot' },
-        { status: 500 }
-      );
+    // Generate with secondary model if requested
+    if (body.generateBothModels) {
+      try {
+        const secondaryModel = primaryModel === 'flux-pro' ? 'gemini-flash' : 'flux-pro';
+        const resultB = await generateProductShot({
+          productType,
+          style,
+          shotType: body.shotType,
+          cityName,
+          model: secondaryModel
+        });
+
+        response.modelB = {
+          url: resultB.imageUrl,
+          model: resultB.model,
+          prompt: resultB.prompt,
+          generatedAt: resultB.generatedAt
+        };
+      } catch (error) {
+        console.error('[Product Shot] Secondary model failed:', error);
+        response.modelB = {
+          error: 'Secondary model generation failed',
+          model: 'flux-klein'
+        };
+      }
+    }
+
+    // Save to database if available
+    const supabase = getSupabaseClient();
+    if (supabase && result.imageUrl) {
+      try {
+        await supabase.from('generated_content').insert({
+          content_type: 'image',
+          title: `Product Shot - ${body.shotType}`,
+          prompt: result.prompt,
+          model: result.model,
+          output_url: result.imageUrl,
+          status: 'completed'
+        });
+      } catch (dbError) {
+        console.warn('[Product Shot] Failed to save to database:', dbError);
+      }
     }
 
     return NextResponse.json(response);
 
   } catch (error) {
-    console.error('Product shot generation error:', error);
+    console.error('[Product Shot] Generation error:', error);
     return NextResponse.json(
-      { error: 'Internal server error' },
+      {
+        error: 'Failed to generate product shot',
+        details: error instanceof Error ? error.message : 'Unknown error'
+      },
       { status: 500 }
     );
   }
+}
+
+// Get available shot types and models
+export async function GET() {
+  return NextResponse.json({
+    shotTypes: [
+      { id: 'flat-front', name: 'Flat Front', description: 'Top-down front view on white background' },
+      { id: 'flat-back', name: 'Flat Back', description: 'Top-down back view showing details' },
+      { id: 'ghost', name: 'Ghost Mannequin', description: '3D form with invisible mannequin' },
+      { id: 'hanging', name: 'Hanger Shot', description: 'Suspended on hanger, front view' },
+      { id: 'macro', name: 'Macro Detail', description: 'Close-up of fabric and stitching' }
+    ],
+    models: [
+      { id: 'flux-pro', name: 'Flux Pro', description: 'Best quality, recommended for finals' },
+      { id: 'flux-klein', name: 'Flux Schnell', description: 'Fast iteration, lower cost' },
+      { id: 'gemini-flash', name: 'Gemini Flash', description: 'Google model, good for variations' }
+    ],
+    configured: isImageGenerationConfigured()
+  });
 }

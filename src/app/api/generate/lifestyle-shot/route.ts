@@ -1,19 +1,35 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { generateLifestyleShot, isImageGenerationConfigured } from '@/lib/image-generation';
+import { createClient } from '@supabase/supabase-js';
+
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
+const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
+
+function getSupabaseClient() {
+  if (!supabaseUrl || supabaseUrl.includes('your-project')) return null;
+  return createClient(supabaseUrl, supabaseKey);
+}
 
 interface LifestyleVariation {
   id: string;
   name: string;
-  model: string;
-  location: string;
+  model?: string;
+  location?: string;
   description: string;
-  prompt: string;
+  prompt?: string;
 }
 
 interface GenerationRequest {
-  cityId: string;
+  cityId?: string;
   cityName: string;
-  variation: LifestyleVariation;
-  generateBothModels: boolean;
+  variation?: LifestyleVariation;
+  description?: string;
+  modelDescription?: string;
+  sneaker?: string;
+  location?: string;
+  model?: 'flux-pro' | 'flux-max' | 'flux-klein' | 'gemini-flash';
+  aspectRatio?: '1:1' | '4:3' | '3:4' | '16:9' | '9:16';
+  generateBothModels?: boolean;
 }
 
 export async function POST(request: NextRequest) {
@@ -21,54 +37,94 @@ export async function POST(request: NextRequest) {
     const body: GenerationRequest = await request.json();
     const { cityId, cityName, variation, generateBothModels } = body;
 
-    if (!cityId || !cityName || !variation) {
+    if (!cityName) {
       return NextResponse.json(
-        { error: 'Missing required fields' },
+        { error: 'City name is required' },
         { status: 400 }
       );
     }
 
-    // Prepare prompts for both models
-    const modelAPrompt = `${variation.prompt}, Model A style, city: ${cityName}, professional photography, high quality`;
-    const modelBPrompt = `${variation.prompt}, Model B style, city: ${cityName}, lifestyle photography, natural lighting`;
-
-    // Initialize response data
-    const responseData: any = {};
-
-    // Generate with Model A
-    try {
-      // In production, this would call the actual AI generation API
-      // For now, we'll simulate with placeholder data
-      const modelAResponse = await generateImage(modelAPrompt, 'model-a');
-      responseData.modelA = {
-        imageUrl: modelAResponse.imageUrl || `https://via.placeholder.com/600x800/4F46E5/ffffff?text=Model+A+${encodeURIComponent(variation.name)}`,
-        prompt: modelAPrompt,
-        model: 'model-a',
-        generatedAt: new Date().toISOString()
-      };
-    } catch (error) {
-      console.error('Error generating Model A image:', error);
-      responseData.modelA = {
-        error: 'Failed to generate with Model A',
-        prompt: modelAPrompt
-      };
+    // Check if image generation is configured
+    if (!isImageGenerationConfigured()) {
+      console.warn('[Lifestyle Shot] OpenRouter not configured, returning placeholder');
+      return NextResponse.json({
+        modelA: {
+          imageUrl: `https://placehold.co/800x600/4F46E5/ffffff?text=${encodeURIComponent(cityName + ' Lifestyle')}`,
+          model: 'placeholder',
+          prompt: 'Development mode - no API key',
+          generatedAt: new Date().toISOString()
+        },
+        metadata: {
+          cityId,
+          cityName,
+          variation: variation?.id,
+          variationName: variation?.name,
+          generatedAt: new Date().toISOString()
+        },
+        note: 'Using placeholder - configure OPENROUTER_API_KEY for real generation'
+      });
     }
 
-    // Generate with Model B if requested
+    // Build description from variation or direct input
+    const description = variation?.description || body.description || `Urban lifestyle scene in ${cityName}`;
+    const modelDescription = variation?.model || body.modelDescription;
+    const sneaker = body.sneaker;
+    const location = variation?.location || body.location;
+    const primaryModel = body.model || 'flux-pro';
+    const aspectRatio = body.aspectRatio || '4:3';
+
+    console.log('[Lifestyle Shot] Generating with:', {
+      cityName,
+      description: description.slice(0, 50),
+      model: primaryModel,
+      aspectRatio
+    });
+
+    // Generate with primary model
+    const result = await generateLifestyleShot({
+      description,
+      cityName,
+      modelDescription,
+      sneaker,
+      location,
+      model: primaryModel,
+      aspectRatio
+    });
+
+    const responseData: Record<string, unknown> = {
+      modelA: {
+        imageUrl: result.imageUrl,
+        prompt: result.prompt,
+        model: result.model,
+        generatedAt: result.generatedAt
+      }
+    };
+
+    // Generate with secondary model if requested
     if (generateBothModels) {
       try {
-        const modelBResponse = await generateImage(modelBPrompt, 'model-b');
+        const secondaryModel = primaryModel === 'flux-pro' ? 'gemini-flash' : 'flux-pro';
+        const resultB = await generateLifestyleShot({
+          description,
+          cityName,
+          modelDescription,
+          sneaker,
+          location,
+          model: secondaryModel,
+          aspectRatio
+        });
+
         responseData.modelB = {
-          imageUrl: modelBResponse.imageUrl || `https://via.placeholder.com/600x800/10B981/ffffff?text=Model+B+${encodeURIComponent(variation.name)}`,
-          prompt: modelBPrompt,
-          model: 'model-b',
-          generatedAt: new Date().toISOString()
+          imageUrl: resultB.imageUrl,
+          prompt: resultB.prompt,
+          model: resultB.model,
+          generatedAt: resultB.generatedAt
         };
       } catch (error) {
-        console.error('Error generating Model B image:', error);
+        console.error('[Lifestyle Shot] Secondary model failed:', error);
         responseData.modelB = {
-          error: 'Failed to generate with Model B',
-          prompt: modelBPrompt
+          error: 'Failed to generate with secondary model',
+          prompt: description
         };
       }
     }
@@ -77,48 +133,65 @@ export async function POST(request: NextRequest) {
     responseData.metadata = {
       cityId,
       cityName,
-      variation: variation.id,
-      variationName: variation.name,
+      variation: variation?.id,
+      variationName: variation?.name,
       generatedAt: new Date().toISOString()
     };
+
+    // Save to database if available
+    const supabase = getSupabaseClient();
+    if (supabase && result.imageUrl) {
+      try {
+        await supabase.from('generated_content').insert({
+          city_id: cityId || null,
+          content_type: 'image',
+          title: `Lifestyle Shot - ${cityName}${variation?.name ? ` - ${variation.name}` : ''}`,
+          prompt: result.prompt,
+          model: result.model,
+          output_url: result.imageUrl,
+          status: 'completed'
+        });
+      } catch (dbError) {
+        console.warn('[Lifestyle Shot] Failed to save to database:', dbError);
+      }
+    }
 
     return NextResponse.json(responseData);
 
   } catch (error) {
-    console.error('Error in lifestyle shot generation:', error);
+    console.error('[Lifestyle Shot] Generation error:', error);
     return NextResponse.json(
-      { error: 'Failed to generate lifestyle shots' },
+      {
+        error: 'Failed to generate lifestyle shots',
+        details: error instanceof Error ? error.message : 'Unknown error'
+      },
       { status: 500 }
     );
   }
 }
 
-// Mock image generation function - replace with actual AI API call
-async function generateImage(prompt: string, model: string): Promise<{ imageUrl: string }> {
-  // Simulate API delay
-  await new Promise(resolve => setTimeout(resolve, 1500));
-
-  // In production, this would call the actual AI generation service
-  // For example:
-  // const response = await fetch('https://api.openrouter.ai/v1/images/generations', {
-  //   method: 'POST',
-  //   headers: {
-  //     'Authorization': `Bearer ${process.env.OPENROUTER_API_KEY}`,
-  //     'Content-Type': 'application/json'
-  //   },
-  //   body: JSON.stringify({
-  //     prompt,
-  //     model: model === 'model-a' ? 'dalle-3' : 'stable-diffusion-xl',
-  //     n: 1,
-  //     size: '1024x1024'
-  //   })
-  // });
-  // const data = await response.json();
-  // return { imageUrl: data.data[0].url };
-
-  // Return mock placeholder for now
-  const colors = model === 'model-a' ? '4F46E5' : '10B981';
-  return {
-    imageUrl: `https://via.placeholder.com/600x800/${colors}/ffffff?text=${encodeURIComponent(prompt.slice(0, 30))}`
-  };
+// Get available options
+export async function GET() {
+  return NextResponse.json({
+    models: [
+      { id: 'flux-pro', name: 'Flux Pro', description: 'Best quality, recommended for finals' },
+      { id: 'flux-klein', name: 'Flux Schnell', description: 'Fast iteration, lower cost' },
+      { id: 'gemini-flash', name: 'Gemini Flash', description: 'Google model, supports aspect ratios' }
+    ],
+    aspectRatios: [
+      { id: '1:1', name: 'Square', description: 'Instagram feed' },
+      { id: '4:3', name: 'Landscape', description: 'Standard photo' },
+      { id: '3:4', name: 'Portrait', description: 'Vertical photo' },
+      { id: '16:9', name: 'Wide', description: 'YouTube thumbnail' },
+      { id: '9:16', name: 'Vertical', description: 'Instagram Stories, TikTok' }
+    ],
+    presetVariations: [
+      { id: 'street-casual', name: 'Street Casual', description: 'Model walking through urban neighborhood' },
+      { id: 'rooftop-golden', name: 'Rooftop Golden Hour', description: 'Model on rooftop with city skyline at sunset' },
+      { id: 'sneaker-focus', name: 'Sneaker Focus', description: 'Close-up lifestyle shot highlighting sneakers' },
+      { id: 'coffee-shop', name: 'Coffee Shop', description: 'Model in trendy local coffee shop' },
+      { id: 'mural-backdrop', name: 'Mural Backdrop', description: 'Model in front of iconic street art' }
+    ],
+    configured: isImageGenerationConfigured()
+  });
 }
