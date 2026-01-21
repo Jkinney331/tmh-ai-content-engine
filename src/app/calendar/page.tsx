@@ -6,13 +6,18 @@ import { Calendar, Filter, Image, FileText, Video, Clock, CheckCircle, XCircle, 
 
 interface GeneratedContent {
   id: string;
-  content_type: 'product_shot' | 'lifestyle_shot' | 'social_post' | 'video_ad';
+  content_type: 'product_shot' | 'lifestyle_shot' | 'social_post' | 'video_ad' | 'image' | 'video';
   city_id: string;
-  generation_params: any;
-  model_used: string;
-  prompt_used: string;
+  title?: string | null;
+  generation_params?: any;
+  // Support both old and new column names
+  model_used?: string;
+  model?: string;
+  prompt_used?: string;
+  prompt?: string;
   output_url: string;
-  output_metadata: any;
+  output_metadata?: any;
+  duration_seconds?: number | null;
   status: 'pending' | 'processing' | 'completed' | 'failed' | 'approved' | 'rejected';
   created_at: string;
   city?: {
@@ -26,18 +31,22 @@ interface City {
   name: string;
 }
 
-const contentTypeIcons = {
+const contentTypeIcons: Record<string, JSX.Element> = {
   product_shot: <Image className="w-4 h-4" />,
   lifestyle_shot: <Image className="w-4 h-4" />,
   social_post: <FileText className="w-4 h-4" />,
-  video_ad: <Video className="w-4 h-4" />
+  video_ad: <Video className="w-4 h-4" />,
+  image: <Image className="w-4 h-4" />,
+  video: <Video className="w-4 h-4" />
 };
 
-const contentTypeLabels = {
+const contentTypeLabels: Record<string, string> = {
   product_shot: 'Product Shot',
   lifestyle_shot: 'Lifestyle Shot',
   social_post: 'Social Post',
-  video_ad: 'Video Ad'
+  video_ad: 'Video Ad',
+  image: 'Image',
+  video: 'Video'
 };
 
 const statusColors = {
@@ -157,6 +166,11 @@ export default function CalendarPage() {
   };
 
   const getCaptionPreview = (item: GeneratedContent) => {
+    // Use title if available
+    if (item.title) {
+      return item.title;
+    }
+
     // Extract caption from different content types
     if (item.content_type === 'social_post') {
       if (item.output_metadata?.caption) {
@@ -167,8 +181,13 @@ export default function CalendarPage() {
       }
     }
 
-    // For other types, use the prompt as a preview
-    return item.prompt_used?.substring(0, 150) + '...';
+    // For other types, use the prompt as a preview (support both column names)
+    const prompt = item.prompt || item.prompt_used;
+    if (prompt) {
+      return prompt.substring(0, 150) + (prompt.length > 150 ? '...' : '');
+    }
+
+    return 'No description available';
   };
 
   const handleSelectAll = () => {
@@ -202,12 +221,13 @@ export default function CalendarPage() {
       const exportData = selectedContent.map(item => ({
         id: item.id,
         content_type: item.content_type,
+        title: item.title,
         city: item.city?.name || 'Unknown',
         status: item.status,
         created_at: item.created_at,
         output_url: item.output_url,
-        prompt: item.prompt_used,
-        model: item.model_used,
+        prompt: item.prompt || item.prompt_used,
+        model: item.model || item.model_used,
         metadata: item.output_metadata
       }));
 
@@ -524,7 +544,7 @@ export default function CalendarPage() {
 
                   {/* Model Used */}
                   <p className="text-xs text-gray-400 mt-1">
-                    Model: {item.model_used}
+                    Model: {item.model || item.model_used || 'N/A'}
                   </p>
                 </div>
               </div>

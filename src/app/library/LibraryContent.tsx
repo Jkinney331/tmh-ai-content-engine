@@ -6,16 +6,17 @@ import Image from 'next/image'
 import { useSearchParams, useRouter, usePathname } from 'next/navigation'
 import AssetDetailModal from '@/components/AssetDetailModal'
 
-interface GeneratedImage {
+interface GeneratedContent {
   id: string
   city_id: string
-  design_concept_id: string | null
-  image_url: string
-  prompt_used: string | null
-  model_used: string | null
-  image_type: string | null
-  is_approved: boolean
-  approval_notes: string | null
+  content_type: string | null
+  title: string | null
+  prompt: string | null
+  model: string | null
+  status: string
+  output_url: string | null
+  generation_cost_cents: number | null
+  duration_seconds: number | null
   created_at: string
   cities?: {
     id: string
@@ -33,6 +34,8 @@ interface City {
 
 const contentTypes = [
   { value: 'all', label: 'All Types' },
+  { value: 'image', label: 'Image' },
+  { value: 'video', label: 'Video' },
   { value: 'product_shot', label: 'Product Shot' },
   { value: 'lifestyle_shot', label: 'Lifestyle Shot' },
   { value: 'social_post', label: 'Social Post' },
@@ -46,11 +49,11 @@ const dateRanges = [
 ]
 
 export default function LibraryContent() {
-  const [assets, setAssets] = useState<GeneratedImage[]>([])
+  const [assets, setAssets] = useState<GeneratedContent[]>([])
   const [cities, setCities] = useState<City[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
-  const [selectedAsset, setSelectedAsset] = useState<GeneratedImage | null>(null)
+  const [selectedAsset, setSelectedAsset] = useState<GeneratedContent | null>(null)
 
   const router = useRouter()
   const pathname = usePathname()
@@ -95,7 +98,7 @@ export default function LibraryContent() {
       setError(null)
 
       let query = supabase
-        .from('generated_images')
+        .from('generated_content')
         .select(`
           *,
           cities (
@@ -104,7 +107,7 @@ export default function LibraryContent() {
             state
           )
         `)
-        .eq('is_approved', true)
+        .eq('status', 'approved')
 
       // Apply city filter
       if (selectedCity !== 'all') {
@@ -113,7 +116,7 @@ export default function LibraryContent() {
 
       // Apply content type filter
       if (selectedContentType !== 'all') {
-        query = query.eq('image_type', selectedContentType)
+        query = query.eq('content_type', selectedContentType)
       }
 
       // Apply date range filter
@@ -143,7 +146,8 @@ export default function LibraryContent() {
   // Get filtered asset count
   const filteredCount = assets.length
 
-  const getImageUrl = (url: string) => {
+  const getImageUrl = (url: string | null) => {
+    if (!url) return '/placeholder-image.png'
     // If it's already a full URL, return it
     if (url.startsWith('http')) return url
     // Otherwise, construct the Supabase storage URL
@@ -154,7 +158,7 @@ export default function LibraryContent() {
   const handleDeleteAsset = async (assetId: string) => {
     try {
       const { error: deleteError } = await supabase
-        .from('generated_images')
+        .from('generated_content')
         .delete()
         .eq('id', assetId)
 
@@ -358,13 +362,25 @@ export default function LibraryContent() {
               className="group relative aspect-square bg-gray-100 rounded-lg overflow-hidden hover:shadow-lg transition-shadow cursor-pointer"
             >
               <div className="relative w-full h-full">
-                <Image
-                  src={getImageUrl(asset.image_url)}
-                  alt={`${asset.image_type || 'Generated'} asset`}
-                  fill
-                  className="object-cover"
-                  sizes="(max-width: 640px) 50vw, (max-width: 768px) 33vw, (max-width: 1024px) 25vw, 20vw"
-                />
+                {asset.content_type === 'video' ? (
+                  <div className="w-full h-full flex items-center justify-center bg-gray-800">
+                    <div className="text-center text-white">
+                      <svg className="w-12 h-12 mx-auto mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                      </svg>
+                      <p className="text-xs">{asset.duration_seconds}s video</p>
+                    </div>
+                  </div>
+                ) : (
+                  <Image
+                    src={getImageUrl(asset.output_url)}
+                    alt={asset.title || 'Generated asset'}
+                    fill
+                    className="object-cover"
+                    sizes="(max-width: 640px) 50vw, (max-width: 768px) 33vw, (max-width: 1024px) 25vw, 20vw"
+                  />
+                )}
               </div>
 
               {/* Hover Overlay */}
@@ -375,14 +391,14 @@ export default function LibraryContent() {
                       {asset.cities.name}{asset.cities.state && `, ${asset.cities.state}`}
                     </p>
                   )}
-                  {asset.image_type && (
+                  {asset.title && (
                     <p className="text-xs opacity-90">
-                      {asset.image_type.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase())}
+                      {asset.title}
                     </p>
                   )}
-                  {asset.model_used && (
+                  {asset.model && (
                     <p className="text-xs opacity-75 mt-1">
-                      {asset.model_used}
+                      {asset.model}
                     </p>
                   )}
                 </div>
@@ -394,8 +410,8 @@ export default function LibraryContent() {
                       e.stopPropagation()
                       // Download functionality
                       const link = document.createElement('a')
-                      link.href = getImageUrl(asset.image_url)
-                      link.download = `tmh-asset-${asset.id}.jpg`
+                      link.href = getImageUrl(asset.output_url)
+                      link.download = `tmh-asset-${asset.id}.${asset.content_type === 'video' ? 'mp4' : 'jpg'}`
                       link.click()
                     }}
                     className="p-2 bg-white rounded-full shadow-lg hover:shadow-xl transition-shadow"

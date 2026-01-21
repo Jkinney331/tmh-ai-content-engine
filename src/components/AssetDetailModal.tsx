@@ -7,10 +7,17 @@ import Link from 'next/link';
 interface AssetDetailModalProps {
   asset: {
     id: string;
-    image_url: string;
+    // Support both old and new schema
+    image_url?: string;
+    output_url?: string | null;
     image_type?: string | null;
+    content_type?: string | null;
+    title?: string | null;
     model_used?: string | null;
+    model?: string | null;
     prompt_used?: string | null;
+    prompt?: string | null;
+    duration_seconds?: number | null;
     created_at: string;
     cities?: {
       id: string;
@@ -27,7 +34,15 @@ export default function AssetDetailModal({ asset, onClose, onDelete }: AssetDeta
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
 
+  // Support both old and new schema field names
+  const imageUrl = asset.output_url || asset.image_url || '';
+  const contentType = asset.content_type || asset.image_type;
+  const modelUsed = asset.model || asset.model_used;
+  const promptUsed = asset.prompt || asset.prompt_used;
+  const isVideo = contentType === 'video';
+
   const getImageUrl = (url: string) => {
+    if (!url) return '/placeholder-image.png';
     if (url.startsWith('http')) return url;
     const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
     return `${supabaseUrl}/storage/v1/object/public/images/${url}`;
@@ -35,8 +50,8 @@ export default function AssetDetailModal({ asset, onClose, onDelete }: AssetDeta
 
   const handleDownload = () => {
     const link = document.createElement('a');
-    link.href = getImageUrl(asset.image_url);
-    link.download = `tmh-asset-${asset.id}.jpg`;
+    link.href = getImageUrl(imageUrl);
+    link.download = `tmh-asset-${asset.id}.${isVideo ? 'mp4' : 'jpg'}`;
     link.click();
   };
 
@@ -89,19 +104,43 @@ export default function AssetDetailModal({ asset, onClose, onDelete }: AssetDeta
 
           {/* Content */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6 p-6 overflow-y-auto max-h-[calc(90vh-180px)]">
-            {/* Image */}
+            {/* Image/Video */}
             <div className="aspect-square bg-gray-100 rounded-lg overflow-hidden">
-              <img
-                src={getImageUrl(asset.image_url)}
-                alt={`${asset.image_type || 'Generated'} asset`}
-                className="w-full h-full object-contain"
-              />
+              {isVideo ? (
+                <div className="w-full h-full flex items-center justify-center bg-gray-800">
+                  <div className="text-center text-white">
+                    <svg className="w-16 h-16 mx-auto mb-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    <p className="text-lg font-medium">{asset.title || 'Video'}</p>
+                    {asset.duration_seconds && <p className="text-sm opacity-75">{asset.duration_seconds} seconds</p>}
+                  </div>
+                </div>
+              ) : (
+                <img
+                  src={getImageUrl(imageUrl)}
+                  alt={asset.title || contentType || 'Generated asset'}
+                  className="w-full h-full object-contain"
+                />
+              )}
             </div>
 
             {/* Details */}
             <div className="space-y-6">
               {/* Metadata */}
               <div className="space-y-4">
+                {/* Title */}
+                {asset.title && (
+                  <div className="flex items-start gap-3">
+                    <FileImage className="w-5 h-5 text-gray-400 mt-0.5" />
+                    <div>
+                      <p className="text-sm text-gray-500">Title</p>
+                      <p className="text-gray-900">{asset.title}</p>
+                    </div>
+                  </div>
+                )}
+
                 {/* City */}
                 {asset.cities && (
                   <div className="flex items-start gap-3">
@@ -117,25 +156,25 @@ export default function AssetDetailModal({ asset, onClose, onDelete }: AssetDeta
                 )}
 
                 {/* Type */}
-                {asset.image_type && (
+                {contentType && (
                   <div className="flex items-start gap-3">
                     <FileImage className="w-5 h-5 text-gray-400 mt-0.5" />
                     <div>
                       <p className="text-sm text-gray-500">Content Type</p>
                       <p className="text-gray-900">
-                        {asset.image_type.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase())}
+                        {contentType.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase())}
                       </p>
                     </div>
                   </div>
                 )}
 
                 {/* Model */}
-                {asset.model_used && (
+                {modelUsed && (
                   <div className="flex items-start gap-3">
                     <Settings className="w-5 h-5 text-gray-400 mt-0.5" />
                     <div>
                       <p className="text-sm text-gray-500">Model Used</p>
-                      <p className="text-gray-900">{asset.model_used}</p>
+                      <p className="text-gray-900">{modelUsed}</p>
                     </div>
                   </div>
                 )}
@@ -162,12 +201,12 @@ export default function AssetDetailModal({ asset, onClose, onDelete }: AssetDeta
               </div>
 
               {/* Prompt */}
-              {asset.prompt_used && (
+              {promptUsed && (
                 <div>
                   <p className="text-sm text-gray-500 mb-2">Generation Prompt</p>
                   <div className="bg-gray-50 rounded-lg p-3">
                     <p className="text-sm text-gray-700 whitespace-pre-wrap">
-                      {asset.prompt_used}
+                      {promptUsed}
                     </p>
                   </div>
                 </div>
@@ -180,7 +219,7 @@ export default function AssetDetailModal({ asset, onClose, onDelete }: AssetDeta
             <div className="flex gap-2">
               {/* Use in Post */}
               <Link
-                href={`/content/create?assetId=${asset.id}&assetUrl=${encodeURIComponent(asset.image_url)}`}
+                href={`/content/create?assetId=${asset.id}&assetUrl=${encodeURIComponent(imageUrl)}`}
                 className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition-colors"
               >
                 <FileImage className="w-4 h-4" />

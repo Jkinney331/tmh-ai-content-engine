@@ -92,46 +92,62 @@ export async function updateCityStatus(id: string, status: string) {
 
 // City Elements helpers
 export async function getCityElements(cityId: string, elementType?: string, status?: string) {
-  let query = supabase
-    .from('city_elements')
-    .select('*')
-    .eq('city_id', cityId)
+  try {
+    let query = supabase
+      .from('city_elements')
+      .select('*')
+      .eq('city_id', cityId)
 
-  if (elementType) {
-    query = query.eq('element_type', elementType)
+    if (elementType) {
+      query = query.eq('element_type', elementType)
+    }
+
+    if (status) {
+      query = query.eq('status', status)
+    }
+
+    const { data, error } = await query.order('element_type').order('element_key')
+
+    if (error) {
+      console.error('Error fetching city elements:', error)
+      return []
+    }
+    return data || []
+  } catch (err) {
+    console.error('Failed to fetch city elements:', err)
+    return []
   }
-
-  if (status) {
-    query = query.eq('status', status)
-  }
-
-  const { data, error } = await query.order('element_type').order('element_key')
-
-  if (error) throw error
-  return data
 }
 
 export async function getCityElementsByType(cityId: string) {
-  const { data, error } = await supabase
-    .from('city_elements')
-    .select('*')
-    .eq('city_id', cityId)
-    .order('element_type')
-    .order('element_key')
+  try {
+    const { data, error } = await supabase
+      .from('city_elements')
+      .select('*')
+      .eq('city_id', cityId)
+      .order('element_type')
+      .order('element_key')
 
-  if (error) throw error
-
-  // Group elements by type
-  const grouped = (data as any)?.reduce((acc: Record<string, typeof data>, element: any) => {
-    const type = element.element_type
-    if (!acc[type]) {
-      acc[type] = []
+    if (error) {
+      console.error('Error fetching city elements:', error)
+      return {}
     }
-    (acc as any)[type].push(element)
-    return acc
-  }, {}) || {}
 
-  return grouped
+    // Group elements by type
+    const grouped = (data as any)?.reduce((acc: Record<string, typeof data>, element: any) => {
+      const type = element.element_type
+      if (!acc[type]) {
+        acc[type] = []
+      }
+      (acc as any)[type].push(element)
+      return acc
+    }, {}) || {}
+
+    return grouped
+  } catch (err) {
+    console.error('Failed to fetch city elements:', err)
+    return {}
+  }
 }
 
 // Image helpers
