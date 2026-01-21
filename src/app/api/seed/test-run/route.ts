@@ -72,8 +72,22 @@ export async function POST(request: NextRequest) {
           .from('cities')
           .insert({
             name: cityName,
-            status: 'researching',
-            research_categories: ['slang', 'landmarks', 'sports', 'culture', 'visual_identity', 'area_codes']
+            status: 'draft',
+            nicknames: [],
+            area_codes: [],
+            visual_identity: {
+              research_categories: {
+                slang: true,
+                landmarks: true,
+                sports: true,
+                culture: true,
+                visualIdentity: true,
+                areaCodes: true
+              }
+            },
+            avoid: [],
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString()
           })
           .select()
           .single();
