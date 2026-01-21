@@ -1,0 +1,26 @@
+## Completed Acceptance Criteria
+
+✅ **Query feedback tags** - The component uses `supabase.rpc('get_feedback_by_tags')` to query all feedback tags from the database.
+
+✅ **Count frequency of each tag with thumbs_up vs thumbs_down** - The component processes the data to calculate:
+   - `thumbs_up_count`: Number of positive ratings for each tag
+   - `thumbs_down_count`: Number of negative ratings for each tag
+   - `positive_rate`: Percentage of positive feedback (thumbs_up / total)
+
+✅ **Display as sorted list: "golden_hour: 85% positive"** - Tags are displayed with:
+   - Tag name (formatted with spaces instead of underscores)
+   - Percentage positive rating
+   - Sorted by total frequency (most common tags first)
+
+✅ **Color code: green for positive, red for negative patterns** - The component implements color coding:
+   - Green (≥70% positive): Text and background in green shades
+   - Red (≤30% positive): Text and background in red shades  
+   - Yellow (30-70% positive): Text and background in yellow shades for mixed patterns
+
+Additional features implemented:
+- Visual progress bars showing positive percentage
+- Thumbs up/down icons with counts
+- Total count display for each tag
+- Loading and error states
+- Empty state when no feedback exists
+- Legend explaining the color coding

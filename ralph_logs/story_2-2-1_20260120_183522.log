@@ -1,0 +1,20 @@
+## Completed Acceptance Criteria
+
+✅ **All acceptance criteria have been satisfied:**
+
+1. ✅ **Clicking "Add City" button opens modal with `data-testid="add-city-modal"`**
+   - Added `onClick` handler to the button that sets `isModalOpen` to `true`
+   - Modal component has the required `data-testid="add-city-modal"` attribute
+
+2. ✅ **Modal has close button (X) that closes modal**
+   - Implemented close button with X icon in the top-right corner
+   - Button has `onClick` handler that calls `onClose` function
+
+3. ✅ **Modal has heading "Add New City"**
+   - Added `<h3>` element with text "Add New City"
+
+4. ✅ **Clicking outside modal closes it**
+   - Implemented `handleClickOutside` function using `useRef` and `mousedown` event listener
+   - Modal closes when clicking on the backdrop overlay
+
+The AddCityModal component shell has been successfully created with proper TypeScript types, accessibility features (including Escape key handling and screen reader support), and all required functionality.

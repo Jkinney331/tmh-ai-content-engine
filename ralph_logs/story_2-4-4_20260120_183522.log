@@ -1,0 +1,22 @@
+## Story 2-4-4 Implementation Complete
+
+I have successfully implemented the "Approve city profile" story with all acceptance criteria satisfied:
+
+### ✅ Acceptance Criteria Completed:
+
+1. **"Approve City Profile" button visible when at least 3 elements approved** - Implemented in lines 572-586. The button only appears when `getApprovedElementsCount() >= 3`
+
+2. **Clicking button calls PATCH `/api/cities/[cityId]` with status='approved'** - Implemented in the `handleApproveCityProfile` function (lines 98-117) which makes a PATCH request to `/api/cities/${cityId}` with `{ status: 'approved' }`
+
+3. **City status updates to 'approved'** - The API endpoint at `/api/cities/[cityId]/route.ts` handles the PATCH request and updates the city status in the database using the `updateCityStatus` function
+
+4. **Button changes to "City Approved" (disabled, green)** - Implemented in lines 589-596. When city status is 'approved', the button is disabled with green styling and displays "City Approved"
+
+5. **"Start Generating" button appears** - Implemented in lines 597-602. When the city is approved, a "Start Generating" button appears that navigates to `/generate?cityId=${cityId}`
+
+### Files Created/Modified:
+- **Modified:** `/src/app/cities/[cityId]/page.tsx` - Added city approval logic, button states, and element counting
+- **Created:** `/src/app/api/cities/[cityId]/route.ts` - PATCH endpoint for updating city status
+- **Modified:** `/src/lib/supabase.ts` - Added `updateCityStatus` helper function
+
+The implementation is complete and ready for testing!

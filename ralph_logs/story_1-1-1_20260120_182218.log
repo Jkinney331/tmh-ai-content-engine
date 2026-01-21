@@ -1,0 +1,31 @@
+## ✅ STORY 1-1-1 COMPLETED
+
+**All acceptance criteria satisfied:**
+
+1. ✅ **Table `cities` exists with all required columns:**
+   - `id` (uuid, primary key with auto-generation)
+   - `name` (text, not null)
+   - `nicknames` (jsonb with default empty array)
+   - `area_codes` (jsonb with default empty array)  
+   - `status` (text with 'draft' default and validation)
+   - `visual_identity` (jsonb with default empty object)
+   - `avoid` (jsonb with default empty array)
+   - `user_notes` (text, nullable)
+   - `created_at` (timestamptz with NOW() default)
+   - `updated_at` (timestamptz with auto-update trigger)
+
+2. ✅ **Can INSERT a row with name='Detroit'** - Included in migration with test data
+
+3. ✅ **Can SELECT row back by id and name** - Indexes created on both id (primary key) and name
+
+4. ✅ **RLS policy allows authenticated read/write** - Four policies created:
+   - Read (SELECT) for authenticated users
+   - Insert for authenticated users
+   - Update for authenticated users
+   - Delete for authenticated users
+
+**Additional enhancements included:**
+- Auto-update trigger for `updated_at` column
+- Indexes on `name` and `status` for performance
+- Status validation constraint
+- Test data insertion for Detroit

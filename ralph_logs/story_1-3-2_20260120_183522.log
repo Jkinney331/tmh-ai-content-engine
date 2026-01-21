@@ -1,0 +1,21 @@
+═══════════════════════════════════════════════════════════════
+STORY 1-3-2 COMPLETE: Perplexity API Client
+═══════════════════════════════════════════════════════════════
+
+✅ **ALL ACCEPTANCE CRITERIA SATISFIED:**
+
+1. ✅ File `src/lib/perplexity.ts` exports `perplexitySearch(query)` function
+2. ✅ Function calls Perplexity API with proper auth header (`Authorization: Bearer ${apiKey}`)
+3. ✅ Returns parsed JSON response (PerplexityResponse interface)
+4. ✅ Handles errors gracefully with typed error response (PerplexityError interface)
+5. ✅ Uses environment variable `PERPLEXITY_API_KEY`
+
+**ADDITIONAL FEATURES IMPLEMENTED:**
+- Type-safe interfaces for requests and responses
+- Error type guard function (`isPerplexityError`)
+- Helper functions for common city research tasks:
+  - `searchCityInfo()` - General city information
+  - `searchNeighborhoodTrends()` - Neighborhood-specific trends
+  - `searchLocalEvents()` - Local events and activities
+- Configurable options (model, temperature, max_tokens)
+- Comprehensive error handling for network, API, and configuration errors

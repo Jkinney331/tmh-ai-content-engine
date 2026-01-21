@@ -1,0 +1,23 @@
+## ✅ Story 6-2-1 Complete
+
+All acceptance criteria have been satisfied:
+
+1. **✅ Function `calculatePreferences(userId)` in `src/lib/preferences.ts`** - Created the main function that accepts a userId parameter
+
+2. **✅ Queries feedback table** - The function queries the feedback table to get all user feedback and joins with generated_content table to get model and city information
+
+3. **✅ Returns object: `{ modelPreferences, tagPreferences, cityPreferences }`** - Returns the exact object structure required with weighted preferences for:
+   - **modelPreferences**: Weighted scores for AI models based on user ratings
+   - **tagPreferences**: Weighted scores for content tags based on user feedback
+   - **cityPreferences**: Weighted scores for cities based on content ratings
+
+4. **✅ Caches result for 1 hour** - Implemented an in-memory cache with 1-hour expiration (60 * 60 * 1000 ms)
+
+### Additional features implemented:
+- Proper error handling with fallback to default preferences
+- Support for comparison feedback (boosts winner models, decreases loser models)
+- Weighted scoring system that normalizes preferences from 0 to 1
+- Helper functions for cache management (`clearPreferencesCache`, `getCacheStats`)
+- TypeScript types for all data structures
+
+The service is now ready to be used for personalized content generation based on user preferences.

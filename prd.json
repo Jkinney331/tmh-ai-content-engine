@@ -1,0 +1,1885 @@
+{
+  "project": "TMH AI Content Engine",
+  "version": "1.0.0",
+  "total_stories": 87,
+  "stories": [
+    {
+      "id": "1-1-1",
+      "title": "Create cities table",
+      "description": "As a developer, I want a cities table so that city profiles can be persisted.",
+      "acceptance_criteria": [
+        "Table `cities` exists in Supabase with columns: `id` (uuid, primary), `name` (text, not null), `nicknames` (jsonb), `area_codes` (jsonb), `status` (text, default 'draft'), `visual_identity` (jsonb), `avoid` (jsonb), `user_notes` (text), `created_at` (timestamptz), `updated_at` (timestamptz)",
+        "Can INSERT a row with name='Detroit' via Supabase client",
+        "Can SELECT row back by id and name",
+        "RLS policy allows authenticated read/write"
+      ],
+      "dependencies": [],
+      "files": [
+        "supabase/migrations/001_create_cities.sql"
+      ],
+      "phase": 1,
+      "feature": "1.1",
+      "passes": true
+    },
+    {
+      "id": "1-1-2",
+      "title": "Create city_elements table",
+      "description": "As a developer, I want a city_elements table to store slang, landmarks, sports, etc. with approval status.",
+      "acceptance_criteria": [
+        "Table `city_elements` exists with columns: `id` (uuid), `city_id` (uuid, FK to cities), `element_type` (text: 'slang' | 'landmark' | 'sport' | 'cultural'), `element_key` (text), `element_value` (jsonb), `status` (text: 'approved' | 'rejected' | 'pending'), `notes` (text), `created_at` (timestamptz)",
+        "Foreign key constraint to cities.id with ON DELETE CASCADE",
+        "Can INSERT element linked to a city",
+        "Can query all elements for a city filtered by status"
+      ],
+      "dependencies": [
+        "1-1-1"
+      ],
+      "files": [
+        "supabase/migrations/002_create_city_elements.sql"
+      ],
+      "phase": 1,
+      "feature": "1.1",
+      "passes": true
+    },
+    {
+      "id": "1-1-3",
+      "title": "Create designs table",
+      "description": "As a developer, I want a designs table to store generated product designs.",
+      "acceptance_criteria": [
+        "Table `designs` exists with columns: `id` (uuid), `city_id` (uuid, FK), `product_type` (text), `design_name` (text), `design_style` (text), `slang_term` (text), `front_design` (jsonb), `back_design` (jsonb), `colorways` (jsonb), `generation_params` (jsonb), `status` (text: 'generated' | 'approved' | 'rejected'), `created_at` (timestamptz)",
+        "Can INSERT a design linked to a city",
+        "Can query designs by city_id and status"
+      ],
+      "dependencies": [
+        "1-1-1"
+      ],
+      "files": [
+        "supabase/migrations/003_create_designs.sql"
+      ],
+      "phase": 1,
+      "feature": "1.1",
+      "passes": true
+    },
+    {
+      "id": "1-1-4",
+      "title": "Create generated_content table",
+      "description": "As a developer, I want a universal generated_content table for all AI outputs.",
+      "acceptance_criteria": [
+        "Table `generated_content` exists with columns: `id` (uuid), `content_type` (text: 'product_shot' | 'lifestyle_shot' | 'social_post' | 'video_ad'), `parent_id` (uuid, nullable FK to designs), `city_id` (uuid, FK), `generation_params` (jsonb), `model_used` (text), `prompt_used` (text), `output_url` (text), `output_metadata` (jsonb), `status` (text), `created_at` (timestamptz)",
+        "Can INSERT content of any type",
+        "Can query by content_type, city_id, status"
+      ],
+      "dependencies": [
+        "1-1-1",
+        "1-1-3"
+      ],
+      "files": [
+        "supabase/migrations/004_create_generated_content.sql"
+      ],
+      "phase": 1,
+      "feature": "1.1",
+      "passes": true
+    },
+    {
+      "id": "1-1-5",
+      "title": "Create feedback table",
+      "description": "As a developer, I want a feedback table to capture user ratings on all content.",
+      "acceptance_criteria": [
+        "Table `feedback` exists with columns: `id` (uuid), `content_id` (uuid), `content_type` (text), `rating` (text: 'thumbs_up' | 'thumbs_down'), `tags` (jsonb array), `text_feedback` (text), `comparison_winner` (boolean), `competitor_content_id` (uuid, nullable), `created_at` (timestamptz)",
+        "Can INSERT feedback linked to any content",
+        "Can query feedback aggregations (count thumbs_up by tags, etc.)"
+      ],
+      "dependencies": [
+        "1-1-4"
+      ],
+      "files": [
+        "supabase/migrations/005_create_feedback.sql"
+      ],
+      "phase": 1,
+      "feature": "1.1",
+      "passes": true
+    },
+    {
+      "id": "1-1-6",
+      "title": "Create content_types table",
+      "description": "As a developer, I want a content_types table for configurable social content formats.",
+      "acceptance_criteria": [
+        "Table `content_types` exists with columns: `id` (uuid), `name` (text), `description` (text), `template` (text), `variables` (jsonb array), `output_format` (text), `platform_specs` (jsonb), `active` (boolean), `created_at` (timestamptz)",
+        "Can INSERT new content type with template",
+        "Can query active content types"
+      ],
+      "dependencies": [],
+      "files": [
+        "supabase/migrations/006_create_content_types.sql"
+      ],
+      "phase": 1,
+      "feature": "1.1",
+      "passes": true
+    },
+    {
+      "id": "1-1-7",
+      "title": "Create prompt_templates table",
+      "description": "As a developer, I want a prompt_templates table to store reusable AI prompts.",
+      "acceptance_criteria": [
+        "Table `prompt_templates` exists with columns: `id` (uuid), `name` (text), `category` (text), `model_target` (text), `prompt` (text), `variables` (jsonb), `settings` (jsonb), `success_rate` (numeric), `usage_count` (integer), `created_at` (timestamptz)",
+        "Can INSERT prompt template",
+        "Can query by category and model_target"
+      ],
+      "dependencies": [],
+      "files": [
+        "supabase/migrations/007_create_prompt_templates.sql"
+      ],
+      "phase": 1,
+      "feature": "1.1",
+      "passes": true
+    },
+    {
+      "id": "1-1-8",
+      "title": "Seed initial prompt templates",
+      "description": "As a developer, I want the master prompt library seeded into the database.",
+      "acceptance_criteria": [
+        "At least 10 prompt templates seeded from TMH_AI_Content_Engine_Knowledge_Base.md",
+        "Templates include: product flat lay, ghost mannequin, lifestyle shot, video ad prompts",
+        "Each template has variables array populated",
+        "Can query and retrieve seeded templates"
+      ],
+      "dependencies": [
+        "1-1-7"
+      ],
+      "files": [
+        "supabase/migrations/008_seed_prompt_templates.sql"
+      ],
+      "phase": 1,
+      "feature": "1.1",
+      "passes": true
+    },
+    {
+      "id": "1-2-1",
+      "title": "Create cityStore with initial state",
+      "description": "As a developer, I want a Zustand store for city state management.",
+      "acceptance_criteria": [
+        "File `src/stores/cityStore.ts` exports `useCityStore` hook",
+        "Initial state: `{ cities: [], selectedCity: null, loading: false, error: null }`",
+        "Store can be imported and called in a component without error",
+        "TypeScript types defined for City interface"
+      ],
+      "dependencies": [],
+      "files": [
+        "src/stores/cityStore.ts",
+        "src/types/city.ts"
+      ],
+      "phase": 1,
+      "feature": "1.2",
+      "passes": true
+    },
+    {
+      "id": "1-2-2",
+      "title": "Add city CRUD actions to cityStore",
+      "description": "As a developer, I want CRUD actions in cityStore.",
+      "acceptance_criteria": [
+        "`setCities(cities)` replaces cities array",
+        "`addCity(city)` appends to cities array",
+        "`selectCity(id)` sets selectedCity to matching city or null",
+        "`updateCity(id, data)` merges data into matching city",
+        "`removeCity(id)` filters out matching city",
+        "`setLoading(bool)` and `setError(error)` work correctly"
+      ],
+      "dependencies": [
+        "1-2-1"
+      ],
+      "files": [
+        "src/stores/cityStore.ts"
+      ],
+      "phase": 1,
+      "feature": "1.2",
+      "passes": true
+    },
+    {
+      "id": "1-2-3",
+      "title": "Create generationStore with initial state",
+      "description": "As a developer, I want a Zustand store for tracking generation state.",
+      "acceptance_criteria": [
+        "File `src/stores/generationStore.ts` exports `useGenerationStore` hook",
+        "Initial state: `{ queue: [], currentGeneration: null, comparisons: [], loading: false }`",
+        "TypeScript types defined for Generation, Comparison interfaces"
+      ],
+      "dependencies": [],
+      "files": [
+        "src/stores/generationStore.ts",
+        "src/types/generation.ts"
+      ],
+      "phase": 1,
+      "feature": "1.2",
+      "passes": true
+    },
+    {
+      "id": "1-2-4",
+      "title": "Add generation actions to generationStore",
+      "description": "As a developer, I want actions to manage generation queue and comparisons.",
+      "acceptance_criteria": [
+        "`addToQueue(item)` appends to queue",
+        "`setCurrentGeneration(gen)` sets currentGeneration",
+        "`addComparison(modelA, modelB)` creates comparison object",
+        "`selectWinner(comparisonId, winner)` marks winner in comparison",
+        "`clearQueue()` empties queue"
+      ],
+      "dependencies": [
+        "1-2-3"
+      ],
+      "files": [
+        "src/stores/generationStore.ts"
+      ],
+      "phase": 1,
+      "feature": "1.2",
+      "passes": true
+    },
+    {
+      "id": "1-2-5",
+      "title": "Create feedbackStore with initial state",
+      "description": "As a developer, I want a Zustand store for feedback capture.",
+      "acceptance_criteria": [
+        "File `src/stores/feedbackStore.ts` exports `useFeedbackStore` hook",
+        "Initial state: `{ pendingFeedback: null, feedbackHistory: [], submitting: false }`",
+        "TypeScript types defined for Feedback interface"
+      ],
+      "dependencies": [],
+      "files": [
+        "src/stores/feedbackStore.ts",
+        "src/types/feedback.ts"
+      ],
+      "phase": 1,
+      "feature": "1.2",
+      "passes": true
+    },
+    {
+      "id": "1-2-6",
+      "title": "Add feedback actions to feedbackStore",
+      "description": "As a developer, I want actions to capture and submit feedback.",
+      "acceptance_criteria": [
+        "`startFeedback(contentId, contentType)` initializes pendingFeedback",
+        "`setRating(rating)` sets thumbs_up or thumbs_down",
+        "`toggleTag(tag)` adds/removes tag from tags array",
+        "`setTextFeedback(text)` sets text feedback",
+        "`submitFeedback()` moves pending to history and clears pending"
+      ],
+      "dependencies": [
+        "1-2-5"
+      ],
+      "files": [
+        "src/stores/feedbackStore.ts"
+      ],
+      "phase": 1,
+      "feature": "1.2",
+      "passes": true
+    },
+    {
+      "id": "1-3-1",
+      "title": "Create Supabase client utility",
+      "description": "As a developer, I want a configured Supabase client for API routes.",
+      "acceptance_criteria": [
+        "File `src/lib/supabase.ts` exports `supabase` client",
+        "Client uses environment variables `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_ANON_KEY`",
+        "Client can be imported in both server and client components",
+        "Includes typed helpers for common queries"
+      ],
+      "dependencies": [],
+      "files": [
+        "src/lib/supabase.ts",
+        ".env.local.example"
+      ],
+      "phase": 1,
+      "feature": "1.3",
+      "passes": true
+    },
+    {
+      "id": "1-3-2",
+      "title": "Create Perplexity API client",
+      "description": "As a developer, I want a Perplexity API client for city research.",
+      "acceptance_criteria": [
+        "File `src/lib/perplexity.ts` exports `perplexitySearch(query)` function",
+        "Function calls Perplexity API with proper auth header",
+        "Returns parsed JSON response",
+        "Handles errors gracefully with typed error response",
+        "Uses environment variable `PERPLEXITY_API_KEY`"
+      ],
+      "dependencies": [],
+      "files": [
+        "src/lib/perplexity.ts"
+      ],
+      "phase": 1,
+      "feature": "1.3",
+      "passes": true
+    },
+    {
+      "id": "1-3-3",
+      "title": "Create Claude API client",
+      "description": "As a developer, I want a Claude API client for prompt generation and synthesis.",
+      "acceptance_criteria": [
+        "File `src/lib/claude.ts` exports `claudeGenerate(prompt, options)` function",
+        "Function calls Anthropic API with proper auth",
+        "Supports system prompt and user prompt",
+        "Returns parsed response content",
+        "Uses environment variable `ANTHROPIC_API_KEY`"
+      ],
+      "dependencies": [],
+      "files": [
+        "src/lib/claude.ts"
+      ],
+      "phase": 1,
+      "feature": "1.3",
+      "passes": true
+    },
+    {
+      "id": "1-3-4",
+      "title": "Create image generation client (multi-model)",
+      "description": "As a developer, I want an image generation client that supports multiple models.",
+      "acceptance_criteria": [
+        "File `src/lib/imageGeneration.ts` exports `generateImage(prompt, model, options)` function",
+        "`model` parameter accepts 'nano_banana' | 'openai'",
+        "Routes to correct API based on model",
+        "Returns standardized response: `{ url, model, prompt, metadata }`",
+        "Handles errors with typed responses"
+      ],
+      "dependencies": [],
+      "files": [
+        "src/lib/imageGeneration.ts"
+      ],
+      "phase": 1,
+      "feature": "1.3",
+      "passes": true
+    },
+    {
+      "id": "1-4-1",
+      "title": "Create app layout with sidebar navigation",
+      "description": "As a user, I want a consistent navigation sidebar across all pages.",
+      "acceptance_criteria": [
+        "Layout component wraps all pages in `src/app/layout.tsx`",
+        "Sidebar with links: Cities, Generate, Content, Calendar, Library, Preferences, Settings",
+        "Each link has icon (Lucide icons) and label",
+        "Active route highlighted with different background color",
+        "Sidebar is 240px wide on desktop",
+        "TMH logo at top links to `/cities`"
+      ],
+      "dependencies": [],
+      "files": [
+        "src/app/layout.tsx",
+        "src/components/Sidebar.tsx"
+      ],
+      "phase": 1,
+      "feature": "1.4",
+      "passes": true
+    },
+    {
+      "id": "1-4-2",
+      "title": "Create mobile navigation",
+      "description": "As a user, I want navigation to work on mobile devices.",
+      "acceptance_criteria": [
+        "Sidebar hidden on screens < 768px",
+        "Hamburger menu button appears in header on mobile",
+        "Clicking hamburger opens sidebar as overlay",
+        "Clicking outside overlay closes it",
+        "Clicking nav link closes overlay and navigates"
+      ],
+      "dependencies": [
+        "1-4-1"
+      ],
+      "files": [
+        "src/components/Sidebar.tsx",
+        "src/components/MobileNav.tsx"
+      ],
+      "phase": 1,
+      "feature": "1.4",
+      "passes": true
+    },
+    {
+      "id": "1-4-3",
+      "title": "Create breadcrumb component",
+      "description": "As a user, I want to see my location in the app hierarchy.",
+      "acceptance_criteria": [
+        "Breadcrumb component shows path: Home > Cities > Detroit",
+        "Each segment is clickable link except current page",
+        "Displays below header, above page content",
+        "Auto-generates from route path"
+      ],
+      "dependencies": [
+        "1-4-1"
+      ],
+      "files": [
+        "src/components/Breadcrumb.tsx"
+      ],
+      "phase": 1,
+      "feature": "1.4",
+      "passes": true
+    },
+    {
+      "id": "2-1-1",
+      "title": "Create cities page with empty state",
+      "description": "As a user, I want to see a Cities page so I can view and manage cities.",
+      "acceptance_criteria": [
+        "Route `/cities` renders CitiesPage component",
+        "Page has heading \"Cities\"",
+        "Empty state shows \"No cities yet\" message",
+        "\"Add City\" button is visible with `data-testid=\"add-city-button\"`"
+      ],
+      "dependencies": [
+        "1-4-1"
+      ],
+      "files": [
+        "src/app/cities/page.tsx"
+      ],
+      "phase": 2,
+      "feature": "2.1",
+      "passes": true
+    },
+    {
+      "id": "2-1-2",
+      "title": "Display city cards in grid",
+      "description": "As a user, I want to see my cities displayed as cards.",
+      "acceptance_criteria": [
+        "CityCard component exists with props: `city: City`",
+        "Card shows: city name, status badge, area codes, nickname count",
+        "Cards display in responsive grid (1 col mobile, 2 col tablet, 3 col desktop)",
+        "Clicking card navigates to `/cities/[cityId]`"
+      ],
+      "dependencies": [
+        "2-1-1",
+        "1-2-1"
+      ],
+      "files": [
+        "src/components/CityCard.tsx",
+        "src/app/cities/page.tsx"
+      ],
+      "phase": 2,
+      "feature": "2.1",
+      "passes": true
+    },
+    {
+      "id": "2-1-3",
+      "title": "Fetch cities from Supabase on page load",
+      "description": "As a user, I want cities to load from the database when I visit the page.",
+      "acceptance_criteria": [
+        "Page calls `supabase.from('cities').select('*')` on mount",
+        "Loading state shows skeleton cards while fetching",
+        "Fetched cities populate cityStore via `setCities()`",
+        "Error state shows error message if query fails"
+      ],
+      "dependencies": [
+        "2-1-2",
+        "1-3-1",
+        "1-2-2"
+      ],
+      "files": [
+        "src/app/cities/page.tsx"
+      ],
+      "phase": 2,
+      "feature": "2.1",
+      "passes": true
+    },
+    {
+      "id": "2-2-1",
+      "title": "Create AddCityModal component shell",
+      "description": "As a user, I want an Add City modal to appear when I click the button.",
+      "acceptance_criteria": [
+        "Clicking \"Add City\" button opens modal with `data-testid=\"add-city-modal\"`",
+        "Modal has close button (X) that closes modal",
+        "Modal has heading \"Add New City\"",
+        "Clicking outside modal closes it"
+      ],
+      "dependencies": [
+        "2-1-1"
+      ],
+      "files": [
+        "src/components/AddCityModal.tsx",
+        "src/app/cities/page.tsx"
+      ],
+      "phase": 2,
+      "feature": "2.2",
+      "passes": true
+    },
+    {
+      "id": "2-2-2",
+      "title": "Add city name input with validation",
+      "description": "As a user, I want to enter a city name in the modal.",
+      "acceptance_criteria": [
+        "Text input with `name=\"cityName\"` and placeholder \"Enter city name...\"",
+        "Input validates: required, min 2 characters",
+        "Validation error shows below input when invalid",
+        "Submit button disabled when input invalid"
+      ],
+      "dependencies": [
+        "2-2-1"
+      ],
+      "files": [
+        "src/components/AddCityModal.tsx"
+      ],
+      "phase": 2,
+      "feature": "2.2",
+      "passes": true
+    },
+    {
+      "id": "2-2-3",
+      "title": "Add research configuration checklist",
+      "description": "As a user, I want to configure what research categories to include.",
+      "acceptance_criteria": [
+        "Checklist section with heading \"Research Categories\"",
+        "Checkboxes for: Slang, Landmarks, Sports, Culture, Visual Identity, Area Codes",
+        "All checkboxes checked by default",
+        "User can toggle individual checkboxes",
+        "State stored in component for submission"
+      ],
+      "dependencies": [
+        "2-2-2"
+      ],
+      "files": [
+        "src/components/AddCityModal.tsx"
+      ],
+      "phase": 2,
+      "feature": "2.2",
+      "passes": true
+    },
+    {
+      "id": "2-2-4",
+      "title": "Add custom research prompt field",
+      "description": "As a user, I want to add custom research instructions.",
+      "acceptance_criteria": [
+        "Textarea with `name=\"customPrompt\"` and placeholder \"Any specific things to research?\"",
+        "Textarea is optional (can be empty)",
+        "Max length 500 characters with counter"
+      ],
+      "dependencies": [
+        "2-2-3"
+      ],
+      "files": [
+        "src/components/AddCityModal.tsx"
+      ],
+      "phase": 2,
+      "feature": "2.2",
+      "passes": true
+    },
+    {
+      "id": "2-2-5",
+      "title": "Submit modal creates city and triggers research",
+      "description": "As a user, I want to submit the modal to start city research.",
+      "acceptance_criteria": [
+        "Clicking \"Start Research\" button calls POST `/api/cities`",
+        "Request body includes: `{ name, researchCategories, customPrompt }`",
+        "Loading state shows spinner on button",
+        "Success: modal closes, city appears in list with status \"researching\"",
+        "Error: error message shown in modal"
+      ],
+      "dependencies": [
+        "2-2-4"
+      ],
+      "files": [
+        "src/components/AddCityModal.tsx",
+        "src/app/api/cities/route.ts"
+      ],
+      "phase": 2,
+      "feature": "2.2",
+      "passes": true
+    },
+    {
+      "id": "2-3-1",
+      "title": "Create POST /api/cities endpoint",
+      "description": "As a developer, I want an API route to create a city and initiate research.",
+      "acceptance_criteria": [
+        "POST `/api/cities` accepts body: `{ name, researchCategories, customPrompt }`",
+        "Creates city record in Supabase with status='researching'",
+        "Returns city object with id",
+        "Returns 400 with `{ error: 'City name is required' }` if name missing",
+        "Returns 400 with `{ error: 'City name must be at least 2 characters' }` if too short",
+        "Returns 409 with `{ error: 'City already exists' }` if duplicate name",
+        "Returns 500 with `{ error: message }` if database error"
+      ],
+      "dependencies": [
+        "1-3-1",
+        "1-1-1"
+      ],
+      "files": [
+        "src/app/api/cities/route.ts"
+      ],
+      "phase": 2,
+      "feature": "2.3",
+      "passes": true
+    },
+    {
+      "id": "2-3-2",
+      "title": "Create research pipeline function",
+      "description": "As a developer, I want a function that orchestrates Perplexity + Claude research.",
+      "acceptance_criteria": [
+        "Function `runCityResearch(cityId, name, categories, customPrompt)` in `src/lib/research.ts`",
+        "Calls Perplexity with city-specific query based on categories",
+        "Passes Perplexity results to Claude for synthesis and ranking",
+        "Returns structured research results matching city_elements schema",
+        "Updates city status to 'review' when complete"
+      ],
+      "dependencies": [
+        "1-3-2",
+        "1-3-3"
+      ],
+      "files": [
+        "src/lib/research.ts"
+      ],
+      "phase": 2,
+      "feature": "2.3",
+      "passes": true
+    },
+    {
+      "id": "2-3-3",
+      "title": "Store research results as city_elements",
+      "description": "As a developer, I want research results saved as city_elements.",
+      "acceptance_criteria": [
+        "Research results INSERT into city_elements table",
+        "Each element has element_type, element_key, element_value, status='pending'",
+        "Elements are linked to city_id",
+        "At least 5 slang terms, 5 landmarks, 3 sports teams per research"
+      ],
+      "dependencies": [
+        "2-3-2",
+        "1-1-2"
+      ],
+      "files": [
+        "src/lib/research.ts"
+      ],
+      "phase": 2,
+      "feature": "2.3",
+      "passes": true
+    },
+    {
+      "id": "2-4-1",
+      "title": "Create city detail page with research results",
+      "description": "As a user, I want to see research results on the city detail page.",
+      "acceptance_criteria": [
+        "Route `/cities/[cityId]` renders CityDetailPage",
+        "Page fetches city and city_elements from Supabase",
+        "Shows city name, status, area codes",
+        "Displays research elements grouped by element_type"
+      ],
+      "dependencies": [
+        "1-1-1",
+        "1-1-2",
+        "1-3-1"
+      ],
+      "files": [
+        "src/app/cities/[cityId]/page.tsx"
+      ],
+      "phase": 2,
+      "feature": "2.4",
+      "passes": true
+    },
+    {
+      "id": "2-4-2",
+      "title": "Create ElementReviewCard component",
+      "description": "As a user, I want to approve/reject individual research elements.",
+      "acceptance_criteria": [
+        "ElementReviewCard shows: element name, value/meaning, current status",
+        "Three buttons: Approve (green), Reject (red), Maybe (yellow)",
+        "Clicking button updates element status in local state",
+        "Optional notes field expands on click"
+      ],
+      "dependencies": [
+        "2-4-1"
+      ],
+      "files": [
+        "src/components/ElementReviewCard.tsx"
+      ],
+      "phase": 2,
+      "feature": "2.4",
+      "passes": true
+    },
+    {
+      "id": "2-4-3",
+      "title": "Save element approvals to database",
+      "description": "As a user, I want my approval decisions saved.",
+      "acceptance_criteria": [
+        "\"Save Decisions\" button calls PATCH `/api/cities/[cityId]/elements`",
+        "Request includes array of `{ elementId, status, notes }`",
+        "Database updates each element's status",
+        "Success toast: \"Decisions saved\""
+      ],
+      "dependencies": [
+        "2-4-2"
+      ],
+      "files": [
+        "src/app/cities/[cityId]/page.tsx",
+        "src/app/api/cities/[cityId]/elements/route.ts"
+      ],
+      "phase": 2,
+      "feature": "2.4",
+      "passes": true
+    },
+    {
+      "id": "2-4-4",
+      "title": "Approve city profile",
+      "description": "As a user, I want to finalize and approve the city profile.",
+      "acceptance_criteria": [
+        "\"Approve City Profile\" button visible when at least 3 elements approved",
+        "Clicking button calls PATCH `/api/cities/[cityId]` with status='approved'",
+        "City status updates to 'approved'",
+        "Button changes to \"City Approved\" (disabled, green)",
+        "\"Start Generating\" button appears"
+      ],
+      "dependencies": [
+        "2-4-3"
+      ],
+      "files": [
+        "src/app/cities/[cityId]/page.tsx",
+        "src/app/api/cities/[cityId]/route.ts"
+      ],
+      "phase": 2,
+      "feature": "2.4",
+      "passes": true
+    },
+    {
+      "id": "3-1-1",
+      "title": "Create generate page with city selector",
+      "description": "As a user, I want to select a city to generate designs for.",
+      "acceptance_criteria": [
+        "Route `/generate` renders GeneratePage",
+        "CitySelector dropdown shows only approved cities",
+        "Selecting city stores in generationStore",
+        "Shows \"Select a city to begin\" when none selected"
+      ],
+      "dependencies": [
+        "1-2-3",
+        "1-2-1",
+        "1-4-1"
+      ],
+      "files": [
+        "src/app/generate/page.tsx",
+        "src/components/CitySelector.tsx"
+      ],
+      "phase": 3,
+      "feature": "3.1",
+      "passes": true
+    },
+    {
+      "id": "3-1-2",
+      "title": "Add product type selector",
+      "description": "As a user, I want to select what product type to generate.",
+      "acceptance_criteria": [
+        "Radio group with options: Hoodie, T-Shirt, Hat",
+        "\"Hoodie\" selected by default",
+        "Selection stored in generationStore",
+        "Shows product icon for each option"
+      ],
+      "dependencies": [
+        "3-1-1"
+      ],
+      "files": [
+        "src/app/generate/page.tsx"
+      ],
+      "phase": 3,
+      "feature": "3.1",
+      "passes": true
+    },
+    {
+      "id": "3-1-3",
+      "title": "Add design style selector",
+      "description": "As a user, I want to select a design style.",
+      "acceptance_criteria": [
+        "Radio group with options: Minimal, Bold, Vintage, Modern, Luxury",
+        "Each option has short description tooltip",
+        "Selection stored in generationStore"
+      ],
+      "dependencies": [
+        "3-1-2"
+      ],
+      "files": [
+        "src/app/generate/page.tsx"
+      ],
+      "phase": 3,
+      "feature": "3.1",
+      "passes": true
+    },
+    {
+      "id": "3-1-4",
+      "title": "Add slang term selector with suggestions",
+      "description": "As a user, I want to pick a slang term or see suggestions.",
+      "acceptance_criteria": [
+        "Dropdown populated with approved slang from selected city",
+        "\"Let AI Suggest\" option at top",
+        "Shows meaning next to each term",
+        "Selection stored in generationStore"
+      ],
+      "dependencies": [
+        "3-1-3"
+      ],
+      "files": [
+        "src/app/generate/page.tsx"
+      ],
+      "phase": 3,
+      "feature": "3.1",
+      "passes": true
+    },
+    {
+      "id": "3-2-1",
+      "title": "Create \"Generate Designs\" button with loading state",
+      "description": "As a user, I want to click a button to start generation.",
+      "acceptance_criteria": [
+        "\"Generate Designs\" button enabled when city, product, style selected",
+        "Clicking button shows loading state with spinner",
+        "Button disabled during generation",
+        "Loading message: \"Generating with 2 models...\""
+      ],
+      "dependencies": [
+        "3-1-4"
+      ],
+      "files": [
+        "src/app/generate/page.tsx"
+      ],
+      "phase": 3,
+      "feature": "3.2",
+      "passes": true
+    },
+    {
+      "id": "3-2-2",
+      "title": "Create POST /api/generate/design endpoint",
+      "description": "As a developer, I want an API to generate designs with two models.",
+      "acceptance_criteria": [
+        "POST `/api/generate/design` accepts: `{ cityId, productType, designStyle, slangTerm }`",
+        "Fetches prompt template from database",
+        "Calls Claude to finalize prompt with variables",
+        "Calls Nano Banana with prompt",
+        "Calls OpenAI with same prompt",
+        "Returns: `{ modelA: { url, model }, modelB: { url, model }, prompt }`",
+        "Returns 400 with `{ error: 'City ID is required' }` if cityId missing",
+        "Returns 404 with `{ error: 'City not found' }` if city doesn't exist",
+        "Returns partial success if one model succeeds: `{ modelA: result, modelB: null, modelBError: message }`"
+      ],
+      "dependencies": [
+        "1-3-3",
+        "1-3-4",
+        "1-1-7"
+      ],
+      "files": [
+        "src/app/api/generate/design/route.ts"
+      ],
+      "phase": 3,
+      "feature": "3.2",
+      "passes": true
+    },
+    {
+      "id": "3-2-3",
+      "title": "Display generation results in comparison view",
+      "description": "As a user, I want to see both generated designs side by side.",
+      "acceptance_criteria": [
+        "ComparisonViewer component receives modelA and modelB results",
+        "Shows images side by side (or stacked on mobile)",
+        "Labels: \"Model A\" and \"Model B\" (not actual model names initially)",
+        "Images are same size, centered"
+      ],
+      "dependencies": [
+        "3-2-2"
+      ],
+      "files": [
+        "src/components/ComparisonViewer.tsx",
+        "src/app/generate/page.tsx"
+      ],
+      "phase": 3,
+      "feature": "3.2",
+      "passes": true
+    },
+    {
+      "id": "3-3-1",
+      "title": "Add \"Pick Winner\" buttons to comparison",
+      "description": "As a user, I want to pick which design I prefer.",
+      "acceptance_criteria": [
+        "\"Pick A\" and \"Pick B\" buttons below each image",
+        "Clicking highlights winner with border/checkmark",
+        "Stores winner selection in generationStore",
+        "Reveals feedback panel after selection"
+      ],
+      "dependencies": [
+        "3-2-3"
+      ],
+      "files": [
+        "src/components/ComparisonViewer.tsx"
+      ],
+      "phase": 3,
+      "feature": "3.3",
+      "passes": true
+    },
+    {
+      "id": "3-3-2",
+      "title": "Create FeedbackPanel component",
+      "description": "As a user, I want to provide detailed feedback on my choice.",
+      "acceptance_criteria": [
+        "FeedbackPanel shows: thumbs up/down toggle, tag checkboxes, text input",
+        "Thumbs buttons are mutually exclusive",
+        "Tags from POSITIVE_TAGS and NEGATIVE_TAGS arrays (10 each)",
+        "Text input placeholder: \"Any specific feedback?\"",
+        "\"Submit Feedback\" button at bottom"
+      ],
+      "dependencies": [
+        "3-3-1",
+        "1-2-5"
+      ],
+      "files": [
+        "src/components/FeedbackPanel.tsx"
+      ],
+      "phase": 3,
+      "feature": "3.3",
+      "passes": true
+    },
+    {
+      "id": "3-3-3",
+      "title": "Submit feedback to database",
+      "description": "As a user, I want my feedback saved for learning.",
+      "acceptance_criteria": [
+        "Clicking \"Submit Feedback\" calls POST `/api/feedback`",
+        "Request includes: contentId, contentType, rating, tags, textFeedback, comparisonWinner",
+        "Saves to feedback table",
+        "Also saves winning design to designs table with status='approved'",
+        "Shows success message: \"Design saved!\"",
+        "Returns 400 with `{ error: 'Rating is required' }` if rating missing",
+        "Returns 400 with `{ error: 'Invalid rating value' }` if rating not thumbs_up/thumbs_down",
+        "Returns 404 with `{ error: 'Content not found' }` if content_id invalid"
+      ],
+      "dependencies": [
+        "3-3-2",
+        "1-1-5",
+        "1-1-3"
+      ],
+      "files": [
+        "src/components/FeedbackPanel.tsx",
+        "src/app/api/feedback/route.ts"
+      ],
+      "phase": 3,
+      "feature": "3.3",
+      "passes": true
+    },
+    {
+      "id": "3-3-4",
+      "title": "Show \"Generate More\" and \"Continue to Shots\" options",
+      "description": "As a user, I want to generate more designs or continue to next step.",
+      "acceptance_criteria": [
+        "After feedback submitted, show two buttons",
+        "\"Generate Another\" resets form for new generation",
+        "\"Generate Product Shots\" navigates to shots page with design context",
+        "Approved design ID passed as query param"
+      ],
+      "dependencies": [
+        "3-3-3"
+      ],
+      "files": [
+        "src/app/generate/page.tsx"
+      ],
+      "phase": 3,
+      "feature": "3.3",
+      "passes": true
+    },
+    {
+      "id": "4-1-1",
+      "title": "Create product shots page",
+      "description": "As a user, I want a page to generate product photography.",
+      "acceptance_criteria": [
+        "Route `/generate/shots` renders ProductShotsPage",
+        "Reads designId from query params",
+        "Fetches design details from database",
+        "Shows design preview thumbnail"
+      ],
+      "dependencies": [
+        "3-3-3"
+      ],
+      "files": [
+        "src/app/generate/shots/page.tsx"
+      ],
+      "phase": 4,
+      "feature": "4.1",
+      "passes": true
+    },
+    {
+      "id": "4-1-2",
+      "title": "Add shot type checklist",
+      "description": "As a user, I want to select which shot types to generate.",
+      "acceptance_criteria": [
+        "Checkboxes: Flat Lay Front, Flat Lay Back, Ghost Mannequin, Hanging, Macro Detail",
+        "At least one must be selected to proceed",
+        "Each checkbox has icon and description",
+        "Default: all checked"
+      ],
+      "dependencies": [
+        "4-1-1"
+      ],
+      "files": [
+        "src/app/generate/shots/page.tsx"
+      ],
+      "phase": 4,
+      "feature": "4.1",
+      "passes": true
+    },
+    {
+      "id": "4-1-3",
+      "title": "Generate product shots with comparison",
+      "description": "As a user, I want to generate each shot type with model comparison.",
+      "acceptance_criteria": [
+        "\"Generate Shots\" button triggers generation for each selected type",
+        "Progress indicator: \"Generating shot 1 of 5...\"",
+        "Each shot generated with Model A and Model B",
+        "Results displayed in scrollable gallery"
+      ],
+      "dependencies": [
+        "4-1-2",
+        "1-3-4"
+      ],
+      "files": [
+        "src/app/generate/shots/page.tsx",
+        "src/app/api/generate/product-shot/route.ts"
+      ],
+      "phase": 4,
+      "feature": "4.1",
+      "passes": true
+    },
+    {
+      "id": "4-1-4",
+      "title": "Review and approve product shots",
+      "description": "As a user, I want to pick winners and approve shots.",
+      "acceptance_criteria": [
+        "Each shot pair shows in ComparisonViewer",
+        "Can pick winner for each pair",
+        "Can provide feedback for each",
+        "\"Approve All Winners\" button saves all at once",
+        "Approved shots saved to generated_content with status='approved'"
+      ],
+      "dependencies": [
+        "4-1-3",
+        "3-3-2"
+      ],
+      "files": [
+        "src/app/generate/shots/page.tsx"
+      ],
+      "phase": 4,
+      "feature": "4.1",
+      "passes": true
+    },
+    {
+      "id": "4-2-1",
+      "title": "Create lifestyle shots page",
+      "description": "As a user, I want a page to generate lifestyle photography.",
+      "acceptance_criteria": [
+        "Route `/generate/lifestyle` renders LifestyleShotsPage",
+        "Reads designId from query params",
+        "Shows design preview and city context"
+      ],
+      "dependencies": [
+        "4-1-4"
+      ],
+      "files": [
+        "src/app/generate/lifestyle/page.tsx"
+      ],
+      "phase": 4,
+      "feature": "4.2",
+      "passes": true
+    },
+    {
+      "id": "4-2-2",
+      "title": "Add model/location/style configurator",
+      "description": "As a user, I want to configure lifestyle shot parameters.",
+      "acceptance_criteria": [
+        "Model demographics dropdown (auto-populated from diversity requirements)",
+        "Location dropdown (populated from city landmarks)",
+        "Time of day selector (Golden Hour, Blue Hour, Midday, Night)",
+        "Activity selector (Walking, Standing, Sitting, Conversation)",
+        "Sneaker selector (from approved whitelist)"
+      ],
+      "dependencies": [
+        "4-2-1"
+      ],
+      "files": [
+        "src/app/generate/lifestyle/page.tsx"
+      ],
+      "phase": 4,
+      "feature": "4.2",
+      "passes": true
+    },
+    {
+      "id": "4-2-3",
+      "title": "Generate lifestyle shots with comparison",
+      "description": "As a user, I want to generate lifestyle shots.",
+      "acceptance_criteria": [
+        "\"Generate Lifestyle Shots\" generates 3 variations",
+        "Each variation uses different model/location combo",
+        "Each generated with Model A and Model B",
+        "Results in scrollable comparison gallery"
+      ],
+      "dependencies": [
+        "4-2-2",
+        "1-3-4"
+      ],
+      "files": [
+        "src/app/generate/lifestyle/page.tsx",
+        "src/app/api/generate/lifestyle-shot/route.ts"
+      ],
+      "phase": 4,
+      "feature": "4.2",
+      "passes": true
+    },
+    {
+      "id": "4-2-4",
+      "title": "Review and approve lifestyle shots",
+      "description": "As a user, I want to approve lifestyle shots.",
+      "acceptance_criteria": [
+        "Same flow as product shots: pick winners, provide feedback",
+        "\"Approve Selected\" saves approved shots",
+        "Shows \"Continue to Social Content\" button after approvals"
+      ],
+      "dependencies": [
+        "4-2-3",
+        "3-3-2"
+      ],
+      "files": [
+        "src/app/generate/lifestyle/page.tsx"
+      ],
+      "phase": 4,
+      "feature": "4.2",
+      "passes": true
+    },
+    {
+      "id": "4-3-1",
+      "title": "Create social content page",
+      "description": "As a user, I want a page to create social posts.",
+      "acceptance_criteria": [
+        "Route `/content` renders SocialContentPage",
+        "Shows list of available content types from database",
+        "\"Create Post\" button for each content type"
+      ],
+      "dependencies": [
+        "1-1-6"
+      ],
+      "files": [
+        "src/app/content/page.tsx"
+      ],
+      "phase": 4,
+      "feature": "4.3",
+      "passes": true
+    },
+    {
+      "id": "4-3-2",
+      "title": "Create content type selector",
+      "description": "As a user, I want to choose a content format.",
+      "acceptance_criteria": [
+        "ContentTypeCard for each active content type",
+        "Card shows: name, description, output format icon",
+        "Clicking card opens content creation flow",
+        "Passes content_type_id to creation flow"
+      ],
+      "dependencies": [
+        "4-3-1"
+      ],
+      "files": [
+        "src/components/ContentTypeCard.tsx"
+      ],
+      "phase": 4,
+      "feature": "4.3",
+      "passes": true
+    },
+    {
+      "id": "4-3-3",
+      "title": "Create asset selector for social posts",
+      "description": "As a user, I want to select approved assets for my post.",
+      "acceptance_criteria": [
+        "AssetSelector shows approved product and lifestyle shots",
+        "Filterable by city, product, shot type",
+        "Multi-select for carousel formats",
+        "Single select for single image formats",
+        "Selected assets shown with checkmarks"
+      ],
+      "dependencies": [
+        "4-3-2"
+      ],
+      "files": [
+        "src/components/AssetSelector.tsx"
+      ],
+      "phase": 4,
+      "feature": "4.3",
+      "passes": true
+    },
+    {
+      "id": "4-3-4",
+      "title": "Generate caption and hashtags",
+      "description": "As a user, I want AI-generated captions for my posts.",
+      "acceptance_criteria": [
+        "After asset selection, system generates caption",
+        "Uses content type template + Claude",
+        "Shows generated caption in editable textarea",
+        "Shows hashtags as tags (can remove/add)",
+        "\"Regenerate\" button for new caption"
+      ],
+      "dependencies": [
+        "4-3-3",
+        "1-3-3"
+      ],
+      "files": [
+        "src/app/content/create/page.tsx",
+        "src/app/api/generate/caption/route.ts"
+      ],
+      "phase": 4,
+      "feature": "4.3",
+      "passes": true
+    },
+    {
+      "id": "4-3-5",
+      "title": "Preview and approve social post",
+      "description": "As a user, I want to preview and approve my post.",
+      "acceptance_criteria": [
+        "Preview shows image(s) + caption in platform-styled frame",
+        "Toggle between Instagram and TikTok preview styles",
+        "Feedback panel for thumbs + tags",
+        "\"Approve & Add to Calendar\" saves to database"
+      ],
+      "dependencies": [
+        "4-3-4"
+      ],
+      "files": [
+        "src/app/content/create/page.tsx"
+      ],
+      "phase": 4,
+      "feature": "4.3",
+      "passes": true
+    },
+    {
+      "id": "4-4-1",
+      "title": "Create content types management page",
+      "description": "As a user, I want to manage content type templates.",
+      "acceptance_criteria": [
+        "Route `/settings/content-types` renders ContentTypesPage",
+        "Lists all content types with name, status, usage count",
+        "\"Add Content Type\" button",
+        "Edit/Delete buttons per row"
+      ],
+      "dependencies": [
+        "1-1-6"
+      ],
+      "files": [
+        "src/app/settings/content-types/page.tsx"
+      ],
+      "phase": 4,
+      "feature": "4.4",
+      "passes": true
+    },
+    {
+      "id": "4-4-2",
+      "title": "Create content type editor",
+      "description": "As a user, I want to create/edit content type templates.",
+      "acceptance_criteria": [
+        "Form with: name, description, template (textarea), variables (tag input)",
+        "Output format selector: single_image, carousel, video",
+        "Platform specs: aspect ratios per platform",
+        "Active toggle",
+        "Save creates/updates record in database"
+      ],
+      "dependencies": [
+        "4-4-1"
+      ],
+      "files": [
+        "src/components/ContentTypeEditor.tsx"
+      ],
+      "phase": 4,
+      "feature": "4.4",
+      "passes": true
+    },
+    {
+      "id": "4-5-1",
+      "title": "Create video ads page",
+      "description": "As a user, I want a page to create video advertisements.",
+      "acceptance_criteria": [
+        "Route `/generate/video` renders VideoAdsPage",
+        "Shows heading \"Create Video Ad\"",
+        "City selector dropdown (approved cities only)",
+        "Format selector: Hook Test (3-5s), Short-form (15-30s), Standard (30-60s), Anthem (45-90s)"
+      ],
+      "dependencies": [
+        "3-3-3"
+      ],
+      "files": [
+        "src/app/generate/video/page.tsx"
+      ],
+      "phase": 4,
+      "feature": "4.5",
+      "passes": true
+    },
+    {
+      "id": "4-5-2",
+      "title": "Add asset selector for video",
+      "description": "As a user, I want to select approved assets to feature in my video.",
+      "acceptance_criteria": [
+        "Shows approved product shots and lifestyle shots for selected city",
+        "Multi-select with checkboxes",
+        "Selected assets shown in \"Selected Assets\" preview strip",
+        "Minimum 1 asset required to proceed"
+      ],
+      "dependencies": [
+        "4-5-1"
+      ],
+      "files": [
+        "src/app/generate/video/page.tsx"
+      ],
+      "phase": 4,
+      "feature": "4.5",
+      "passes": true
+    },
+    {
+      "id": "4-5-3",
+      "title": "Generate video script with hook variations",
+      "description": "As a user, I want AI to generate a script with multiple hook options.",
+      "acceptance_criteria": [
+        "\"Generate Script\" button calls POST `/api/generate/video-script`",
+        "API uses Claude to generate script based on format, city, assets",
+        "Returns: main script + 3 hook variations",
+        "Display script in editable textarea",
+        "Display hooks as selectable cards (pick 1-3 to generate)"
+      ],
+      "dependencies": [
+        "4-5-2",
+        "1-3-3"
+      ],
+      "files": [
+        "src/app/generate/video/page.tsx",
+        "src/app/api/generate/video-script/route.ts"
+      ],
+      "phase": 4,
+      "feature": "4.5",
+      "passes": true
+    },
+    {
+      "id": "4-5-4",
+      "title": "Generate videos with model comparison",
+      "description": "As a user, I want to generate videos with two models for comparison.",
+      "acceptance_criteria": [
+        "\"Generate Video\" button triggers generation",
+        "Calls Sora 2 API with script + assets",
+        "Calls Gemini Video API with same inputs",
+        "Shows progress: \"Generating with Sora 2...\" then \"Generating with Gemini...\"",
+        "Both videos display in ComparisonViewer when complete"
+      ],
+      "dependencies": [
+        "4-5-3",
+        "4-5-5"
+      ],
+      "files": [
+        "src/app/generate/video/page.tsx",
+        "src/app/api/generate/video/route.ts"
+      ],
+      "phase": 4,
+      "feature": "4.5",
+      "passes": true
+    },
+    {
+      "id": "4-5-5",
+      "title": "Create video API clients",
+      "description": "As a developer, I want API clients for video generation models.",
+      "acceptance_criteria": [
+        "File `src/lib/videoGeneration.ts` exports `generateVideo(script, assets, model, options)`",
+        "`model` parameter accepts 'sora_2' | 'gemini_video'",
+        "Routes to correct API based on model",
+        "Returns standardized response: `{ url, model, duration, metadata }`",
+        "Uses environment variables `OPENAI_API_KEY` (Sora) and `GOOGLE_AI_API_KEY` (Gemini)"
+      ],
+      "dependencies": [],
+      "files": [
+        "src/lib/videoGeneration.ts"
+      ],
+      "phase": 4,
+      "feature": "4.5",
+      "passes": true
+    },
+    {
+      "id": "4-5-6",
+      "title": "Review and approve video ads",
+      "description": "As a user, I want to compare, grade, and approve video ads.",
+      "acceptance_criteria": [
+        "ComparisonViewer works with video (play buttons, same UI as images)",
+        "Pick winner button for videos",
+        "Feedback panel same as images (thumbs, tags, text)",
+        "\"Approve\" saves to generated_content with content_type='video_ad'",
+        "Shows \"View in Library\" button after approval"
+      ],
+      "dependencies": [
+        "4-5-4",
+        "3-3-2"
+      ],
+      "files": [
+        "src/app/generate/video/page.tsx"
+      ],
+      "phase": 4,
+      "feature": "4.5",
+      "passes": true
+    },
+    {
+      "id": "5-0-1",
+      "title": "Create asset library page",
+      "description": "As a user, I want to view all my approved assets in one place.",
+      "acceptance_criteria": [
+        "Route `/library` renders AssetLibraryPage",
+        "Fetches all generated_content with status='approved'",
+        "Displays as grid of thumbnails",
+        "Shows count: \"47 approved assets\""
+      ],
+      "dependencies": [
+        "4-1-4",
+        "4-2-4"
+      ],
+      "files": [
+        "src/app/library/page.tsx"
+      ],
+      "phase": 5,
+      "feature": "5.0",
+      "passes": true
+    },
+    {
+      "id": "5-0-2",
+      "title": "Add filters to asset library",
+      "description": "As a user, I want to filter assets by various criteria.",
+      "acceptance_criteria": [
+        "Filter dropdown: City (all cities + \"All\")",
+        "Filter dropdown: Content Type (product_shot, lifestyle_shot, social_post, video_ad)",
+        "Filter dropdown: Date range (Last 7 days, Last 30 days, All time)",
+        "Filters update URL query params",
+        "Grid updates when filters change"
+      ],
+      "dependencies": [
+        "5-0-1"
+      ],
+      "files": [
+        "src/app/library/page.tsx"
+      ],
+      "phase": 5,
+      "feature": "5.0",
+      "passes": true
+    },
+    {
+      "id": "5-0-3",
+      "title": "Add asset detail modal",
+      "description": "As a user, I want to view asset details and metadata.",
+      "acceptance_criteria": [
+        "Clicking asset thumbnail opens modal",
+        "Modal shows: full-size image/video, generation params, feedback given, created date",
+        "\"Use in Post\" button (links to content creation with asset pre-selected)",
+        "\"Download\" button for single asset",
+        "\"Delete\" button with confirmation"
+      ],
+      "dependencies": [
+        "5-0-2"
+      ],
+      "files": [
+        "src/components/AssetDetailModal.tsx"
+      ],
+      "phase": 5,
+      "feature": "5.0",
+      "passes": true
+    },
+    {
+      "id": "5-1-1",
+      "title": "Create calendar page with approved content",
+      "description": "As a user, I want to see all approved content in a calendar view.",
+      "acceptance_criteria": [
+        "Route `/calendar` renders CalendarPage",
+        "Fetches approved social posts from database",
+        "Lists content with thumbnail, caption preview, created date",
+        "Filter by city, content type"
+      ],
+      "dependencies": [
+        "4-3-5"
+      ],
+      "files": [
+        "src/app/calendar/page.tsx"
+      ],
+      "phase": 5,
+      "feature": "5.1",
+      "passes": true
+    },
+    {
+      "id": "5-1-2",
+      "title": "Create Instagram grid preview",
+      "description": "As a user, I want to see how my content will look on Instagram.",
+      "acceptance_criteria": [
+        "\"Grid Preview\" button toggles preview mode",
+        "Shows 3-column grid mimicking Instagram profile",
+        "Each cell shows post thumbnail",
+        "Scrollable to show more posts",
+        "Shows 9-12 posts at a time"
+      ],
+      "dependencies": [
+        "5-1-1"
+      ],
+      "files": [
+        "src/components/InstagramGridPreview.tsx"
+      ],
+      "phase": 5,
+      "feature": "5.1",
+      "passes": true
+    },
+    {
+      "id": "5-1-3",
+      "title": "Add drag-drop reordering to grid",
+      "description": "As a user, I want to reorder content by dragging.",
+      "acceptance_criteria": [
+        "Can drag posts to new positions in grid",
+        "Visual feedback during drag (ghost image, drop zone highlight)",
+        "Order persists in local state",
+        "\"Lock Order\" button saves order to database"
+      ],
+      "dependencies": [
+        "5-1-2"
+      ],
+      "files": [
+        "src/components/InstagramGridPreview.tsx"
+      ],
+      "phase": 5,
+      "feature": "5.1",
+      "passes": true
+    },
+    {
+      "id": "5-1-4",
+      "title": "Add TikTok feed preview",
+      "description": "As a user, I want to preview TikTok-style vertical feed.",
+      "acceptance_criteria": [
+        "Toggle between \"Instagram\" and \"TikTok\" preview modes",
+        "TikTok shows single-column vertical scroll",
+        "Each post shows 9:16 preview",
+        "Same drag-drop reordering works"
+      ],
+      "dependencies": [
+        "5-1-3"
+      ],
+      "files": [
+        "src/components/TikTokFeedPreview.tsx"
+      ],
+      "phase": 5,
+      "feature": "5.1",
+      "passes": true
+    },
+    {
+      "id": "5-2-1",
+      "title": "Add export selection mode",
+      "description": "As a user, I want to select content for export.",
+      "acceptance_criteria": [
+        "\"Export Mode\" toggle adds checkboxes to content items",
+        "\"Select All\" / \"Deselect All\" buttons",
+        "Shows count: \"5 items selected\"",
+        "\"Export Selected\" button enabled when items selected"
+      ],
+      "dependencies": [
+        "5-1-1"
+      ],
+      "files": [
+        "src/app/calendar/page.tsx"
+      ],
+      "phase": 5,
+      "feature": "5.2",
+      "passes": true
+    },
+    {
+      "id": "5-2-2",
+      "title": "Create export API endpoint",
+      "description": "As a developer, I want an API to package content for download.",
+      "acceptance_criteria": [
+        "POST `/api/export` accepts array of content IDs",
+        "Fetches content URLs from database",
+        "Generates caption text files for each post",
+        "Creates ZIP file with organized folders (images/, videos/, captions/)",
+        "Returns download URL"
+      ],
+      "dependencies": [
+        "5-2-1"
+      ],
+      "files": [
+        "src/app/api/export/route.ts"
+      ],
+      "phase": 5,
+      "feature": "5.2",
+      "passes": true
+    },
+    {
+      "id": "5-2-3",
+      "title": "Download exported content",
+      "description": "As a user, I want to download my exported content.",
+      "acceptance_criteria": [
+        "After export API returns, show download link",
+        "Clicking link downloads ZIP file",
+        "ZIP contains: images in /images, videos in /videos, captions in /captions",
+        "File naming: `{city}_{content_type}_{date}_{index}.{ext}`"
+      ],
+      "dependencies": [
+        "5-2-2"
+      ],
+      "files": [
+        "src/app/calendar/page.tsx"
+      ],
+      "phase": 5,
+      "feature": "5.2",
+      "passes": true
+    },
+    {
+      "id": "6-1-1",
+      "title": "Create preferences page",
+      "description": "As a user, I want to see my learned preferences.",
+      "acceptance_criteria": [
+        "Route `/preferences` renders PreferencesPage",
+        "Shows heading \"Your Preferences\"",
+        "Sections for: Model Preferences, Style Preferences, Content Preferences"
+      ],
+      "dependencies": [
+        "1-1-5"
+      ],
+      "files": [
+        "src/app/preferences/page.tsx"
+      ],
+      "phase": 6,
+      "feature": "6.1",
+      "passes": true
+    },
+    {
+      "id": "6-1-2",
+      "title": "Display model win rate statistics",
+      "description": "As a user, I want to see which AI models I prefer.",
+      "acceptance_criteria": [
+        "Query feedback where comparison_winner = true",
+        "Calculate win rate per model per content type",
+        "Display as bar charts: \"Nano Banana: 72% | OpenAI: 28%\"",
+        "Separate charts for: images, videos"
+      ],
+      "dependencies": [
+        "6-1-1"
+      ],
+      "files": [
+        "src/app/preferences/page.tsx",
+        "src/components/WinRateChart.tsx"
+      ],
+      "phase": 6,
+      "feature": "6.1",
+      "passes": true
+    },
+    {
+      "id": "6-1-3",
+      "title": "Display tag frequency analysis",
+      "description": "As a user, I want to see what attributes I like/dislike.",
+      "acceptance_criteria": [
+        "Query feedback tags",
+        "Count frequency of each tag with thumbs_up vs thumbs_down",
+        "Display as sorted list: \"golden_hour: 85% positive\"",
+        "Color code: green for positive, red for negative patterns"
+      ],
+      "dependencies": [
+        "6-1-2"
+      ],
+      "files": [
+        "src/app/preferences/page.tsx",
+        "src/components/TagAnalysis.tsx"
+      ],
+      "phase": 6,
+      "feature": "6.1",
+      "passes": true
+    },
+    {
+      "id": "6-1-4",
+      "title": "Display city-specific insights",
+      "description": "As a user, I want to see preferences per city.",
+      "acceptance_criteria": [
+        "Group feedback by city",
+        "Show top 3 positive tags per city",
+        "Show preferred colorways per city",
+        "Collapsible sections per city"
+      ],
+      "dependencies": [
+        "6-1-3"
+      ],
+      "files": [
+        "src/app/preferences/page.tsx"
+      ],
+      "phase": 6,
+      "feature": "6.1",
+      "passes": true
+    },
+    {
+      "id": "6-2-1",
+      "title": "Create preference calculation service",
+      "description": "As a developer, I want a service to calculate preference weights.",
+      "acceptance_criteria": [
+        "Function `calculatePreferences(userId)` in `src/lib/preferences.ts`",
+        "Queries feedback table",
+        "Returns object: `{ modelPreferences, tagPreferences, cityPreferences }`",
+        "Caches result for 1 hour"
+      ],
+      "dependencies": [
+        "6-1-3"
+      ],
+      "files": [
+        "src/lib/preferences.ts"
+      ],
+      "phase": 6,
+      "feature": "6.2",
+      "passes": true
+    },
+    {
+      "id": "6-2-2",
+      "title": "Apply preferences to generation defaults",
+      "description": "As a developer, I want generation forms to use learned preferences.",
+      "acceptance_criteria": [
+        "Generation pages call `calculatePreferences()` on mount",
+        "If preference confidence > 70%, pre-select that option",
+        "Show indicator: \"Based on your preferences\" next to pre-selected options",
+        "User can still override any default"
+      ],
+      "dependencies": [
+        "6-2-1"
+      ],
+      "files": [
+        "src/app/generate/page.tsx",
+        "src/app/generate/lifestyle/page.tsx"
+      ],
+      "phase": 6,
+      "feature": "6.2",
+      "passes": true
+    },
+    {
+      "id": "6-2-3",
+      "title": "Show prediction confidence on comparisons",
+      "description": "As a user, I want to see when the system predicts my preference.",
+      "acceptance_criteria": [
+        "In ComparisonViewer, if one model has > 70% win rate for this content type",
+        "Show subtle indicator: \"You usually prefer this style\"",
+        "Don't auto-select, just inform",
+        "Track if prediction was correct to improve model"
+      ],
+      "dependencies": [
+        "6-2-2"
+      ],
+      "files": [
+        "src/components/ComparisonViewer.tsx"
+      ],
+      "phase": 6,
+      "feature": "6.2",
+      "passes": true
+    },
+    {
+      "id": "6-3-1",
+      "title": "Create prompt templates settings page",
+      "description": "As a user, I want to view and manage all prompt templates.",
+      "acceptance_criteria": [
+        "Route `/settings/prompts` renders PromptTemplatesPage",
+        "Lists all prompt templates from database",
+        "Table columns: Name, Category, Model Target, Usage Count, Last Updated",
+        "Search/filter by category",
+        "\"Add Template\" button"
+      ],
+      "dependencies": [
+        "1-1-7"
+      ],
+      "files": [
+        "src/app/settings/prompts/page.tsx"
+      ],
+      "phase": 6,
+      "feature": "6.3",
+      "passes": true
+    },
+    {
+      "id": "6-3-2",
+      "title": "Create prompt template editor modal",
+      "description": "As a user, I want to create and edit prompt templates.",
+      "acceptance_criteria": [
+        "Clicking template row or \"Add Template\" opens editor modal",
+        "Form fields: name (text), category (dropdown), model_target (dropdown), prompt (textarea)",
+        "Variables section: add/remove variables with name and type",
+        "Settings section: aspect_ratio, quality, style (JSON editor or form)",
+        "\"Save\" creates or updates record",
+        "\"Cancel\" closes without saving"
+      ],
+      "dependencies": [
+        "6-3-1"
+      ],
+      "files": [
+        "src/components/PromptTemplateEditor.tsx"
+      ],
+      "phase": 6,
+      "feature": "6.3",
+      "passes": true
+    },
+    {
+      "id": "6-3-3",
+      "title": "Add prompt template test mode",
+      "description": "As a user, I want to test a prompt template with sample data.",
+      "acceptance_criteria": [
+        "\"Test Template\" button in editor",
+        "Opens panel with variable inputs (based on template variables)",
+        "\"Run Test\" button generates preview with Claude",
+        "Shows rendered prompt (variables replaced)",
+        "Shows Claude's response (for text) or \"would generate image\" (for image prompts)"
+      ],
+      "dependencies": [
+        "6-3-2",
+        "1-3-3"
+      ],
+      "files": [
+        "src/components/PromptTemplateEditor.tsx"
+      ],
+      "phase": 6,
+      "feature": "6.3",
+      "passes": true
+    },
+    {
+      "id": "6-3-4",
+      "title": "Add prompt template duplication",
+      "description": "As a user, I want to duplicate a template as a starting point.",
+      "acceptance_criteria": [
+        "\"Duplicate\" button on each template row",
+        "Creates copy with name \"{original} (Copy)\"",
+        "Opens editor with duplicated content",
+        "Saving creates new record (doesn't overwrite original)"
+      ],
+      "dependencies": [
+        "6-3-2"
+      ],
+      "files": [
+        "src/app/settings/prompts/page.tsx"
+      ],
+      "phase": 6,
+      "feature": "6.3",
+      "passes": true
+    },
+    {
+      "id": "6-4-1",
+      "title": "Create settings page with sections",
+      "description": "As a user, I want a central settings page.",
+      "acceptance_criteria": [
+        "Route `/settings` renders SettingsPage",
+        "Sections: API Status, Content Types, Prompt Templates, Preferences",
+        "Each section is a card with link to detail page",
+        "Shows summary info per section (e.g., \"5 API keys configured\")"
+      ],
+      "dependencies": [],
+      "files": [
+        "src/app/settings/page.tsx"
+      ],
+      "phase": 6,
+      "feature": "6.4",
+      "passes": true
+    },
+    {
+      "id": "6-4-2",
+      "title": "Create API status dashboard",
+      "description": "As a user, I want to see if my API connections are working.",
+      "acceptance_criteria": [
+        "Route `/settings/api` renders APIStatusPage",
+        "Lists all required APIs: Supabase, Claude, Perplexity, Nano Banana, OpenAI, Sora 2, Gemini",
+        "For each: shows status (Connected/Error), last used timestamp",
+        "\"Test Connection\" button pings each API",
+        "Shows error message if connection fails"
+      ],
+      "dependencies": [
+        "1-3-1",
+        "1-3-2",
+        "1-3-3",
+        "1-3-4",
+        "4-5-5"
+      ],
+      "files": [
+        "src/app/settings/api/page.tsx"
+      ],
+      "phase": 6,
+      "feature": "6.4",
+      "passes": true
+    }
+  ]
+}

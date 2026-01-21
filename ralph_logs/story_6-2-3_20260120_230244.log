@@ -1,0 +1,38 @@
+## Summary
+
+I have successfully implemented Story 6-2-3: "Show prediction confidence on comparisons". Here's what was accomplished:
+
+### Files Modified:
+- **src/components/ComparisonViewer.tsx** - Enhanced with prediction confidence features
+
+### Implementation Details:
+
+1. **Added preference prediction logic**:
+   - Integrated with `calculatePreferences()` function from lib/preferences
+   - Checks if either model has > 70% win rate based on user history
+   - Stores prediction in `modelPreference` state
+
+2. **Visual indicator implementation**:
+   - Shows a subtle purple badge with lightning icon
+   - Displays text "You usually prefer this style" 
+   - Only appears before user makes a selection (non-intrusive)
+   - Positioned next to the model heading
+
+3. **Prediction tracking**:
+   - Tracks whether the prediction was correct when user selects a winner
+   - Logs prediction accuracy data for future model improvements
+   - Shows feedback message indicating if prediction was correct
+
+4. **User experience**:
+   - No auto-selection - just informative indicator
+   - Feedback messages after selection:
+     - Green message if prediction was correct: "Our prediction was correct! We're learning your preferences."
+     - Yellow message if incorrect: "Thanks for the feedback! We'll improve our predictions."
+
+### All Acceptance Criteria Satisfied:
+- ✅ Shows indicator when one model has > 70% win rate for content type
+- ✅ Displays subtle "You usually prefer this style" indicator
+- ✅ Does not auto-select, only informs
+- ✅ Tracks if prediction was correct for model improvement
+
+The implementation is complete and ready for use. The feature provides a non-intrusive way to show users when the system has high confidence in their preferences while still allowing them full control over their selection.

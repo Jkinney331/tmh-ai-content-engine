@@ -1,0 +1,37 @@
+Excellent! The implementation is complete. Let's summarize what was accomplished:
+
+## ✅ Implementation Summary - Story 6-2-2: Apply preferences to generation defaults
+
+### Completed Acceptance Criteria:
+
+1. **✅ Generation pages call `calculatePreferences()` on mount**
+   - Both `/generate/page.tsx` and `/generate/lifestyle/page.tsx` now call `calculatePreferences()` in a `useEffect` hook on mount
+
+2. **✅ If preference confidence > 70%, pre-select that option**
+   - Product Type selection: Pre-selected if confidence > 0.7
+   - Design Style selection: Pre-selected if confidence > 0.7
+   - Lifestyle variations: Pre-selected if confidence > 0.7
+   - City selection (lifestyle page): Pre-selected if confidence > 0.7
+
+3. **✅ Show indicator: "Based on your preferences" next to pre-selected options**
+   - Product Type: Shows indicator text when pre-selected based on preferences
+   - Design Style: Shows indicator text inline with the label
+   - Lifestyle variations: Shows indicator in the variation header
+   - City selector (lifestyle page): Shows indicator with info icon below the selector
+
+4. **✅ User can still override any default**
+   - All pre-selections only happen if the user hasn't already made a selection
+   - All form controls remain fully interactive and can be changed by the user
+
+### Files Modified:
+- `/src/app/generate/page.tsx` - Added preference calculation, auto-selection logic, and UI indicators
+- `/src/app/generate/lifestyle/page.tsx` - Added preference calculation, auto-selection for variations and city, and UI indicators
+
+### Implementation Details:
+- Uses a default userId ('default-user') for now - ready for integration with auth context
+- Caches preferences for 1 hour to avoid repeated calculations
+- Only pre-selects options if confidence exceeds 70% threshold
+- Maintains user control - pre-selections only apply when no selection exists
+- Clear visual indicators show when selections are based on learned preferences
+
+The story has been fully implemented with all acceptance criteria satisfied.

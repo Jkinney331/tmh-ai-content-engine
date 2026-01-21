@@ -1,0 +1,12 @@
+[2026-01-20 22:59:55] Checking dependencies...
+[2026-01-20 22:59:55] [0;32mAll dependencies satisfied[0m
+[2026-01-20 22:59:55] Configuration:
+[2026-01-20 22:59:55]   PRD File: /Users/greenmachine2.0/TMH/prd.json
+[2026-01-20 22:59:55]   Log File: /Users/greenmachine2.0/TMH/ralph_logs/ralph_run_20260120_225955.log
+[2026-01-20 22:59:55]   Dry Run: false
+[2026-01-20 22:59:55]   Phase Filter: all
+[2026-01-20 22:59:55]   Start From: beginning
+[2026-01-20 22:59:55] Stories: 21 pending of 91 total
+[2026-01-20 22:59:55] Executing story 5-0-3 with Claude Code...
+[2026-01-20 22:59:58] [0;31m✗ Story 5-0-3 failed (exit code: 1) - check /Users/greenmachine2.0/TMH/ralph_logs/story_5-0-3_20260120_225955.log for details[0m
+[2026-01-20 23:00:00] Executing story 5-1-1 with Claude Code...

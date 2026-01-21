@@ -1,0 +1,1297 @@
+
+[0;36m════════════════════════════════════════════════════════════════[0m
+[0;36m  RALPH WIGGUM - TMH Autonomous Execution Loop[0m
+[0;36m════════════════════════════════════════════════════════════════[0m
+
+[2026-01-20 18:35:22] Checking dependencies...
+[2026-01-20 18:35:22] [0;32mAll dependencies satisfied[0m
+[2026-01-20 18:35:22] Configuration:
+[2026-01-20 18:35:22]   PRD File: /Users/greenmachine2.0/TMH/prd.json
+[2026-01-20 18:35:22]   Log File: /Users/greenmachine2.0/TMH/ralph_logs/ralph_run_20260120_183522.log
+[2026-01-20 18:35:22]   Dry Run: false
+[2026-01-20 18:35:22]   Phase Filter: all
+[2026-01-20 18:35:22]   Start From: beginning
+
+[2026-01-20 18:35:22] Stories: 90 pending of 91 total
+
+[0;34m┌─────────────────────────────────────────────────────────────────┐[0m
+[0;34m│[0m Story: [1;33m1-1-2[0m - Create city_elements table
+[0;34m└─────────────────────────────────────────────────────────────────┘[0m
+[0;36mDescription:[0m As a developer, I want a city_elements table to store slang, landmarks, sports, etc. with approval status.
+[0;36mFiles:[0m supabase/migrations/002_create_city_elements.sql
+[0;36mAcceptance Criteria:[0m
+- Table `city_elements` exists with columns: `id` (uuid), `city_id` (uuid, FK to cities), `element_type` (text: 'slang' | 'landmark' | 'sport' | 'cultural'), `element_key` (text), `element_value` (jsonb), `status` (text: 'approved' | 'rejected' | 'pending'), `notes` (text), `created_at` (timestamptz)
+- Foreign key constraint to cities.id with ON DELETE CASCADE
+- Can INSERT element linked to a city
+- Can query all elements for a city filtered by status
+
+[2026-01-20 18:35:22] Executing story 1-1-2 with Claude Code...
+[2026-01-20 18:35:48] [0;32m✓ Story 1-1-2 completed successfully[0m
+[2026-01-20 18:35:48] [0;32m✓ Marked story 1-1-2 as complete[0m
+[0;34m┌─────────────────────────────────────────────────────────────────┐[0m
+[0;34m│[0m Story: [1;33m1-1-3[0m - Create designs table
+[0;34m└─────────────────────────────────────────────────────────────────┘[0m
+[0;36mDescription:[0m As a developer, I want a designs table to store generated product designs.
+[0;36mFiles:[0m supabase/migrations/003_create_designs.sql
+[0;36mAcceptance Criteria:[0m
+- Table `designs` exists with columns: `id` (uuid), `city_id` (uuid, FK), `product_type` (text), `design_name` (text), `design_style` (text), `slang_term` (text), `front_design` (jsonb), `back_design` (jsonb), `colorways` (jsonb), `generation_params` (jsonb), `status` (text: 'generated' | 'approved' | 'rejected'), `created_at` (timestamptz)
+- Can INSERT a design linked to a city
+- Can query designs by city_id and status
+
+[2026-01-20 18:35:50] Executing story 1-1-3 with Claude Code...
+[2026-01-20 18:36:49] [0;32m✓ Story 1-1-3 completed successfully[0m
+[2026-01-20 18:36:49] [0;32m✓ Marked story 1-1-3 as complete[0m
+[0;34m┌─────────────────────────────────────────────────────────────────┐[0m
+[0;34m│[0m Story: [1;33m1-1-4[0m - Create generated_content table
+[0;34m└─────────────────────────────────────────────────────────────────┘[0m
+[0;36mDescription:[0m As a developer, I want a universal generated_content table for all AI outputs.
+[0;36mFiles:[0m supabase/migrations/004_create_generated_content.sql
+[0;36mAcceptance Criteria:[0m
+- Table `generated_content` exists with columns: `id` (uuid), `content_type` (text: 'product_shot' | 'lifestyle_shot' | 'social_post' | 'video_ad'), `parent_id` (uuid, nullable FK to designs), `city_id` (uuid, FK), `generation_params` (jsonb), `model_used` (text), `prompt_used` (text), `output_url` (text), `output_metadata` (jsonb), `status` (text), `created_at` (timestamptz)
+- Can INSERT content of any type
+- Can query by content_type, city_id, status
+
+[2026-01-20 18:36:51] Executing story 1-1-4 with Claude Code...
+[2026-01-20 18:38:10] [0;32m✓ Story 1-1-4 completed successfully[0m
+[2026-01-20 18:38:10] [0;32m✓ Marked story 1-1-4 as complete[0m
+[0;34m┌─────────────────────────────────────────────────────────────────┐[0m
+[0;34m│[0m Story: [1;33m1-1-5[0m - Create feedback table
+[0;34m└─────────────────────────────────────────────────────────────────┘[0m
+[0;36mDescription:[0m As a developer, I want a feedback table to capture user ratings on all content.
+[0;36mFiles:[0m supabase/migrations/005_create_feedback.sql
+[0;36mAcceptance Criteria:[0m
+- Table `feedback` exists with columns: `id` (uuid), `content_id` (uuid), `content_type` (text), `rating` (text: 'thumbs_up' | 'thumbs_down'), `tags` (jsonb array), `text_feedback` (text), `comparison_winner` (boolean), `competitor_content_id` (uuid, nullable), `created_at` (timestamptz)
+- Can INSERT feedback linked to any content
+- Can query feedback aggregations (count thumbs_up by tags, etc.)
+
+[2026-01-20 18:38:12] Executing story 1-1-5 with Claude Code...
+[2026-01-20 18:39:27] [0;32m✓ Story 1-1-5 completed successfully[0m
+[2026-01-20 18:39:28] [0;32m✓ Marked story 1-1-5 as complete[0m
+[0;34m┌─────────────────────────────────────────────────────────────────┐[0m
+[0;34m│[0m Story: [1;33m1-1-6[0m - Create content_types table
+[0;34m└─────────────────────────────────────────────────────────────────┘[0m
+[0;36mDescription:[0m As a developer, I want a content_types table for configurable social content formats.
+[0;36mFiles:[0m supabase/migrations/006_create_content_types.sql
+[0;36mAcceptance Criteria:[0m
+- Table `content_types` exists with columns: `id` (uuid), `name` (text), `description` (text), `template` (text), `variables` (jsonb array), `output_format` (text), `platform_specs` (jsonb), `active` (boolean), `created_at` (timestamptz)
+- Can INSERT new content type with template
+- Can query active content types
+
+[2026-01-20 18:39:30] Executing story 1-1-6 with Claude Code...
+[2026-01-20 18:41:13] [0;32m✓ Story 1-1-6 completed successfully[0m
+[2026-01-20 18:41:13] [0;32m✓ Marked story 1-1-6 as complete[0m
+[0;34m┌─────────────────────────────────────────────────────────────────┐[0m
+[0;34m│[0m Story: [1;33m1-1-7[0m - Create prompt_templates table
+[0;34m└─────────────────────────────────────────────────────────────────┘[0m
+[0;36mDescription:[0m As a developer, I want a prompt_templates table to store reusable AI prompts.
+[0;36mFiles:[0m supabase/migrations/007_create_prompt_templates.sql
+[0;36mAcceptance Criteria:[0m
+- Table `prompt_templates` exists with columns: `id` (uuid), `name` (text), `category` (text), `model_target` (text), `prompt` (text), `variables` (jsonb), `settings` (jsonb), `success_rate` (numeric), `usage_count` (integer), `created_at` (timestamptz)
+- Can INSERT prompt template
+- Can query by category and model_target
+
+[2026-01-20 18:41:15] Executing story 1-1-7 with Claude Code...
+[2026-01-20 18:42:10] [0;32m✓ Story 1-1-7 completed successfully[0m
+[2026-01-20 18:42:10] [0;32m✓ Marked story 1-1-7 as complete[0m
+[0;34m┌─────────────────────────────────────────────────────────────────┐[0m
+[0;34m│[0m Story: [1;33m1-1-8[0m - Seed initial prompt templates
+[0;34m└─────────────────────────────────────────────────────────────────┘[0m
+[0;36mDescription:[0m As a developer, I want the master prompt library seeded into the database.
+[0;36mFiles:[0m supabase/migrations/008_seed_prompt_templates.sql
+[0;36mAcceptance Criteria:[0m
+- At least 10 prompt templates seeded from TMH_AI_Content_Engine_Knowledge_Base.md
+- Templates include: product flat lay, ghost mannequin, lifestyle shot, video ad prompts
+- Each template has variables array populated
+- Can query and retrieve seeded templates
+
+[2026-01-20 18:42:12] Executing story 1-1-8 with Claude Code...
+[2026-01-20 18:44:44] [0;32m✓ Story 1-1-8 completed successfully[0m
+[2026-01-20 18:44:44] [0;32m✓ Marked story 1-1-8 as complete[0m
+[0;34m┌─────────────────────────────────────────────────────────────────┐[0m
+[0;34m│[0m Story: [1;33m1-2-1[0m - Create cityStore with initial state
+[0;34m└─────────────────────────────────────────────────────────────────┘[0m
+[0;36mDescription:[0m As a developer, I want a Zustand store for city state management.
+[0;36mFiles:[0m src/stores/cityStore.ts, src/types/city.ts
+[0;36mAcceptance Criteria:[0m
+- File `src/stores/cityStore.ts` exports `useCityStore` hook
+- Initial state: `{ cities: [], selectedCity: null, loading: false, error: null }`
+- Store can be imported and called in a component without error
+- TypeScript types defined for City interface
+
+[2026-01-20 18:44:46] Executing story 1-2-1 with Claude Code...
+[2026-01-20 18:46:05] [0;32m✓ Story 1-2-1 completed successfully[0m
+[2026-01-20 18:46:05] [0;32m✓ Marked story 1-2-1 as complete[0m
+[0;34m┌─────────────────────────────────────────────────────────────────┐[0m
+[0;34m│[0m Story: [1;33m1-2-2[0m - Add city CRUD actions to cityStore
+[0;34m└─────────────────────────────────────────────────────────────────┘[0m
+[0;36mDescription:[0m As a developer, I want CRUD actions in cityStore.
+[0;36mFiles:[0m src/stores/cityStore.ts
+[0;36mAcceptance Criteria:[0m
+- `setCities(cities)` replaces cities array
+- `addCity(city)` appends to cities array
+- `selectCity(id)` sets selectedCity to matching city or null
+- `updateCity(id, data)` merges data into matching city
+- `removeCity(id)` filters out matching city
+- `setLoading(bool)` and `setError(error)` work correctly
+
+[2026-01-20 18:46:07] Executing story 1-2-2 with Claude Code...
+[2026-01-20 18:46:37] [0;32m✓ Story 1-2-2 completed successfully[0m
+[2026-01-20 18:46:37] [0;32m✓ Marked story 1-2-2 as complete[0m
+[0;34m┌─────────────────────────────────────────────────────────────────┐[0m
+[0;34m│[0m Story: [1;33m1-2-3[0m - Create generationStore with initial state
+[0;34m└─────────────────────────────────────────────────────────────────┘[0m
+[0;36mDescription:[0m As a developer, I want a Zustand store for tracking generation state.
+[0;36mFiles:[0m src/stores/generationStore.ts, src/types/generation.ts
+[0;36mAcceptance Criteria:[0m
+- File `src/stores/generationStore.ts` exports `useGenerationStore` hook
+- Initial state: `{ queue: [], currentGeneration: null, comparisons: [], loading: false }`
+- TypeScript types defined for Generation, Comparison interfaces
+
+[2026-01-20 18:46:39] Executing story 1-2-3 with Claude Code...
+[2026-01-20 18:47:35] [0;32m✓ Story 1-2-3 completed successfully[0m
+[2026-01-20 18:47:35] [0;32m✓ Marked story 1-2-3 as complete[0m
+[0;34m┌─────────────────────────────────────────────────────────────────┐[0m
+[0;34m│[0m Story: [1;33m1-2-4[0m - Add generation actions to generationStore
+[0;34m└─────────────────────────────────────────────────────────────────┘[0m
+[0;36mDescription:[0m As a developer, I want actions to manage generation queue and comparisons.
+[0;36mFiles:[0m src/stores/generationStore.ts
+[0;36mAcceptance Criteria:[0m
+- `addToQueue(item)` appends to queue
+- `setCurrentGeneration(gen)` sets currentGeneration
+- `addComparison(modelA, modelB)` creates comparison object
+- `selectWinner(comparisonId, winner)` marks winner in comparison
+- `clearQueue()` empties queue
+
+[2026-01-20 18:47:37] Executing story 1-2-4 with Claude Code...
+[2026-01-20 18:48:25] [0;32m✓ Story 1-2-4 completed successfully[0m
+[2026-01-20 18:48:25] [0;32m✓ Marked story 1-2-4 as complete[0m
+[0;34m┌─────────────────────────────────────────────────────────────────┐[0m
+[0;34m│[0m Story: [1;33m1-2-5[0m - Create feedbackStore with initial state
+[0;34m└─────────────────────────────────────────────────────────────────┘[0m
+[0;36mDescription:[0m As a developer, I want a Zustand store for feedback capture.
+[0;36mFiles:[0m src/stores/feedbackStore.ts, src/types/feedback.ts
+[0;36mAcceptance Criteria:[0m
+- File `src/stores/feedbackStore.ts` exports `useFeedbackStore` hook
+- Initial state: `{ pendingFeedback: null, feedbackHistory: [], submitting: false }`
+- TypeScript types defined for Feedback interface
+
+[2026-01-20 18:48:27] Executing story 1-2-5 with Claude Code...
+[2026-01-20 18:49:30] [0;32m✓ Story 1-2-5 completed successfully[0m
+[2026-01-20 18:49:30] [0;32m✓ Marked story 1-2-5 as complete[0m
+[0;34m┌─────────────────────────────────────────────────────────────────┐[0m
+[0;34m│[0m Story: [1;33m1-2-6[0m - Add feedback actions to feedbackStore
+[0;34m└─────────────────────────────────────────────────────────────────┘[0m
+[0;36mDescription:[0m As a developer, I want actions to capture and submit feedback.
+[0;36mFiles:[0m src/stores/feedbackStore.ts
+[0;36mAcceptance Criteria:[0m
+- `startFeedback(contentId, contentType)` initializes pendingFeedback
+- `setRating(rating)` sets thumbs_up or thumbs_down
+- `toggleTag(tag)` adds/removes tag from tags array
+- `setTextFeedback(text)` sets text feedback
+- `submitFeedback()` moves pending to history and clears pending
+
+[2026-01-20 18:49:32] Executing story 1-2-6 with Claude Code...
+[2026-01-20 18:50:37] [0;32m✓ Story 1-2-6 completed successfully[0m
+[2026-01-20 18:50:37] [0;32m✓ Marked story 1-2-6 as complete[0m
+[0;34m┌─────────────────────────────────────────────────────────────────┐[0m
+[0;34m│[0m Story: [1;33m1-3-1[0m - Create Supabase client utility
+[0;34m└─────────────────────────────────────────────────────────────────┘[0m
+[0;36mDescription:[0m As a developer, I want a configured Supabase client for API routes.
+[0;36mFiles:[0m src/lib/supabase.ts, .env.local.example
+[0;36mAcceptance Criteria:[0m
+- File `src/lib/supabase.ts` exports `supabase` client
+- Client uses environment variables `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_ANON_KEY`
+- Client can be imported in both server and client components
+- Includes typed helpers for common queries
+
+[2026-01-20 18:50:39] Executing story 1-3-1 with Claude Code...
+[2026-01-20 18:52:08] [0;32m✓ Story 1-3-1 completed successfully[0m
+[2026-01-20 18:52:08] [0;32m✓ Marked story 1-3-1 as complete[0m
+[0;34m┌─────────────────────────────────────────────────────────────────┐[0m
+[0;34m│[0m Story: [1;33m1-3-2[0m - Create Perplexity API client
+[0;34m└─────────────────────────────────────────────────────────────────┘[0m
+[0;36mDescription:[0m As a developer, I want a Perplexity API client for city research.
+[0;36mFiles:[0m src/lib/perplexity.ts
+[0;36mAcceptance Criteria:[0m
+- File `src/lib/perplexity.ts` exports `perplexitySearch(query)` function
+- Function calls Perplexity API with proper auth header
+- Returns parsed JSON response
+- Handles errors gracefully with typed error response
+- Uses environment variable `PERPLEXITY_API_KEY`
+
+[2026-01-20 18:52:10] Executing story 1-3-2 with Claude Code...
+[2026-01-20 18:52:53] [0;32m✓ Story 1-3-2 completed successfully[0m
+[2026-01-20 18:52:53] [0;32m✓ Marked story 1-3-2 as complete[0m
+[0;34m┌─────────────────────────────────────────────────────────────────┐[0m
+[0;34m│[0m Story: [1;33m1-3-3[0m - Create Claude API client
+[0;34m└─────────────────────────────────────────────────────────────────┘[0m
+[0;36mDescription:[0m As a developer, I want a Claude API client for prompt generation and synthesis.
+[0;36mFiles:[0m src/lib/claude.ts
+[0;36mAcceptance Criteria:[0m
+- File `src/lib/claude.ts` exports `claudeGenerate(prompt, options)` function
+- Function calls Anthropic API with proper auth
+- Supports system prompt and user prompt
+- Returns parsed response content
+- Uses environment variable `ANTHROPIC_API_KEY`
+
+[2026-01-20 18:52:55] Executing story 1-3-3 with Claude Code...
+[2026-01-20 18:53:45] [0;32m✓ Story 1-3-3 completed successfully[0m
+[2026-01-20 18:53:45] [0;32m✓ Marked story 1-3-3 as complete[0m
+[0;34m┌─────────────────────────────────────────────────────────────────┐[0m
+[0;34m│[0m Story: [1;33m1-3-4[0m - Create image generation client (multi-model)
+[0;34m└─────────────────────────────────────────────────────────────────┘[0m
+[0;36mDescription:[0m As a developer, I want an image generation client that supports multiple models.
+[0;36mFiles:[0m src/lib/imageGeneration.ts
+[0;36mAcceptance Criteria:[0m
+- File `src/lib/imageGeneration.ts` exports `generateImage(prompt, model, options)` function
+- `model` parameter accepts 'nano_banana' | 'openai'
+- Routes to correct API based on model
+- Returns standardized response: `{ url, model, prompt, metadata }`
+- Handles errors with typed responses
+
+[2026-01-20 18:53:47] Executing story 1-3-4 with Claude Code...
+[2026-01-20 18:55:11] [0;32m✓ Story 1-3-4 completed successfully[0m
+[2026-01-20 18:55:11] [0;32m✓ Marked story 1-3-4 as complete[0m
+[0;34m┌─────────────────────────────────────────────────────────────────┐[0m
+[0;34m│[0m Story: [1;33m1-4-1[0m - Create app layout with sidebar navigation
+[0;34m└─────────────────────────────────────────────────────────────────┘[0m
+[0;36mDescription:[0m As a user, I want a consistent navigation sidebar across all pages.
+[0;36mFiles:[0m src/app/layout.tsx, src/components/Sidebar.tsx
+[0;36mAcceptance Criteria:[0m
+- Layout component wraps all pages in `src/app/layout.tsx`
+- Sidebar with links: Cities, Generate, Content, Calendar, Library, Preferences, Settings
+- Each link has icon (Lucide icons) and label
+- Active route highlighted with different background color
+- Sidebar is 240px wide on desktop
+- TMH logo at top links to `/cities`
+
+[2026-01-20 18:55:13] Executing story 1-4-1 with Claude Code...
+[2026-01-20 18:59:09] [0;32m✓ Story 1-4-1 completed successfully[0m
+[2026-01-20 18:59:09] [0;32m✓ Marked story 1-4-1 as complete[0m
+[0;34m┌─────────────────────────────────────────────────────────────────┐[0m
+[0;34m│[0m Story: [1;33m1-4-2[0m - Create mobile navigation
+[0;34m└─────────────────────────────────────────────────────────────────┘[0m
+[0;36mDescription:[0m As a user, I want navigation to work on mobile devices.
+[0;36mFiles:[0m src/components/Sidebar.tsx, src/components/MobileNav.tsx
+[0;36mAcceptance Criteria:[0m
+- Sidebar hidden on screens < 768px
+- Hamburger menu button appears in header on mobile
+- Clicking hamburger opens sidebar as overlay
+- Clicking outside overlay closes it
+- Clicking nav link closes overlay and navigates
+
+[2026-01-20 18:59:11] Executing story 1-4-2 with Claude Code...
+[2026-01-20 19:00:51] [0;32m✓ Story 1-4-2 completed successfully[0m
+[2026-01-20 19:00:51] [0;32m✓ Marked story 1-4-2 as complete[0m
+[0;34m┌─────────────────────────────────────────────────────────────────┐[0m
+[0;34m│[0m Story: [1;33m1-4-3[0m - Create breadcrumb component
+[0;34m└─────────────────────────────────────────────────────────────────┘[0m
+[0;36mDescription:[0m As a user, I want to see my location in the app hierarchy.
+[0;36mFiles:[0m src/components/Breadcrumb.tsx
+[0;36mAcceptance Criteria:[0m
+- Breadcrumb component shows path: Home > Cities > Detroit
+- Each segment is clickable link except current page
+- Displays below header, above page content
+- Auto-generates from route path
+
+[2026-01-20 19:00:53] Executing story 1-4-3 with Claude Code...
+[2026-01-20 19:03:09] [0;32m✓ Story 1-4-3 completed successfully[0m
+[2026-01-20 19:03:09] [0;32m✓ Marked story 1-4-3 as complete[0m
+[0;34m┌─────────────────────────────────────────────────────────────────┐[0m
+[0;34m│[0m Story: [1;33m2-1-1[0m - Create cities page with empty state
+[0;34m└─────────────────────────────────────────────────────────────────┘[0m
+[0;36mDescription:[0m As a user, I want to see a Cities page so I can view and manage cities.
+[0;36mFiles:[0m src/app/cities/page.tsx
+[0;36mAcceptance Criteria:[0m
+- Route `/cities` renders CitiesPage component
+- Page has heading "Cities"
+- Empty state shows "No cities yet" message
+- "Add City" button is visible with `data-testid="add-city-button"`
+
+[2026-01-20 19:03:11] Executing story 2-1-1 with Claude Code...
+[2026-01-20 19:03:42] [0;32m✓ Story 2-1-1 completed successfully[0m
+[2026-01-20 19:03:42] [0;32m✓ Marked story 2-1-1 as complete[0m
+[0;34m┌─────────────────────────────────────────────────────────────────┐[0m
+[0;34m│[0m Story: [1;33m2-1-2[0m - Display city cards in grid
+[0;34m└─────────────────────────────────────────────────────────────────┘[0m
+[0;36mDescription:[0m As a user, I want to see my cities displayed as cards.
+[0;36mFiles:[0m src/components/CityCard.tsx, src/app/cities/page.tsx
+[0;36mAcceptance Criteria:[0m
+- CityCard component exists with props: `city: City`
+- Card shows: city name, status badge, area codes, nickname count
+- Cards display in responsive grid (1 col mobile, 2 col tablet, 3 col desktop)
+- Clicking card navigates to `/cities/[cityId]`
+
+[2026-01-20 19:03:44] Executing story 2-1-2 with Claude Code...
+[2026-01-20 19:05:18] [0;32m✓ Story 2-1-2 completed successfully[0m
+[2026-01-20 19:05:18] [0;32m✓ Marked story 2-1-2 as complete[0m
+[0;34m┌─────────────────────────────────────────────────────────────────┐[0m
+[0;34m│[0m Story: [1;33m2-1-3[0m - Fetch cities from Supabase on page load
+[0;34m└─────────────────────────────────────────────────────────────────┘[0m
+[0;36mDescription:[0m As a user, I want cities to load from the database when I visit the page.
+[0;36mFiles:[0m src/app/cities/page.tsx
+[0;36mAcceptance Criteria:[0m
+- Page calls `supabase.from('cities').select('*')` on mount
+- Loading state shows skeleton cards while fetching
+- Fetched cities populate cityStore via `setCities()`
+- Error state shows error message if query fails
+
+[2026-01-20 19:05:20] Executing story 2-1-3 with Claude Code...
+[2026-01-20 19:07:10] [0;32m✓ Story 2-1-3 completed successfully[0m
+[2026-01-20 19:07:10] [0;32m✓ Marked story 2-1-3 as complete[0m
+[0;34m┌─────────────────────────────────────────────────────────────────┐[0m
+[0;34m│[0m Story: [1;33m2-2-1[0m - Create AddCityModal component shell
+[0;34m└─────────────────────────────────────────────────────────────────┘[0m
+[0;36mDescription:[0m As a user, I want an Add City modal to appear when I click the button.
+[0;36mFiles:[0m src/components/AddCityModal.tsx, src/app/cities/page.tsx
+[0;36mAcceptance Criteria:[0m
+- Clicking "Add City" button opens modal with `data-testid="add-city-modal"`
+- Modal has close button (X) that closes modal
+- Modal has heading "Add New City"
+- Clicking outside modal closes it
+
+[2026-01-20 19:07:12] Executing story 2-2-1 with Claude Code...
+[2026-01-20 19:08:14] [0;32m✓ Story 2-2-1 completed successfully[0m
+[2026-01-20 19:08:14] [0;32m✓ Marked story 2-2-1 as complete[0m
+[0;34m┌─────────────────────────────────────────────────────────────────┐[0m
+[0;34m│[0m Story: [1;33m2-2-2[0m - Add city name input with validation
+[0;34m└─────────────────────────────────────────────────────────────────┘[0m
+[0;36mDescription:[0m As a user, I want to enter a city name in the modal.
+[0;36mFiles:[0m src/components/AddCityModal.tsx
+[0;36mAcceptance Criteria:[0m
+- Text input with `name="cityName"` and placeholder "Enter city name..."
+- Input validates: required, min 2 characters
+- Validation error shows below input when invalid
+- Submit button disabled when input invalid
+
+[2026-01-20 19:08:16] Executing story 2-2-2 with Claude Code...
+[2026-01-20 19:09:35] [0;32m✓ Story 2-2-2 completed successfully[0m
+[2026-01-20 19:09:35] [0;32m✓ Marked story 2-2-2 as complete[0m
+[0;34m┌─────────────────────────────────────────────────────────────────┐[0m
+[0;34m│[0m Story: [1;33m2-2-3[0m - Add research configuration checklist
+[0;34m└─────────────────────────────────────────────────────────────────┘[0m
+[0;36mDescription:[0m As a user, I want to configure what research categories to include.
+[0;36mFiles:[0m src/components/AddCityModal.tsx
+[0;36mAcceptance Criteria:[0m
+- Checklist section with heading "Research Categories"
+- Checkboxes for: Slang, Landmarks, Sports, Culture, Visual Identity, Area Codes
+- All checkboxes checked by default
+- User can toggle individual checkboxes
+- State stored in component for submission
+
+[2026-01-20 19:09:38] Executing story 2-2-3 with Claude Code...
+[2026-01-20 19:10:39] [0;32m✓ Story 2-2-3 completed successfully[0m
+[2026-01-20 19:10:39] [0;32m✓ Marked story 2-2-3 as complete[0m
+[0;34m┌─────────────────────────────────────────────────────────────────┐[0m
+[0;34m│[0m Story: [1;33m2-2-4[0m - Add custom research prompt field
+[0;34m└─────────────────────────────────────────────────────────────────┘[0m
+[0;36mDescription:[0m As a user, I want to add custom research instructions.
+[0;36mFiles:[0m src/components/AddCityModal.tsx
+[0;36mAcceptance Criteria:[0m
+- Textarea with `name="customPrompt"` and placeholder "Any specific things to research?"
+- Textarea is optional (can be empty)
+- Max length 500 characters with counter
+
+[2026-01-20 19:10:41] Executing story 2-2-4 with Claude Code...
+[2026-01-20 19:11:33] [0;32m✓ Story 2-2-4 completed successfully[0m
+[2026-01-20 19:11:33] [0;32m✓ Marked story 2-2-4 as complete[0m
+[0;34m┌─────────────────────────────────────────────────────────────────┐[0m
+[0;34m│[0m Story: [1;33m2-2-5[0m - Submit modal creates city and triggers research
+[0;34m└─────────────────────────────────────────────────────────────────┘[0m
+[0;36mDescription:[0m As a user, I want to submit the modal to start city research.
+[0;36mFiles:[0m src/components/AddCityModal.tsx, src/app/api/cities/route.ts
+[0;36mAcceptance Criteria:[0m
+- Clicking "Start Research" button calls POST `/api/cities`
+- Request body includes: `{ name, researchCategories, customPrompt }`
+- Loading state shows spinner on button
+- Success: modal closes, city appears in list with status "researching"
+- Error: error message shown in modal
+
+[2026-01-20 19:11:35] Executing story 2-2-5 with Claude Code...
+[2026-01-20 19:19:19] [0;32m✓ Story 2-2-5 completed successfully[0m
+[2026-01-20 19:19:19] [0;32m✓ Marked story 2-2-5 as complete[0m
+[0;34m┌─────────────────────────────────────────────────────────────────┐[0m
+[0;34m│[0m Story: [1;33m2-3-1[0m - Create POST /api/cities endpoint
+[0;34m└─────────────────────────────────────────────────────────────────┘[0m
+[0;36mDescription:[0m As a developer, I want an API route to create a city and initiate research.
+[0;36mFiles:[0m src/app/api/cities/route.ts
+[0;36mAcceptance Criteria:[0m
+- POST `/api/cities` accepts body: `{ name, researchCategories, customPrompt }`
+- Creates city record in Supabase with status='researching'
+- Returns city object with id
+- Returns 400 with `{ error: 'City name is required' }` if name missing
+- Returns 400 with `{ error: 'City name must be at least 2 characters' }` if too short
+- Returns 409 with `{ error: 'City already exists' }` if duplicate name
+- Returns 500 with `{ error: message }` if database error
+
+[2026-01-20 19:19:22] Executing story 2-3-1 with Claude Code...
+[2026-01-20 19:24:39] [0;32m✓ Story 2-3-1 completed successfully[0m
+[2026-01-20 19:24:39] [0;32m✓ Marked story 2-3-1 as complete[0m
+[0;34m┌─────────────────────────────────────────────────────────────────┐[0m
+[0;34m│[0m Story: [1;33m2-3-2[0m - Create research pipeline function
+[0;34m└─────────────────────────────────────────────────────────────────┘[0m
+[0;36mDescription:[0m As a developer, I want a function that orchestrates Perplexity + Claude research.
+[0;36mFiles:[0m src/lib/research.ts
+[0;36mAcceptance Criteria:[0m
+- Function `runCityResearch(cityId, name, categories, customPrompt)` in `src/lib/research.ts`
+- Calls Perplexity with city-specific query based on categories
+- Passes Perplexity results to Claude for synthesis and ranking
+- Returns structured research results matching city_elements schema
+- Updates city status to 'review' when complete
+
+[2026-01-20 19:24:41] Executing story 2-3-2 with Claude Code...
+[2026-01-20 19:26:56] [0;32m✓ Story 2-3-2 completed successfully[0m
+[2026-01-20 19:26:56] [0;32m✓ Marked story 2-3-2 as complete[0m
+[0;34m┌─────────────────────────────────────────────────────────────────┐[0m
+[0;34m│[0m Story: [1;33m2-3-3[0m - Store research results as city_elements
+[0;34m└─────────────────────────────────────────────────────────────────┘[0m
+[0;36mDescription:[0m As a developer, I want research results saved as city_elements.
+[0;36mFiles:[0m src/lib/research.ts
+[0;36mAcceptance Criteria:[0m
+- Research results INSERT into city_elements table
+- Each element has element_type, element_key, element_value, status='pending'
+- Elements are linked to city_id
+- At least 5 slang terms, 5 landmarks, 3 sports teams per research
+
+[2026-01-20 19:26:58] Executing story 2-3-3 with Claude Code...
+[2026-01-20 19:30:52] [0;32m✓ Story 2-3-3 completed successfully[0m
+[2026-01-20 19:30:52] [0;32m✓ Marked story 2-3-3 as complete[0m
+[0;34m┌─────────────────────────────────────────────────────────────────┐[0m
+[0;34m│[0m Story: [1;33m2-4-1[0m - Create city detail page with research results
+[0;34m└─────────────────────────────────────────────────────────────────┘[0m
+[0;36mDescription:[0m As a user, I want to see research results on the city detail page.
+[0;36mFiles:[0m src/app/cities/[cityId]/page.tsx
+[0;36mAcceptance Criteria:[0m
+- Route `/cities/[cityId]` renders CityDetailPage
+- Page fetches city and city_elements from Supabase
+- Shows city name, status, area codes
+- Displays research elements grouped by element_type
+
+[2026-01-20 19:30:55] Executing story 2-4-1 with Claude Code...
+[2026-01-20 19:34:27] [0;32m✓ Story 2-4-1 completed successfully[0m
+[2026-01-20 19:34:27] [0;32m✓ Marked story 2-4-1 as complete[0m
+[0;34m┌─────────────────────────────────────────────────────────────────┐[0m
+[0;34m│[0m Story: [1;33m2-4-2[0m - Create ElementReviewCard component
+[0;34m└─────────────────────────────────────────────────────────────────┘[0m
+[0;36mDescription:[0m As a user, I want to approve/reject individual research elements.
+[0;36mFiles:[0m src/components/ElementReviewCard.tsx
+[0;36mAcceptance Criteria:[0m
+- ElementReviewCard shows: element name, value/meaning, current status
+- Three buttons: Approve (green), Reject (red), Maybe (yellow)
+- Clicking button updates element status in local state
+- Optional notes field expands on click
+
+[2026-01-20 19:34:29] Executing story 2-4-2 with Claude Code...
+[2026-01-20 19:35:36] [0;32m✓ Story 2-4-2 completed successfully[0m
+[2026-01-20 19:35:36] [0;32m✓ Marked story 2-4-2 as complete[0m
+[0;34m┌─────────────────────────────────────────────────────────────────┐[0m
+[0;34m│[0m Story: [1;33m2-4-3[0m - Save element approvals to database
+[0;34m└─────────────────────────────────────────────────────────────────┘[0m
+[0;36mDescription:[0m As a user, I want my approval decisions saved.
+[0;36mFiles:[0m src/app/cities/[cityId]/page.tsx, src/app/api/cities/[cityId]/elements/route.ts
+[0;36mAcceptance Criteria:[0m
+- "Save Decisions" button calls PATCH `/api/cities/[cityId]/elements`
+- Request includes array of `{ elementId, status, notes }`
+- Database updates each element's status
+- Success toast: "Decisions saved"
+
+[2026-01-20 19:35:39] Executing story 2-4-3 with Claude Code...
+[2026-01-20 19:39:09] [0;32m✓ Story 2-4-3 completed successfully[0m
+[2026-01-20 19:39:09] [0;32m✓ Marked story 2-4-3 as complete[0m
+[0;34m┌─────────────────────────────────────────────────────────────────┐[0m
+[0;34m│[0m Story: [1;33m2-4-4[0m - Approve city profile
+[0;34m└─────────────────────────────────────────────────────────────────┘[0m
+[0;36mDescription:[0m As a user, I want to finalize and approve the city profile.
+[0;36mFiles:[0m src/app/cities/[cityId]/page.tsx, src/app/api/cities/[cityId]/route.ts
+[0;36mAcceptance Criteria:[0m
+- "Approve City Profile" button visible when at least 3 elements approved
+- Clicking button calls PATCH `/api/cities/[cityId]` with status='approved'
+- City status updates to 'approved'
+- Button changes to "City Approved" (disabled, green)
+- "Start Generating" button appears
+
+[2026-01-20 19:39:11] Executing story 2-4-4 with Claude Code...
+[2026-01-20 19:41:53] [0;32m✓ Story 2-4-4 completed successfully[0m
+[2026-01-20 19:41:53] [0;32m✓ Marked story 2-4-4 as complete[0m
+[0;34m┌─────────────────────────────────────────────────────────────────┐[0m
+[0;34m│[0m Story: [1;33m3-1-1[0m - Create generate page with city selector
+[0;34m└─────────────────────────────────────────────────────────────────┘[0m
+[0;36mDescription:[0m As a user, I want to select a city to generate designs for.
+[0;36mFiles:[0m src/app/generate/page.tsx, src/components/CitySelector.tsx
+[0;36mAcceptance Criteria:[0m
+- Route `/generate` renders GeneratePage
+- CitySelector dropdown shows only approved cities
+- Selecting city stores in generationStore
+- Shows "Select a city to begin" when none selected
+
+[2026-01-20 19:41:55] Executing story 3-1-1 with Claude Code...
+[2026-01-20 19:44:47] [0;32m✓ Story 3-1-1 completed successfully[0m
+[2026-01-20 19:44:47] [0;32m✓ Marked story 3-1-1 as complete[0m
+[0;34m┌─────────────────────────────────────────────────────────────────┐[0m
+[0;34m│[0m Story: [1;33m3-1-2[0m - Add product type selector
+[0;34m└─────────────────────────────────────────────────────────────────┘[0m
+[0;36mDescription:[0m As a user, I want to select what product type to generate.
+[0;36mFiles:[0m src/app/generate/page.tsx
+[0;36mAcceptance Criteria:[0m
+- Radio group with options: Hoodie, T-Shirt, Hat
+- "Hoodie" selected by default
+- Selection stored in generationStore
+- Shows product icon for each option
+
+[2026-01-20 19:44:49] Executing story 3-1-2 with Claude Code...
+[2026-01-20 19:46:07] [0;32m✓ Story 3-1-2 completed successfully[0m
+[2026-01-20 19:46:07] [0;32m✓ Marked story 3-1-2 as complete[0m
+[0;34m┌─────────────────────────────────────────────────────────────────┐[0m
+[0;34m│[0m Story: [1;33m3-1-3[0m - Add design style selector
+[0;34m└─────────────────────────────────────────────────────────────────┘[0m
+[0;36mDescription:[0m As a user, I want to select a design style.
+[0;36mFiles:[0m src/app/generate/page.tsx
+[0;36mAcceptance Criteria:[0m
+- Radio group with options: Minimal, Bold, Vintage, Modern, Luxury
+- Each option has short description tooltip
+- Selection stored in generationStore
+
+[2026-01-20 19:46:09] Executing story 3-1-3 with Claude Code...
+[2026-01-20 19:47:33] [0;32m✓ Story 3-1-3 completed successfully[0m
+[2026-01-20 19:47:33] [0;32m✓ Marked story 3-1-3 as complete[0m
+[0;34m┌─────────────────────────────────────────────────────────────────┐[0m
+[0;34m│[0m Story: [1;33m3-1-4[0m - Add slang term selector with suggestions
+[0;34m└─────────────────────────────────────────────────────────────────┘[0m
+[0;36mDescription:[0m As a user, I want to pick a slang term or see suggestions.
+[0;36mFiles:[0m src/app/generate/page.tsx
+[0;36mAcceptance Criteria:[0m
+- Dropdown populated with approved slang from selected city
+- "Let AI Suggest" option at top
+- Shows meaning next to each term
+- Selection stored in generationStore
+
+[2026-01-20 19:47:35] Executing story 3-1-4 with Claude Code...
+[2026-01-20 19:50:45] [0;32m✓ Story 3-1-4 completed successfully[0m
+[2026-01-20 19:50:45] [0;32m✓ Marked story 3-1-4 as complete[0m
+[0;34m┌─────────────────────────────────────────────────────────────────┐[0m
+[0;34m│[0m Story: [1;33m3-2-1[0m - Create "Generate Designs" button with loading state
+[0;34m└─────────────────────────────────────────────────────────────────┘[0m
+[0;36mDescription:[0m As a user, I want to click a button to start generation.
+[0;36mFiles:[0m src/app/generate/page.tsx
+[0;36mAcceptance Criteria:[0m
+- "Generate Designs" button enabled when city, product, style selected
+- Clicking button shows loading state with spinner
+- Button disabled during generation
+- Loading message: "Generating with 2 models..."
+
+[2026-01-20 19:50:47] Executing story 3-2-1 with Claude Code...
+[2026-01-20 19:51:50] [0;32m✓ Story 3-2-1 completed successfully[0m
+[2026-01-20 19:51:50] [0;32m✓ Marked story 3-2-1 as complete[0m
+[0;34m┌─────────────────────────────────────────────────────────────────┐[0m
+[0;34m│[0m Story: [1;33m3-2-2[0m - Create POST /api/generate/design endpoint
+[0;34m└─────────────────────────────────────────────────────────────────┘[0m
+[0;36mDescription:[0m As a developer, I want an API to generate designs with two models.
+[0;36mFiles:[0m src/app/api/generate/design/route.ts
+[0;36mAcceptance Criteria:[0m
+- POST `/api/generate/design` accepts: `{ cityId, productType, designStyle, slangTerm }`
+- Fetches prompt template from database
+- Calls Claude to finalize prompt with variables
+- Calls Nano Banana with prompt
+- Calls OpenAI with same prompt
+- Returns: `{ modelA: { url, model }, modelB: { url, model }, prompt }`
+- Returns 400 with `{ error: 'City ID is required' }` if cityId missing
+- Returns 404 with `{ error: 'City not found' }` if city doesn't exist
+- Returns partial success if one model succeeds: `{ modelA: result, modelB: null, modelBError: message }`
+
+[2026-01-20 19:51:52] Executing story 3-2-2 with Claude Code...
+[2026-01-20 19:54:51] [0;32m✓ Story 3-2-2 completed successfully[0m
+[2026-01-20 19:54:51] [0;32m✓ Marked story 3-2-2 as complete[0m
+[0;34m┌─────────────────────────────────────────────────────────────────┐[0m
+[0;34m│[0m Story: [1;33m3-2-3[0m - Display generation results in comparison view
+[0;34m└─────────────────────────────────────────────────────────────────┘[0m
+[0;36mDescription:[0m As a user, I want to see both generated designs side by side.
+[0;36mFiles:[0m src/components/ComparisonViewer.tsx, src/app/generate/page.tsx
+[0;36mAcceptance Criteria:[0m
+- ComparisonViewer component receives modelA and modelB results
+- Shows images side by side (or stacked on mobile)
+- Labels: "Model A" and "Model B" (not actual model names initially)
+- Images are same size, centered
+
+[2026-01-20 19:54:53] Executing story 3-2-3 with Claude Code...
+[2026-01-20 19:57:16] [0;32m✓ Story 3-2-3 completed successfully[0m
+[2026-01-20 19:57:16] [0;32m✓ Marked story 3-2-3 as complete[0m
+[0;34m┌─────────────────────────────────────────────────────────────────┐[0m
+[0;34m│[0m Story: [1;33m3-3-1[0m - Add "Pick Winner" buttons to comparison
+[0;34m└─────────────────────────────────────────────────────────────────┘[0m
+[0;36mDescription:[0m As a user, I want to pick which design I prefer.
+[0;36mFiles:[0m src/components/ComparisonViewer.tsx
+[0;36mAcceptance Criteria:[0m
+- "Pick A" and "Pick B" buttons below each image
+- Clicking highlights winner with border/checkmark
+- Stores winner selection in generationStore
+- Reveals feedback panel after selection
+
+[2026-01-20 19:57:18] Executing story 3-3-1 with Claude Code...
+[2026-01-20 20:00:26] [0;32m✓ Story 3-3-1 completed successfully[0m
+[2026-01-20 20:00:26] [0;32m✓ Marked story 3-3-1 as complete[0m
+[0;34m┌─────────────────────────────────────────────────────────────────┐[0m
+[0;34m│[0m Story: [1;33m3-3-2[0m - Create FeedbackPanel component
+[0;34m└─────────────────────────────────────────────────────────────────┘[0m
+[0;36mDescription:[0m As a user, I want to provide detailed feedback on my choice.
+[0;36mFiles:[0m src/components/FeedbackPanel.tsx
+[0;36mAcceptance Criteria:[0m
+- FeedbackPanel shows: thumbs up/down toggle, tag checkboxes, text input
+- Thumbs buttons are mutually exclusive
+- Tags from POSITIVE_TAGS and NEGATIVE_TAGS arrays (10 each)
+- Text input placeholder: "Any specific feedback?"
+- "Submit Feedback" button at bottom
+
+[2026-01-20 20:00:28] Executing story 3-3-2 with Claude Code...
+[2026-01-20 20:01:18] [0;32m✓ Story 3-3-2 completed successfully[0m
+[2026-01-20 20:01:18] [0;32m✓ Marked story 3-3-2 as complete[0m
+[0;34m┌─────────────────────────────────────────────────────────────────┐[0m
+[0;34m│[0m Story: [1;33m3-3-3[0m - Submit feedback to database
+[0;34m└─────────────────────────────────────────────────────────────────┘[0m
+[0;36mDescription:[0m As a user, I want my feedback saved for learning.
+[0;36mFiles:[0m src/components/FeedbackPanel.tsx, src/app/api/feedback/route.ts
+[0;36mAcceptance Criteria:[0m
+- Clicking "Submit Feedback" calls POST `/api/feedback`
+- Request includes: contentId, contentType, rating, tags, textFeedback, comparisonWinner
+- Saves to feedback table
+- Also saves winning design to designs table with status='approved'
+- Shows success message: "Design saved!"
+- Returns 400 with `{ error: 'Rating is required' }` if rating missing
+- Returns 400 with `{ error: 'Invalid rating value' }` if rating not thumbs_up/thumbs_down
+- Returns 404 with `{ error: 'Content not found' }` if content_id invalid
+
+[2026-01-20 20:01:21] Executing story 3-3-3 with Claude Code...
+[2026-01-20 20:03:48] [0;32m✓ Story 3-3-3 completed successfully[0m
+[2026-01-20 20:03:49] [0;32m✓ Marked story 3-3-3 as complete[0m
+[0;34m┌─────────────────────────────────────────────────────────────────┐[0m
+[0;34m│[0m Story: [1;33m3-3-4[0m - Show "Generate More" and "Continue to Shots" options
+[0;34m└─────────────────────────────────────────────────────────────────┘[0m
+[0;36mDescription:[0m As a user, I want to generate more designs or continue to next step.
+[0;36mFiles:[0m src/app/generate/page.tsx
+[0;36mAcceptance Criteria:[0m
+- After feedback submitted, show two buttons
+- "Generate Another" resets form for new generation
+- "Generate Product Shots" navigates to shots page with design context
+- Approved design ID passed as query param
+
+[2026-01-20 20:03:51] Executing story 3-3-4 with Claude Code...
+[2026-01-20 20:07:08] [0;32m✓ Story 3-3-4 completed successfully[0m
+[2026-01-20 20:07:08] [0;32m✓ Marked story 3-3-4 as complete[0m
+[0;34m┌─────────────────────────────────────────────────────────────────┐[0m
+[0;34m│[0m Story: [1;33m4-1-1[0m - Create product shots page
+[0;34m└─────────────────────────────────────────────────────────────────┘[0m
+[0;36mDescription:[0m As a user, I want a page to generate product photography.
+[0;36mFiles:[0m src/app/generate/shots/page.tsx
+[0;36mAcceptance Criteria:[0m
+- Route `/generate/shots` renders ProductShotsPage
+- Reads designId from query params
+- Fetches design details from database
+- Shows design preview thumbnail
+
+[2026-01-20 20:07:10] Executing story 4-1-1 with Claude Code...
+[2026-01-20 20:10:29] [0;32m✓ Story 4-1-1 completed successfully[0m
+[2026-01-20 20:10:29] [0;32m✓ Marked story 4-1-1 as complete[0m
+[0;34m┌─────────────────────────────────────────────────────────────────┐[0m
+[0;34m│[0m Story: [1;33m4-1-2[0m - Add shot type checklist
+[0;34m└─────────────────────────────────────────────────────────────────┘[0m
+[0;36mDescription:[0m As a user, I want to select which shot types to generate.
+[0;36mFiles:[0m src/app/generate/shots/page.tsx
+[0;36mAcceptance Criteria:[0m
+- Checkboxes: Flat Lay Front, Flat Lay Back, Ghost Mannequin, Hanging, Macro Detail
+- At least one must be selected to proceed
+- Each checkbox has icon and description
+- Default: all checked
+
+[2026-01-20 20:10:31] Executing story 4-1-2 with Claude Code...
+[2026-01-20 20:12:16] [0;32m✓ Story 4-1-2 completed successfully[0m
+[2026-01-20 20:12:16] [0;32m✓ Marked story 4-1-2 as complete[0m
+[0;34m┌─────────────────────────────────────────────────────────────────┐[0m
+[0;34m│[0m Story: [1;33m4-1-3[0m - Generate product shots with comparison
+[0;34m└─────────────────────────────────────────────────────────────────┘[0m
+[0;36mDescription:[0m As a user, I want to generate each shot type with model comparison.
+[0;36mFiles:[0m src/app/generate/shots/page.tsx, src/app/api/generate/product-shot/route.ts
+[0;36mAcceptance Criteria:[0m
+- "Generate Shots" button triggers generation for each selected type
+- Progress indicator: "Generating shot 1 of 5..."
+- Each shot generated with Model A and Model B
+- Results displayed in scrollable gallery
+
+[2026-01-20 20:12:18] Executing story 4-1-3 with Claude Code...
+[2026-01-20 20:16:12] [0;32m✓ Story 4-1-3 completed successfully[0m
+[2026-01-20 20:16:12] [0;32m✓ Marked story 4-1-3 as complete[0m
+[0;34m┌─────────────────────────────────────────────────────────────────┐[0m
+[0;34m│[0m Story: [1;33m4-1-4[0m - Review and approve product shots
+[0;34m└─────────────────────────────────────────────────────────────────┘[0m
+[0;36mDescription:[0m As a user, I want to pick winners and approve shots.
+[0;36mFiles:[0m src/app/generate/shots/page.tsx
+[0;36mAcceptance Criteria:[0m
+- Each shot pair shows in ComparisonViewer
+- Can pick winner for each pair
+- Can provide feedback for each
+- "Approve All Winners" button saves all at once
+- Approved shots saved to generated_content with status='approved'
+
+[2026-01-20 20:16:14] Executing story 4-1-4 with Claude Code...
+[2026-01-20 20:20:56] [0;32m✓ Story 4-1-4 completed successfully[0m
+[2026-01-20 20:20:56] [0;32m✓ Marked story 4-1-4 as complete[0m
+[0;34m┌─────────────────────────────────────────────────────────────────┐[0m
+[0;34m│[0m Story: [1;33m4-2-1[0m - Create lifestyle shots page
+[0;34m└─────────────────────────────────────────────────────────────────┘[0m
+[0;36mDescription:[0m As a user, I want a page to generate lifestyle photography.
+[0;36mFiles:[0m src/app/generate/lifestyle/page.tsx
+[0;36mAcceptance Criteria:[0m
+- Route `/generate/lifestyle` renders LifestyleShotsPage
+- Reads designId from query params
+- Shows design preview and city context
+
+[2026-01-20 20:20:58] Executing story 4-2-1 with Claude Code...
+[2026-01-20 20:23:30] [0;32m✓ Story 4-2-1 completed successfully[0m
+[2026-01-20 20:23:30] [0;32m✓ Marked story 4-2-1 as complete[0m
+[0;34m┌─────────────────────────────────────────────────────────────────┐[0m
+[0;34m│[0m Story: [1;33m4-2-2[0m - Add model/location/style configurator
+[0;34m└─────────────────────────────────────────────────────────────────┘[0m
+[0;36mDescription:[0m As a user, I want to configure lifestyle shot parameters.
+[0;36mFiles:[0m src/app/generate/lifestyle/page.tsx
+[0;36mAcceptance Criteria:[0m
+- Model demographics dropdown (auto-populated from diversity requirements)
+- Location dropdown (populated from city landmarks)
+- Time of day selector (Golden Hour, Blue Hour, Midday, Night)
+- Activity selector (Walking, Standing, Sitting, Conversation)
+- Sneaker selector (from approved whitelist)
+
+[2026-01-20 20:23:32] Executing story 4-2-2 with Claude Code...
+[2026-01-20 20:26:10] [0;32m✓ Story 4-2-2 completed successfully[0m
+[2026-01-20 20:26:10] [0;32m✓ Marked story 4-2-2 as complete[0m
+[0;34m┌─────────────────────────────────────────────────────────────────┐[0m
+[0;34m│[0m Story: [1;33m4-2-3[0m - Generate lifestyle shots with comparison
+[0;34m└─────────────────────────────────────────────────────────────────┘[0m
+[0;36mDescription:[0m As a user, I want to generate lifestyle shots.
+[0;36mFiles:[0m src/app/generate/lifestyle/page.tsx, src/app/api/generate/lifestyle-shot/route.ts
+[0;36mAcceptance Criteria:[0m
+- "Generate Lifestyle Shots" generates 3 variations
+- Each variation uses different model/location combo
+- Each generated with Model A and Model B
+- Results in scrollable comparison gallery
+
+[2026-01-20 20:26:12] Executing story 4-2-3 with Claude Code...
+[2026-01-20 20:31:29] [0;32m✓ Story 4-2-3 completed successfully[0m
+[2026-01-20 20:31:29] [0;32m✓ Marked story 4-2-3 as complete[0m
+[0;34m┌─────────────────────────────────────────────────────────────────┐[0m
+[0;34m│[0m Story: [1;33m4-2-4[0m - Review and approve lifestyle shots
+[0;34m└─────────────────────────────────────────────────────────────────┘[0m
+[0;36mDescription:[0m As a user, I want to approve lifestyle shots.
+[0;36mFiles:[0m src/app/generate/lifestyle/page.tsx
+[0;36mAcceptance Criteria:[0m
+- Same flow as product shots: pick winners, provide feedback
+- "Approve Selected" saves approved shots
+- Shows "Continue to Social Content" button after approvals
+
+[2026-01-20 20:31:32] Executing story 4-2-4 with Claude Code...
+[2026-01-20 20:34:15] [0;32m✓ Story 4-2-4 completed successfully[0m
+[2026-01-20 20:34:15] [0;32m✓ Marked story 4-2-4 as complete[0m
+[0;34m┌─────────────────────────────────────────────────────────────────┐[0m
+[0;34m│[0m Story: [1;33m4-3-1[0m - Create social content page
+[0;34m└─────────────────────────────────────────────────────────────────┘[0m
+[0;36mDescription:[0m As a user, I want a page to create social posts.
+[0;36mFiles:[0m src/app/content/page.tsx
+[0;36mAcceptance Criteria:[0m
+- Route `/content` renders SocialContentPage
+- Shows list of available content types from database
+- "Create Post" button for each content type
+
+[2026-01-20 20:34:17] Executing story 4-3-1 with Claude Code...
+[2026-01-20 20:37:21] [0;32m✓ Story 4-3-1 completed successfully[0m
+[2026-01-20 20:37:21] [0;32m✓ Marked story 4-3-1 as complete[0m
+[0;34m┌─────────────────────────────────────────────────────────────────┐[0m
+[0;34m│[0m Story: [1;33m4-3-2[0m - Create content type selector
+[0;34m└─────────────────────────────────────────────────────────────────┘[0m
+[0;36mDescription:[0m As a user, I want to choose a content format.
+[0;36mFiles:[0m src/components/ContentTypeCard.tsx
+[0;36mAcceptance Criteria:[0m
+- ContentTypeCard for each active content type
+- Card shows: name, description, output format icon
+- Clicking card opens content creation flow
+- Passes content_type_id to creation flow
+
+[2026-01-20 20:37:23] Executing story 4-3-2 with Claude Code...
+[2026-01-20 20:40:55] [0;32m✓ Story 4-3-2 completed successfully[0m
+[2026-01-20 20:40:55] [0;32m✓ Marked story 4-3-2 as complete[0m
+[0;34m┌─────────────────────────────────────────────────────────────────┐[0m
+[0;34m│[0m Story: [1;33m4-3-3[0m - Create asset selector for social posts
+[0;34m└─────────────────────────────────────────────────────────────────┘[0m
+[0;36mDescription:[0m As a user, I want to select approved assets for my post.
+[0;36mFiles:[0m src/components/AssetSelector.tsx
+[0;36mAcceptance Criteria:[0m
+- AssetSelector shows approved product and lifestyle shots
+- Filterable by city, product, shot type
+- Multi-select for carousel formats
+- Single select for single image formats
+- Selected assets shown with checkmarks
+
+[2026-01-20 20:40:57] Executing story 4-3-3 with Claude Code...
+[2026-01-20 20:43:54] [0;32m✓ Story 4-3-3 completed successfully[0m
+[2026-01-20 20:43:54] [0;32m✓ Marked story 4-3-3 as complete[0m
+[0;34m┌─────────────────────────────────────────────────────────────────┐[0m
+[0;34m│[0m Story: [1;33m4-3-4[0m - Generate caption and hashtags
+[0;34m└─────────────────────────────────────────────────────────────────┘[0m
+[0;36mDescription:[0m As a user, I want AI-generated captions for my posts.
+[0;36mFiles:[0m src/app/content/create/page.tsx, src/app/api/generate/caption/route.ts
+[0;36mAcceptance Criteria:[0m
+- After asset selection, system generates caption
+- Uses content type template + Claude
+- Shows generated caption in editable textarea
+- Shows hashtags as tags (can remove/add)
+- "Regenerate" button for new caption
+
+[2026-01-20 20:43:56] Executing story 4-3-4 with Claude Code...
+[2026-01-20 20:47:52] [0;32m✓ Story 4-3-4 completed successfully[0m
+[2026-01-20 20:47:52] [0;32m✓ Marked story 4-3-4 as complete[0m
+[0;34m┌─────────────────────────────────────────────────────────────────┐[0m
+[0;34m│[0m Story: [1;33m4-3-5[0m - Preview and approve social post
+[0;34m└─────────────────────────────────────────────────────────────────┘[0m
+[0;36mDescription:[0m As a user, I want to preview and approve my post.
+[0;36mFiles:[0m src/app/content/create/page.tsx
+[0;36mAcceptance Criteria:[0m
+- Preview shows image(s) + caption in platform-styled frame
+- Toggle between Instagram and TikTok preview styles
+- Feedback panel for thumbs + tags
+- "Approve & Add to Calendar" saves to database
+
+[2026-01-20 20:47:54] Executing story 4-3-5 with Claude Code...
+[2026-01-20 20:50:41] [0;32m✓ Story 4-3-5 completed successfully[0m
+[2026-01-20 20:50:41] [0;32m✓ Marked story 4-3-5 as complete[0m
+[0;34m┌─────────────────────────────────────────────────────────────────┐[0m
+[0;34m│[0m Story: [1;33m4-4-1[0m - Create content types management page
+[0;34m└─────────────────────────────────────────────────────────────────┘[0m
+[0;36mDescription:[0m As a user, I want to manage content type templates.
+[0;36mFiles:[0m src/app/settings/content-types/page.tsx
+[0;36mAcceptance Criteria:[0m
+- Route `/settings/content-types` renders ContentTypesPage
+- Lists all content types with name, status, usage count
+- "Add Content Type" button
+- Edit/Delete buttons per row
+
+[2026-01-20 20:50:43] Executing story 4-4-1 with Claude Code...
+[2026-01-20 20:56:43] [0;32m✓ Story 4-4-1 completed successfully[0m
+[2026-01-20 20:56:43] [0;32m✓ Marked story 4-4-1 as complete[0m
+[0;34m┌─────────────────────────────────────────────────────────────────┐[0m
+[0;34m│[0m Story: [1;33m4-4-2[0m - Create content type editor
+[0;34m└─────────────────────────────────────────────────────────────────┘[0m
+[0;36mDescription:[0m As a user, I want to create/edit content type templates.
+[0;36mFiles:[0m src/components/ContentTypeEditor.tsx
+[0;36mAcceptance Criteria:[0m
+- Form with: name, description, template (textarea), variables (tag input)
+- Output format selector: single_image, carousel, video
+- Platform specs: aspect ratios per platform
+- Active toggle
+- Save creates/updates record in database
+
+[2026-01-20 20:56:45] Executing story 4-4-2 with Claude Code...
+[2026-01-20 20:59:15] [0;32m✓ Story 4-4-2 completed successfully[0m
+[2026-01-20 20:59:15] [0;32m✓ Marked story 4-4-2 as complete[0m
+[0;34m┌─────────────────────────────────────────────────────────────────┐[0m
+[0;34m│[0m Story: [1;33m4-5-1[0m - Create video ads page
+[0;34m└─────────────────────────────────────────────────────────────────┘[0m
+[0;36mDescription:[0m As a user, I want a page to create video advertisements.
+[0;36mFiles:[0m src/app/generate/video/page.tsx
+[0;36mAcceptance Criteria:[0m
+- Route `/generate/video` renders VideoAdsPage
+- Shows heading "Create Video Ad"
+- City selector dropdown (approved cities only)
+- Format selector: Hook Test (3-5s), Short-form (15-30s), Standard (30-60s), Anthem (45-90s)
+
+[2026-01-20 20:59:17] Executing story 4-5-1 with Claude Code...
+[2026-01-20 21:01:05] [0;32m✓ Story 4-5-1 completed successfully[0m
+[2026-01-20 21:01:05] [0;32m✓ Marked story 4-5-1 as complete[0m
+[0;34m┌─────────────────────────────────────────────────────────────────┐[0m
+[0;34m│[0m Story: [1;33m4-5-2[0m - Add asset selector for video
+[0;34m└─────────────────────────────────────────────────────────────────┘[0m
+[0;36mDescription:[0m As a user, I want to select approved assets to feature in my video.
+[0;36mFiles:[0m src/app/generate/video/page.tsx
+[0;36mAcceptance Criteria:[0m
+- Shows approved product shots and lifestyle shots for selected city
+- Multi-select with checkboxes
+- Selected assets shown in "Selected Assets" preview strip
+- Minimum 1 asset required to proceed
+
+[2026-01-20 21:01:07] Executing story 4-5-2 with Claude Code...
+[2026-01-20 21:05:59] [0;32m✓ Story 4-5-2 completed successfully[0m
+[2026-01-20 21:05:59] [0;32m✓ Marked story 4-5-2 as complete[0m
+[0;34m┌─────────────────────────────────────────────────────────────────┐[0m
+[0;34m│[0m Story: [1;33m4-5-3[0m - Generate video script with hook variations
+[0;34m└─────────────────────────────────────────────────────────────────┘[0m
+[0;36mDescription:[0m As a user, I want AI to generate a script with multiple hook options.
+[0;36mFiles:[0m src/app/generate/video/page.tsx, src/app/api/generate/video-script/route.ts
+[0;36mAcceptance Criteria:[0m
+- "Generate Script" button calls POST `/api/generate/video-script`
+- API uses Claude to generate script based on format, city, assets
+- Returns: main script + 3 hook variations
+- Display script in editable textarea
+- Display hooks as selectable cards (pick 1-3 to generate)
+
+[2026-01-20 21:06:01] Executing story 4-5-3 with Claude Code...
+[2026-01-20 21:21:42] [0;32m✓ Story 4-5-3 completed successfully[0m
+[2026-01-20 21:21:42] [0;32m✓ Marked story 4-5-3 as complete[0m
+[0;34m┌─────────────────────────────────────────────────────────────────┐[0m
+[0;34m│[0m Story: [1;33m4-5-4[0m - Generate videos with model comparison
+[0;34m└─────────────────────────────────────────────────────────────────┘[0m
+[0;36mDescription:[0m As a user, I want to generate videos with two models for comparison.
+[0;36mFiles:[0m src/app/generate/video/page.tsx, src/app/api/generate/video/route.ts
+[0;36mAcceptance Criteria:[0m
+- "Generate Video" button triggers generation
+- Calls Sora 2 API with script + assets
+- Calls Gemini Video API with same inputs
+- Shows progress: "Generating with Sora 2..." then "Generating with Gemini..."
+- Both videos display in ComparisonViewer when complete
+
+[2026-01-20 21:21:44] Executing story 4-5-4 with Claude Code...
+[2026-01-20 21:26:39] [0;32m✓ Story 4-5-4 completed successfully[0m
+[2026-01-20 21:26:39] [0;32m✓ Marked story 4-5-4 as complete[0m
+[0;34m┌─────────────────────────────────────────────────────────────────┐[0m
+[0;34m│[0m Story: [1;33m4-5-5[0m - Create video API clients
+[0;34m└─────────────────────────────────────────────────────────────────┘[0m
+[0;36mDescription:[0m As a developer, I want API clients for video generation models.
+[0;36mFiles:[0m src/lib/videoGeneration.ts
+[0;36mAcceptance Criteria:[0m
+- File `src/lib/videoGeneration.ts` exports `generateVideo(script, assets, model, options)`
+- `model` parameter accepts 'sora_2' | 'gemini_video'
+- Routes to correct API based on model
+- Returns standardized response: `{ url, model, duration, metadata }`
+- Uses environment variables `OPENAI_API_KEY` (Sora) and `GOOGLE_AI_API_KEY` (Gemini)
+
+[2026-01-20 21:26:41] Executing story 4-5-5 with Claude Code...
+[2026-01-20 21:27:44] [0;32m✓ Story 4-5-5 completed successfully[0m
+[2026-01-20 21:27:44] [0;32m✓ Marked story 4-5-5 as complete[0m
+[0;34m┌─────────────────────────────────────────────────────────────────┐[0m
+[0;34m│[0m Story: [1;33m4-5-6[0m - Review and approve video ads
+[0;34m└─────────────────────────────────────────────────────────────────┘[0m
+[0;36mDescription:[0m As a user, I want to compare, grade, and approve video ads.
+[0;36mFiles:[0m src/app/generate/video/page.tsx
+[0;36mAcceptance Criteria:[0m
+- ComparisonViewer works with video (play buttons, same UI as images)
+- Pick winner button for videos
+- Feedback panel same as images (thumbs, tags, text)
+- "Approve" saves to generated_content with content_type='video_ad'
+- Shows "View in Library" button after approval
+
+[2026-01-20 21:27:46] Executing story 4-5-6 with Claude Code...
+[2026-01-20 21:33:38] [0;32m✓ Story 4-5-6 completed successfully[0m
+[2026-01-20 21:33:38] [0;32m✓ Marked story 4-5-6 as complete[0m
+[0;34m┌─────────────────────────────────────────────────────────────────┐[0m
+[0;34m│[0m Story: [1;33m5-0-1[0m - Create asset library page
+[0;34m└─────────────────────────────────────────────────────────────────┘[0m
+[0;36mDescription:[0m As a user, I want to view all my approved assets in one place.
+[0;36mFiles:[0m src/app/library/page.tsx
+[0;36mAcceptance Criteria:[0m
+- Route `/library` renders AssetLibraryPage
+- Fetches all generated_content with status='approved'
+- Displays as grid of thumbnails
+- Shows count: "47 approved assets"
+
+[2026-01-20 21:33:40] Executing story 5-0-1 with Claude Code...
+[2026-01-20 21:37:23] [0;32m✓ Story 5-0-1 completed successfully[0m
+[2026-01-20 21:37:23] [0;32m✓ Marked story 5-0-1 as complete[0m
+[0;34m┌─────────────────────────────────────────────────────────────────┐[0m
+[0;34m│[0m Story: [1;33m5-0-2[0m - Add filters to asset library
+[0;34m└─────────────────────────────────────────────────────────────────┘[0m
+[0;36mDescription:[0m As a user, I want to filter assets by various criteria.
+[0;36mFiles:[0m src/app/library/page.tsx
+[0;36mAcceptance Criteria:[0m
+- Filter dropdown: City (all cities + "All")
+- Filter dropdown: Content Type (product_shot, lifestyle_shot, social_post, video_ad)
+- Filter dropdown: Date range (Last 7 days, Last 30 days, All time)
+- Filters update URL query params
+- Grid updates when filters change
+
+[2026-01-20 21:37:25] Executing story 5-0-2 with Claude Code...
+[2026-01-20 21:39:11] [0;32m✓ Story 5-0-2 completed successfully[0m
+[2026-01-20 21:39:11] [0;32m✓ Marked story 5-0-2 as complete[0m
+[0;34m┌─────────────────────────────────────────────────────────────────┐[0m
+[0;34m│[0m Story: [1;33m5-0-3[0m - Add asset detail modal
+[0;34m└─────────────────────────────────────────────────────────────────┘[0m
+[0;36mDescription:[0m As a user, I want to view asset details and metadata.
+[0;36mFiles:[0m src/components/AssetDetailModal.tsx
+[0;36mAcceptance Criteria:[0m
+- Clicking asset thumbnail opens modal
+- Modal shows: full-size image/video, generation params, feedback given, created date
+- "Use in Post" button (links to content creation with asset pre-selected)
+- "Download" button for single asset
+- "Delete" button with confirmation
+
+[2026-01-20 21:39:13] Executing story 5-0-3 with Claude Code...
+[2026-01-20 21:39:22] [0;31m✗ Story 5-0-3 failed (exit code: 1) - check /Users/greenmachine2.0/TMH/ralph_logs/story_5-0-3_20260120_183522.log for details[0m
+[0;34m┌─────────────────────────────────────────────────────────────────┐[0m
+[0;34m│[0m Story: [1;33m5-1-1[0m - Create calendar page with approved content
+[0;34m└─────────────────────────────────────────────────────────────────┘[0m
+[0;36mDescription:[0m As a user, I want to see all approved content in a calendar view.
+[0;36mFiles:[0m src/app/calendar/page.tsx
+[0;36mAcceptance Criteria:[0m
+- Route `/calendar` renders CalendarPage
+- Fetches approved social posts from database
+- Lists content with thumbnail, caption preview, created date
+- Filter by city, content type
+
+[2026-01-20 21:39:24] Executing story 5-1-1 with Claude Code...
+[2026-01-20 21:39:27] [0;31m✗ Story 5-1-1 failed (exit code: 1) - check /Users/greenmachine2.0/TMH/ralph_logs/story_5-1-1_20260120_183522.log for details[0m
+[0;34m┌─────────────────────────────────────────────────────────────────┐[0m
+[0;34m│[0m Story: [1;33m5-1-2[0m - Create Instagram grid preview
+[0;34m└─────────────────────────────────────────────────────────────────┘[0m
+[0;36mDescription:[0m As a user, I want to see how my content will look on Instagram.
+[0;36mFiles:[0m src/components/InstagramGridPreview.tsx
+[0;36mAcceptance Criteria:[0m
+- "Grid Preview" button toggles preview mode
+- Shows 3-column grid mimicking Instagram profile
+- Each cell shows post thumbnail
+- Scrollable to show more posts
+- Shows 9-12 posts at a time
+
+[2026-01-20 21:39:29] Executing story 5-1-2 with Claude Code...
+[2026-01-20 21:39:32] [0;31m✗ Story 5-1-2 failed (exit code: 1) - check /Users/greenmachine2.0/TMH/ralph_logs/story_5-1-2_20260120_183522.log for details[0m
+[0;34m┌─────────────────────────────────────────────────────────────────┐[0m
+[0;34m│[0m Story: [1;33m5-1-3[0m - Add drag-drop reordering to grid
+[0;34m└─────────────────────────────────────────────────────────────────┘[0m
+[0;36mDescription:[0m As a user, I want to reorder content by dragging.
+[0;36mFiles:[0m src/components/InstagramGridPreview.tsx
+[0;36mAcceptance Criteria:[0m
+- Can drag posts to new positions in grid
+- Visual feedback during drag (ghost image, drop zone highlight)
+- Order persists in local state
+- "Lock Order" button saves order to database
+
+[2026-01-20 21:39:34] Executing story 5-1-3 with Claude Code...
+[2026-01-20 21:39:36] [0;31m✗ Story 5-1-3 failed (exit code: 1) - check /Users/greenmachine2.0/TMH/ralph_logs/story_5-1-3_20260120_183522.log for details[0m
+[0;34m┌─────────────────────────────────────────────────────────────────┐[0m
+[0;34m│[0m Story: [1;33m5-1-4[0m - Add TikTok feed preview
+[0;34m└─────────────────────────────────────────────────────────────────┘[0m
+[0;36mDescription:[0m As a user, I want to preview TikTok-style vertical feed.
+[0;36mFiles:[0m src/components/TikTokFeedPreview.tsx
+[0;36mAcceptance Criteria:[0m
+- Toggle between "Instagram" and "TikTok" preview modes
+- TikTok shows single-column vertical scroll
+- Each post shows 9:16 preview
+- Same drag-drop reordering works
+
+[2026-01-20 21:39:38] Executing story 5-1-4 with Claude Code...
+[2026-01-20 21:39:41] [0;31m✗ Story 5-1-4 failed (exit code: 1) - check /Users/greenmachine2.0/TMH/ralph_logs/story_5-1-4_20260120_183522.log for details[0m
+[0;34m┌─────────────────────────────────────────────────────────────────┐[0m
+[0;34m│[0m Story: [1;33m5-2-1[0m - Add export selection mode
+[0;34m└─────────────────────────────────────────────────────────────────┘[0m
+[0;36mDescription:[0m As a user, I want to select content for export.
+[0;36mFiles:[0m src/app/calendar/page.tsx
+[0;36mAcceptance Criteria:[0m
+- "Export Mode" toggle adds checkboxes to content items
+- "Select All" / "Deselect All" buttons
+- Shows count: "5 items selected"
+- "Export Selected" button enabled when items selected
+
+[2026-01-20 21:39:43] Executing story 5-2-1 with Claude Code...
+[2026-01-20 21:39:45] [0;31m✗ Story 5-2-1 failed (exit code: 1) - check /Users/greenmachine2.0/TMH/ralph_logs/story_5-2-1_20260120_183522.log for details[0m
+[0;34m┌─────────────────────────────────────────────────────────────────┐[0m
+[0;34m│[0m Story: [1;33m5-2-2[0m - Create export API endpoint
+[0;34m└─────────────────────────────────────────────────────────────────┘[0m
+[0;36mDescription:[0m As a developer, I want an API to package content for download.
+[0;36mFiles:[0m src/app/api/export/route.ts
+[0;36mAcceptance Criteria:[0m
+- POST `/api/export` accepts array of content IDs
+- Fetches content URLs from database
+- Generates caption text files for each post
+- Creates ZIP file with organized folders (images/, videos/, captions/)
+- Returns download URL
+
+[2026-01-20 21:39:47] Executing story 5-2-2 with Claude Code...
+[2026-01-20 21:39:50] [0;31m✗ Story 5-2-2 failed (exit code: 1) - check /Users/greenmachine2.0/TMH/ralph_logs/story_5-2-2_20260120_183522.log for details[0m
+[0;34m┌─────────────────────────────────────────────────────────────────┐[0m
+[0;34m│[0m Story: [1;33m5-2-3[0m - Download exported content
+[0;34m└─────────────────────────────────────────────────────────────────┘[0m
+[0;36mDescription:[0m As a user, I want to download my exported content.
+[0;36mFiles:[0m src/app/calendar/page.tsx
+[0;36mAcceptance Criteria:[0m
+- After export API returns, show download link
+- Clicking link downloads ZIP file
+- ZIP contains: images in /images, videos in /videos, captions in /captions
+- File naming: `{city}_{content_type}_{date}_{index}.{ext}`
+
+[2026-01-20 21:39:52] Executing story 5-2-3 with Claude Code...
+[2026-01-20 21:39:55] [0;31m✗ Story 5-2-3 failed (exit code: 1) - check /Users/greenmachine2.0/TMH/ralph_logs/story_5-2-3_20260120_183522.log for details[0m
+[0;34m┌─────────────────────────────────────────────────────────────────┐[0m
+[0;34m│[0m Story: [1;33m6-1-1[0m - Create preferences page
+[0;34m└─────────────────────────────────────────────────────────────────┘[0m
+[0;36mDescription:[0m As a user, I want to see my learned preferences.
+[0;36mFiles:[0m src/app/preferences/page.tsx
+[0;36mAcceptance Criteria:[0m
+- Route `/preferences` renders PreferencesPage
+- Shows heading "Your Preferences"
+- Sections for: Model Preferences, Style Preferences, Content Preferences
+
+[2026-01-20 21:39:57] Executing story 6-1-1 with Claude Code...
+[2026-01-20 21:39:59] [0;31m✗ Story 6-1-1 failed (exit code: 1) - check /Users/greenmachine2.0/TMH/ralph_logs/story_6-1-1_20260120_183522.log for details[0m
+[0;34m┌─────────────────────────────────────────────────────────────────┐[0m
+[0;34m│[0m Story: [1;33m6-1-2[0m - Display model win rate statistics
+[0;34m└─────────────────────────────────────────────────────────────────┘[0m
+[0;36mDescription:[0m As a user, I want to see which AI models I prefer.
+[0;36mFiles:[0m src/app/preferences/page.tsx, src/components/WinRateChart.tsx
+[0;36mAcceptance Criteria:[0m
+- Query feedback where comparison_winner = true
+- Calculate win rate per model per content type
+- Display as bar charts: "Nano Banana: 72% | OpenAI: 28%"
+- Separate charts for: images, videos
+
+[2026-01-20 21:40:01] Executing story 6-1-2 with Claude Code...
+[2026-01-20 21:40:03] [0;31m✗ Story 6-1-2 failed (exit code: 1) - check /Users/greenmachine2.0/TMH/ralph_logs/story_6-1-2_20260120_183522.log for details[0m
+[0;34m┌─────────────────────────────────────────────────────────────────┐[0m
+[0;34m│[0m Story: [1;33m6-1-3[0m - Display tag frequency analysis
+[0;34m└─────────────────────────────────────────────────────────────────┘[0m
+[0;36mDescription:[0m As a user, I want to see what attributes I like/dislike.
+[0;36mFiles:[0m src/app/preferences/page.tsx, src/components/TagAnalysis.tsx
+[0;36mAcceptance Criteria:[0m
+- Query feedback tags
+- Count frequency of each tag with thumbs_up vs thumbs_down
+- Display as sorted list: "golden_hour: 85% positive"
+- Color code: green for positive, red for negative patterns
+
+[2026-01-20 21:40:05] Executing story 6-1-3 with Claude Code...
+[2026-01-20 21:40:08] [0;31m✗ Story 6-1-3 failed (exit code: 1) - check /Users/greenmachine2.0/TMH/ralph_logs/story_6-1-3_20260120_183522.log for details[0m
+[0;34m┌─────────────────────────────────────────────────────────────────┐[0m
+[0;34m│[0m Story: [1;33m6-1-4[0m - Display city-specific insights
+[0;34m└─────────────────────────────────────────────────────────────────┘[0m
+[0;36mDescription:[0m As a user, I want to see preferences per city.
+[0;36mFiles:[0m src/app/preferences/page.tsx
+[0;36mAcceptance Criteria:[0m
+- Group feedback by city
+- Show top 3 positive tags per city
+- Show preferred colorways per city
+- Collapsible sections per city
+
+[2026-01-20 21:40:10] Executing story 6-1-4 with Claude Code...
+[2026-01-20 21:40:12] [0;31m✗ Story 6-1-4 failed (exit code: 1) - check /Users/greenmachine2.0/TMH/ralph_logs/story_6-1-4_20260120_183522.log for details[0m
+[0;34m┌─────────────────────────────────────────────────────────────────┐[0m
+[0;34m│[0m Story: [1;33m6-2-1[0m - Create preference calculation service
+[0;34m└─────────────────────────────────────────────────────────────────┘[0m
+[0;36mDescription:[0m As a developer, I want a service to calculate preference weights.
+[0;36mFiles:[0m src/lib/preferences.ts
+[0;36mAcceptance Criteria:[0m
+- Function `calculatePreferences(userId)` in `src/lib/preferences.ts`
+- Queries feedback table
+- Returns object: `{ modelPreferences, tagPreferences, cityPreferences }`
+- Caches result for 1 hour
+
+[2026-01-20 21:40:14] Executing story 6-2-1 with Claude Code...
+[2026-01-20 21:40:16] [0;31m✗ Story 6-2-1 failed (exit code: 1) - check /Users/greenmachine2.0/TMH/ralph_logs/story_6-2-1_20260120_183522.log for details[0m
+[0;34m┌─────────────────────────────────────────────────────────────────┐[0m
+[0;34m│[0m Story: [1;33m6-2-2[0m - Apply preferences to generation defaults
+[0;34m└─────────────────────────────────────────────────────────────────┘[0m
+[0;36mDescription:[0m As a developer, I want generation forms to use learned preferences.
+[0;36mFiles:[0m src/app/generate/page.tsx, src/app/generate/lifestyle/page.tsx
+[0;36mAcceptance Criteria:[0m
+- Generation pages call `calculatePreferences()` on mount
+- If preference confidence > 70%, pre-select that option
+- Show indicator: "Based on your preferences" next to pre-selected options
+- User can still override any default
+
+[2026-01-20 21:40:19] Executing story 6-2-2 with Claude Code...
+[2026-01-20 21:40:21] [0;31m✗ Story 6-2-2 failed (exit code: 1) - check /Users/greenmachine2.0/TMH/ralph_logs/story_6-2-2_20260120_183522.log for details[0m
+[0;34m┌─────────────────────────────────────────────────────────────────┐[0m
+[0;34m│[0m Story: [1;33m6-2-3[0m - Show prediction confidence on comparisons
+[0;34m└─────────────────────────────────────────────────────────────────┘[0m
+[0;36mDescription:[0m As a user, I want to see when the system predicts my preference.
+[0;36mFiles:[0m src/components/ComparisonViewer.tsx
+[0;36mAcceptance Criteria:[0m
+- In ComparisonViewer, if one model has > 70% win rate for this content type
+- Show subtle indicator: "You usually prefer this style"
+- Don't auto-select, just inform
+- Track if prediction was correct to improve model
+
+[2026-01-20 21:40:23] Executing story 6-2-3 with Claude Code...
+[2026-01-20 21:40:25] [0;31m✗ Story 6-2-3 failed (exit code: 1) - check /Users/greenmachine2.0/TMH/ralph_logs/story_6-2-3_20260120_183522.log for details[0m
+[0;34m┌─────────────────────────────────────────────────────────────────┐[0m
+[0;34m│[0m Story: [1;33m6-3-1[0m - Create prompt templates settings page
+[0;34m└─────────────────────────────────────────────────────────────────┘[0m
+[0;36mDescription:[0m As a user, I want to view and manage all prompt templates.
+[0;36mFiles:[0m src/app/settings/prompts/page.tsx
+[0;36mAcceptance Criteria:[0m
+- Route `/settings/prompts` renders PromptTemplatesPage
+- Lists all prompt templates from database
+- Table columns: Name, Category, Model Target, Usage Count, Last Updated
+- Search/filter by category
+- "Add Template" button
+
+[2026-01-20 21:40:27] Executing story 6-3-1 with Claude Code...
+[2026-01-20 21:40:30] [0;31m✗ Story 6-3-1 failed (exit code: 1) - check /Users/greenmachine2.0/TMH/ralph_logs/story_6-3-1_20260120_183522.log for details[0m
+[0;34m┌─────────────────────────────────────────────────────────────────┐[0m
+[0;34m│[0m Story: [1;33m6-3-2[0m - Create prompt template editor modal
+[0;34m└─────────────────────────────────────────────────────────────────┘[0m
+[0;36mDescription:[0m As a user, I want to create and edit prompt templates.
+[0;36mFiles:[0m src/components/PromptTemplateEditor.tsx
+[0;36mAcceptance Criteria:[0m
+- Clicking template row or "Add Template" opens editor modal
+- Form fields: name (text), category (dropdown), model_target (dropdown), prompt (textarea)
+- Variables section: add/remove variables with name and type
+- Settings section: aspect_ratio, quality, style (JSON editor or form)
+- "Save" creates or updates record
+- "Cancel" closes without saving
+
+[2026-01-20 21:40:32] Executing story 6-3-2 with Claude Code...
+[2026-01-20 21:40:34] [0;31m✗ Story 6-3-2 failed (exit code: 1) - check /Users/greenmachine2.0/TMH/ralph_logs/story_6-3-2_20260120_183522.log for details[0m
+[0;34m┌─────────────────────────────────────────────────────────────────┐[0m
+[0;34m│[0m Story: [1;33m6-3-3[0m - Add prompt template test mode
+[0;34m└─────────────────────────────────────────────────────────────────┘[0m
+[0;36mDescription:[0m As a user, I want to test a prompt template with sample data.
+[0;36mFiles:[0m src/components/PromptTemplateEditor.tsx
+[0;36mAcceptance Criteria:[0m
+- "Test Template" button in editor
+- Opens panel with variable inputs (based on template variables)
+- "Run Test" button generates preview with Claude
+- Shows rendered prompt (variables replaced)
+- Shows Claude's response (for text) or "would generate image" (for image prompts)
+
+[2026-01-20 21:40:36] Executing story 6-3-3 with Claude Code...
+[2026-01-20 21:40:39] [0;31m✗ Story 6-3-3 failed (exit code: 1) - check /Users/greenmachine2.0/TMH/ralph_logs/story_6-3-3_20260120_183522.log for details[0m
+[0;34m┌─────────────────────────────────────────────────────────────────┐[0m
+[0;34m│[0m Story: [1;33m6-3-4[0m - Add prompt template duplication
+[0;34m└─────────────────────────────────────────────────────────────────┘[0m
+[0;36mDescription:[0m As a user, I want to duplicate a template as a starting point.
+[0;36mFiles:[0m src/app/settings/prompts/page.tsx
+[0;36mAcceptance Criteria:[0m
+- "Duplicate" button on each template row
+- Creates copy with name "{original} (Copy)"
+- Opens editor with duplicated content
+- Saving creates new record (doesn't overwrite original)
+
+[2026-01-20 21:40:41] Executing story 6-3-4 with Claude Code...
+[2026-01-20 21:40:43] [0;31m✗ Story 6-3-4 failed (exit code: 1) - check /Users/greenmachine2.0/TMH/ralph_logs/story_6-3-4_20260120_183522.log for details[0m
+[0;34m┌─────────────────────────────────────────────────────────────────┐[0m
+[0;34m│[0m Story: [1;33m6-4-1[0m - Create settings page with sections
+[0;34m└─────────────────────────────────────────────────────────────────┘[0m
+[0;36mDescription:[0m As a user, I want a central settings page.
+[0;36mFiles:[0m src/app/settings/page.tsx
+[0;36mAcceptance Criteria:[0m
+- Route `/settings` renders SettingsPage
+- Sections: API Status, Content Types, Prompt Templates, Preferences
+- Each section is a card with link to detail page
+- Shows summary info per section (e.g., "5 API keys configured")
+
+[2026-01-20 21:40:45] Executing story 6-4-1 with Claude Code...
+[2026-01-20 21:40:47] [0;31m✗ Story 6-4-1 failed (exit code: 1) - check /Users/greenmachine2.0/TMH/ralph_logs/story_6-4-1_20260120_183522.log for details[0m
+[0;34m┌─────────────────────────────────────────────────────────────────┐[0m
+[0;34m│[0m Story: [1;33m6-4-2[0m - Create API status dashboard
+[0;34m└─────────────────────────────────────────────────────────────────┘[0m
+[0;36mDescription:[0m As a user, I want to see if my API connections are working.
+[0;36mFiles:[0m src/app/settings/api/page.tsx
+[0;36mAcceptance Criteria:[0m
+- Route `/settings/api` renders APIStatusPage
+- Lists all required APIs: Supabase, Claude, Perplexity, Nano Banana, OpenAI, Sora 2, Gemini
+- For each: shows status (Connected/Error), last used timestamp
+- "Test Connection" button pings each API
+- Shows error message if connection fails
+
+[2026-01-20 21:40:50] Executing story 6-4-2 with Claude Code...
+[2026-01-20 21:40:52] [0;31m✗ Story 6-4-2 failed (exit code: 1) - check /Users/greenmachine2.0/TMH/ralph_logs/story_6-4-2_20260120_183522.log for details[0m
+
+
+[0;36m════════════════════════════════════════════════════════════════[0m
+[0;36m  Execution Summary[0m
+[0;36m════════════════════════════════════════════════════════════════[0m
+
+[2026-01-20 21:40:54]   [0;32mCompleted:[0m 69
+[2026-01-20 21:40:54]   [0;31mFailed:[0m 21
+[2026-01-20 21:40:54]   [1;33mSkipped:[0m 0
+[2026-01-20 21:40:54]   Log file: /Users/greenmachine2.0/TMH/ralph_logs/ralph_run_20260120_183522.log

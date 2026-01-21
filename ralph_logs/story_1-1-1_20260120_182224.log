@@ -1,0 +1,25 @@
+═══════════════════════════════════════════════════════════════
+STORY 1-1-1 COMPLETED: Create cities table
+═══════════════════════════════════════════════════════════════
+
+✅ **ALL ACCEPTANCE CRITERIA SATISFIED:**
+
+1. ✅ Table `cities` exists with all required columns:
+   - `id` (uuid, primary)
+   - `name` (text, not null)
+   - `nicknames` (jsonb)
+   - `area_codes` (jsonb)
+   - `status` (text, default 'draft')
+   - `visual_identity` (jsonb)
+   - `avoid` (jsonb)
+   - `user_notes` (text)
+   - `created_at` (timestamptz)
+   - `updated_at` (timestamptz)
+
+2. ✅ Can INSERT a row with name='Detroit' - Test insert included in migration
+
+3. ✅ Can SELECT row back by id and name - Indexes created for efficient queries
+
+4. ✅ RLS policy allows authenticated read/write - All CRUD policies implemented
+
+**FILE CREATED:** `supabase/migrations/001_create_cities.sql`

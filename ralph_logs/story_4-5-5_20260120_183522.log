@@ -1,0 +1,15 @@
+## ✅ Acceptance Criteria Completed:
+
+1. **✅ File exports `generateVideo(script, assets, model, options)`** - The function is properly exported with all required parameters
+2. **✅ `model` parameter accepts 'sora_2' | 'gemini_video'** - Type `VideoModel` is defined with exactly these two options
+3. **✅ Routes to correct API based on model** - Switch statement routes to `generateWithSora` or `generateWithGemini` based on model selection
+4. **✅ Returns standardized response: `{ url, model, duration, metadata }`** - `VideoResponse` interface ensures consistent response structure
+5. **✅ Uses environment variables `OPENAI_API_KEY` and `GOOGLE_AI_API_KEY`** - Both environment variables are properly referenced for their respective APIs
+
+The implementation includes:
+- Complete type definitions for video generation
+- Separate API client functions for Sora 2 and Gemini Video
+- Error handling and validation
+- Helper functions for asset validation and time estimation
+- Proper environment variable usage
+- Standardized response format across both APIs

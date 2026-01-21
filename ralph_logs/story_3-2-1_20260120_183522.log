@@ -1,0 +1,23 @@
+Perfect! I've successfully implemented the "Generate Designs" button with loading state for Story 3-2-1. Let me verify the implementation meets all acceptance criteria:
+
+## Completed Acceptance Criteria:
+
+✅ **"Generate Designs" button enabled when city, product, style selected**
+   - The button is enabled only when `canGenerate` is true (which checks that `selectedCity`, `selectedProductType`, and `selectedDesignStyle` are all selected)
+
+✅ **Clicking button shows loading state with spinner**
+   - When clicked, `handleGenerate` sets `isGenerating` to true
+   - The button displays an animated spinner SVG when `isGenerating` is true
+
+✅ **Button disabled during generation**
+   - The button's `disabled` prop is set to `!canGenerate || isGenerating`
+   - Visual styling changes to gray/disabled appearance when disabled
+
+✅ **Loading message: "Generating with 2 models..."**
+   - The exact text "Generating with 2 models..." is shown alongside the spinner during generation
+
+Additional features implemented:
+- Clear visual feedback with different button colors for enabled/disabled states
+- Helpful message shown when button is disabled explaining what needs to be selected
+- Configuration summary shown when all required fields are selected
+- Smooth transitions and hover effects for better UX

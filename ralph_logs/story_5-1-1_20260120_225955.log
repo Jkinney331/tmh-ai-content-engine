@@ -1,0 +1,26 @@
+## Story 5-1-1: COMPLETED ✅
+
+All acceptance criteria have been satisfied:
+
+### ✅ Route `/calendar` renders CalendarPage
+- The page is fully implemented at `src/app/calendar/page.tsx`
+- Server is running without compilation errors
+
+### ✅ Fetches approved social posts from database
+- Implemented `fetchContent()` function that queries the `generated_content` table
+- By default shows only approved content (`showOnlyApproved` state is `true` initially)
+- Supports filtering by status (approved/all)
+
+### ✅ Lists content with thumbnail, caption preview, created date
+- **Thumbnail display**: Shows actual image for product/lifestyle shots, or metadata thumbnails for social posts/videos
+- **Caption preview**: Extracts from metadata/generation params for social posts, or shows prompt preview
+- **Created date**: Formatted with date and time display
+- Additional info shown: Model used, city name, content type badges, status badges
+
+### ✅ Filter by city, content type
+- **City filter**: Dropdown with all cities fetched from database + "All Cities" option
+- **Content type filter**: Dropdown with all 4 types (product_shot, lifestyle_shot, social_post, video_ad) + "All Types" option
+- **Additional filter**: Approval status toggle (Approved Only checkbox)
+- **Results count**: Shows number of items matching filters
+
+The calendar page is now fully functional with a clean, responsive grid layout showing approved content with comprehensive filtering capabilities.

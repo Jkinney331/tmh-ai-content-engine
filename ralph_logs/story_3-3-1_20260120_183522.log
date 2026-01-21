@@ -1,0 +1,32 @@
+Now let me verify the implementation summary:
+
+## Implementation Complete: "Pick Winner" Feature
+
+I've successfully implemented the "Pick Winner" buttons for the ComparisonViewer component with all requested acceptance criteria satisfied:
+
+### ✅ Acceptance Criteria Completed:
+
+1. **"Pick A" and "Pick B" buttons below each image** - Added buttons below each model's image with proper styling and positioning.
+
+2. **Clicking highlights winner with border/checkmark** - When a button is clicked:
+   - The winning model gets a green ring border (ring-4 ring-green-500)
+   - A green checkmark badge appears in the top-right corner of the winning model
+   - The button text changes from "Pick A/B" to "Winner Selected" with green background
+
+3. **Stores winner selection in generationStore** - The winner selection is saved to the generationStore using the `selectWinner` action when a `comparisonId` is provided.
+
+4. **Reveals feedback panel after selection** - A green feedback panel appears after selection showing:
+   - Confirmation message with the selected winner
+   - Option to continue comparing or close the viewer
+   - Information that the choice has been saved (if comparisonId is provided)
+
+### Key Implementation Details:
+
+- Added state management for `selectedWinner` and `showFeedback`
+- Integrated with the existing `useGenerationStore` hook
+- Buttons are disabled until both images are loaded
+- Responsive design maintained for mobile/desktop
+- Visual feedback includes border highlighting, checkmark badge, and button state changes
+- Feedback panel provides clear confirmation and next action options
+
+The component now fully supports winner selection with proper visual feedback and state persistence.

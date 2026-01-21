@@ -1,0 +1,21 @@
+## Story 2-2-5 Implementation Complete
+
+**ACCEPTANCE CRITERIA STATUS:**
+
+✅ **Clicking "Start Research" button calls POST `/api/cities`** - The submit button triggers `handleSubmit` which calls POST to `/api/cities`
+
+✅ **Request body includes: `{ name, researchCategories, customPrompt }`** - The request body contains all required fields as shown in the API tests
+
+✅ **Loading state shows spinner on button** - When `isLoading` is true, the button shows a spinner animation and "Processing..." text
+
+✅ **Success: modal closes, city appears in list with status "researching"** - On successful submission:
+   - Modal closes via `onClose()` 
+   - `onCityAdded` callback refreshes the city list
+   - City appears with "researching" status (changes to "ready" after 5 seconds)
+
+✅ **Error: error message shown in modal** - Errors are caught and displayed in a red alert box in the modal
+
+**FILES CREATED/MODIFIED:**
+- Created: `/src/app/api/cities/route.ts` - API endpoint for city creation
+- Modified: `/src/components/AddCityModal.tsx` - Added API integration with loading states
+- Modified: `/src/app/cities/page.tsx` - Added callback to refresh cities after addition

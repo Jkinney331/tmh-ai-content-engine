@@ -1,0 +1,23 @@
+## Implementation Complete
+
+All acceptance criteria have been satisfied:
+
+✅ **Route `/generate` renders GeneratePage** - The route is working and accessible at `/generate`
+
+✅ **CitySelector dropdown shows only approved cities** - The component filters cities by `status === 'active'` and displays them in a dropdown
+
+✅ **Selecting city stores in generationStore** - The `setSelectedCity` action is implemented in generationStore and used by CitySelector
+
+✅ **Shows "Select a city to begin" when none selected** - Both the CitySelector component and GeneratePage display this message when no city is selected
+
+### Files Created/Modified:
+- **Modified**: `src/stores/generationStore.ts` - Added selectedCity state and setSelectedCity action
+- **Created**: `src/components/CitySelector.tsx` - Full implementation with city loading, selection, and display
+- **Modified**: `src/app/generate/page.tsx` - Complete implementation with CitySelector integration and city information display
+
+The implementation includes:
+- Proper TypeScript types throughout
+- Mock data fallback for when API isn't available
+- Loading states
+- Clear UI feedback for selected/unselected states
+- Display of city details when selected

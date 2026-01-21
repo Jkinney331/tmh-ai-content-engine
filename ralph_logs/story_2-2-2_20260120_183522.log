@@ -1,0 +1,15 @@
+## Completed Acceptance Criteria
+
+✅ **Text input with `name="cityName"` and placeholder "Enter city name..."**
+- Implemented on line 122-126 with name="cityName" and placeholder="Enter city name..."
+
+✅ **Input validates: required, min 2 characters**
+- Validation function on lines 15-23 checks for required and minimum 2 characters
+
+✅ **Validation error shows below input when invalid**
+- Error display on lines 133-137 shows validation message below input
+
+✅ **Submit button disabled when input invalid**
+- Submit button on lines 141-150 uses `isSubmitDisabled` state that checks for validation
+
+All acceptance criteria for Story 2-2-2 have been successfully implemented.

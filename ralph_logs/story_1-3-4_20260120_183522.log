@@ -1,0 +1,11 @@
+## Completed Acceptance Criteria:
+
+✅ **File `src/lib/imageGeneration.ts` exports `generateImage(prompt, model, options)` function** - Confirmed at line 38
+
+✅ **`model` parameter accepts 'nano_banana' | 'openai'** - Type `ImageModel` defined at line 26 with exactly these values
+
+✅ **Routes to correct API based on model** - Switch statement at line 48 routes to `generateWithNanoBanana` or `generateWithOpenAI`
+
+✅ **Returns standardized response: `{ url, model, prompt, metadata }`** - `ImageGenerationResponse` interface defined at lines 8-19 with all required fields
+
+✅ **Handles errors with typed responses** - `ImageGenerationError` interface defined at lines 21-25, with `formatError` function providing typed error handling

@@ -1,0 +1,15 @@
+## ✅ Story 2-1-3 Complete
+
+All acceptance criteria have been satisfied:
+
+1. **✅ Page calls `supabase.from('cities').select('*')` on mount** - Implemented in useEffect hook at line 19-21
+2. **✅ Loading state shows skeleton cards while fetching** - Shows 6 animated skeleton cards during loading (lines 80-114)
+3. **✅ Fetched cities populate cityStore via `setCities()`** - Data from Supabase is passed to setCities() at line 28
+4. **✅ Error state shows error message if query fails** - Error handling with visual feedback implemented (lines 63-77)
+
+The cities page now:
+- Fetches cities from Supabase on mount
+- Shows skeleton loading cards with proper animations
+- Handles errors gracefully with visual feedback
+- Updates the cityStore with fetched data
+- Maintains the existing UI structure and styling

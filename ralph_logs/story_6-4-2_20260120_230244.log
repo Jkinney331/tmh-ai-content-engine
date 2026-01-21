@@ -1,0 +1,37 @@
+Perfect! I've successfully implemented the API status dashboard for story 6-4-2. Let me verify all acceptance criteria:
+
+## ✅ Acceptance Criteria Completed:
+
+1. **Route `/settings/api` renders APIStatusPage** ✅
+   - Created `src/app/settings/api/page.tsx` with the APIStatusPage component
+
+2. **Lists all required APIs** ✅
+   - Supabase ✅
+   - Claude ✅
+   - Perplexity ✅
+   - Nano Banana ✅
+   - OpenAI ✅
+   - Sora 2 ✅
+   - Gemini ✅
+
+3. **For each API shows** ✅
+   - Status (Connected/Error/Not Configured/Checking) ✅
+   - Last used timestamp ✅
+
+4. **"Test Connection" button pings each API** ✅
+   - Individual test buttons for each API
+   - "Test All Connections" button for batch testing
+   - Shows loading state while testing
+
+5. **Shows error message if connection fails** ✅
+   - Error messages displayed in red below each API when connection fails
+
+## Additional Features Implemented:
+- Summary cards showing total Connected, Errors, and Not Configured APIs
+- Visual status indicators with appropriate colors
+- Relative time display for "Last used" (e.g., "2 hours ago")
+- Loading states with spinning animations
+- Responsive design that works on mobile and desktop
+- Help text explaining how to configure API keys
+
+The implementation is complete and fully functional!

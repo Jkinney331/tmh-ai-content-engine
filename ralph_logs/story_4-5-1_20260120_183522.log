@@ -1,0 +1,23 @@
+Perfect! I've successfully implemented the video ads page. Let me verify that all acceptance criteria have been satisfied:
+
+## Completed Acceptance Criteria:
+
+✅ **Route `/generate/video` renders VideoAdsPage** - Created the page at `src/app/generate/video/page.tsx`
+
+✅ **Shows heading "Create Video Ad"** - The page displays the heading at line 106
+
+✅ **City selector dropdown (approved cities only)** - Integrated the CitySelector component which filters for approved cities (status='active') at line 109
+
+✅ **Format selector with all required options** - Implemented all four video formats at lines 22-48:
+   - Hook Test (3-5s)
+   - Short-form (15-30s) 
+   - Standard (30-60s)
+   - Anthem (45-90s)
+
+The implementation includes additional features:
+- Visual format selection cards with duration, platform, and aspect ratio details
+- Generation functionality with loading states
+- Video preview with scene breakdown
+- Responsive design for different screen sizes
+- Error handling and user feedback
+- Proper state management using the generation store

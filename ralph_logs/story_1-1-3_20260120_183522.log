@@ -1,0 +1,27 @@
+## Completed Acceptance Criteria:
+
+✅ **Table `designs` exists with all required columns:**
+- `id` (uuid with gen_random_uuid())
+- `city_id` (uuid, FK referencing cities table)
+- `product_type` (text)
+- `design_name` (text)
+- `design_style` (text)
+- `slang_term` (text)
+- `front_design` (jsonb)
+- `back_design` (jsonb)
+- `colorways` (jsonb)
+- `generation_params` (jsonb)
+- `status` (text with CHECK constraint for 'generated', 'approved', 'rejected')
+- `created_at` (timestamptz with default NOW())
+
+✅ **Can INSERT a design linked to a city:**
+- Sample inserts included for Seattle, Detroit, and Chicago
+- Foreign key constraint ensures city_id references valid cities
+- RLS policy allows authenticated users to insert
+
+✅ **Can query designs by city_id and status:**
+- Created composite index `idx_designs_city_status` for optimized queries
+- Individual indexes on `city_id` and `status` for flexibility
+- RLS policy allows everyone to SELECT/read designs
+
+The migration file `supabase/migrations/003_create_designs.sql` has been successfully created with all requirements satisfied.

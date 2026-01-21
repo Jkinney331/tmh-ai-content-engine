@@ -1,0 +1,18 @@
+Perfect! I've successfully updated the cityStore with all required CRUD actions. Here's what was completed:
+
+## ✅ ACCEPTANCE CRITERIA COMPLETED:
+
+1. **✅ `setCities(cities)` replaces cities array** - Already existed at line 17-18
+2. **✅ `addCity(city)` appends to cities array** - Already existed at lines 20-25
+3. **✅ `selectCity(id)` sets selectedCity to matching city or null** - Updated at lines 27-35 to accept an id and find the matching city
+4. **✅ `updateCity(id, data)` merges data into matching city** - Updated at lines 37-51 to accept `data` parameter instead of `updatedCity`
+5. **✅ `removeCity(id)` filters out matching city** - Renamed from `deleteCity` to `removeCity` at lines 53-63
+6. **✅ `setLoading(bool)` and `setError(error)` work correctly** - Already existed at lines 65-66 and 68-69
+
+All acceptance criteria have been satisfied. The store now has proper CRUD actions that:
+- Replace the entire cities array with `setCities`
+- Add new cities with `addCity`
+- Select cities by ID with `selectCity`
+- Update cities by merging data with `updateCity`
+- Remove cities by ID with `removeCity`
+- Manage loading and error states with `setLoading` and `setError`

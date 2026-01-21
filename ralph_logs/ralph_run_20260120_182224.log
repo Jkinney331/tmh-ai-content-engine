@@ -1,0 +1,13 @@
+[2026-01-20 18:22:24] Checking dependencies...
+[2026-01-20 18:22:24] [0;32mAll dependencies satisfied[0m
+[2026-01-20 18:22:24] Configuration:
+[2026-01-20 18:22:24]   PRD File: /Users/greenmachine2.0/TMH/prd.json
+[2026-01-20 18:22:24]   Log File: /Users/greenmachine2.0/TMH/ralph_logs/ralph_run_20260120_182224.log
+[2026-01-20 18:22:24]   Dry Run: false
+[2026-01-20 18:22:24]   Phase Filter: all
+[2026-01-20 18:22:24]   Start From: beginning
+[2026-01-20 18:22:24] Stories: 91 pending of 91 total
+[2026-01-20 18:22:24] Executing story 1-1-1 with Claude Code...
+[2026-01-20 18:23:22] [0;32m✓ Story 1-1-1 completed successfully[0m
+[2026-01-20 18:23:22] [0;32m✓ Marked story 1-1-1 as complete[0m
+[2026-01-20 18:23:24] Executing story 1-1-2 with Claude Code...

@@ -1,0 +1,43 @@
+## Summary
+
+I've successfully implemented the **AssetSelector** component for Story 4-3-3. The component has been created at `src/components/AssetSelector.tsx`.
+
+### Acceptance Criteria Completed:
+
+✅ **AssetSelector shows approved product and lifestyle shots**
+- Component displays approved images by default (controlled by `approvedOnly` prop)
+- Shows both product and lifestyle shot types from the generated images
+
+✅ **Filterable by city, product, shot type**
+- City filter dropdown allows selecting "All Cities" or specific cities (Seattle, Detroit, Chicago)
+- Shot type filter includes: All Types, Lifestyle, Product, Street Style, Industrial
+- Product tags are displayed when a specific city is selected
+
+✅ **Multi-select for carousel formats**
+- `selectionMode="multiple"` enables multi-select functionality
+- Maximum selections configurable via `maxSelections` prop
+- Selection counter shows X/Y selected
+- Selected assets preview shown at bottom with reorder hint
+
+✅ **Single select for single image formats**
+- `selectionMode="single"` enables single selection
+- Clicking an already selected image deselects it
+- Only one image can be selected at a time
+
+✅ **Selected assets shown with checkmarks**
+- Selected images display blue CheckCircle2 icon
+- Unselected images show empty Circle icon on hover
+- Selected images have blue border highlighting
+- Visual feedback with hover states and disabled states when max selections reached
+
+### Key Features Implemented:
+
+1. **Responsive Grid Layout**: Assets displayed in a responsive grid (1-4 columns based on screen size)
+2. **Rich Metadata**: Each asset shows city, date, shot type badge, and approved status
+3. **Selection Management**: Full state management for single/multiple selections with callbacks
+4. **Preview Strip**: Multi-select mode shows selected assets in a preview strip with removal option
+5. **Empty State**: Clear messaging when no approved assets are available
+6. **Type Safety**: Full TypeScript implementation with proper types from the existing types system
+7. **Accessibility**: Keyboard navigable with proper focus states
+
+The component integrates seamlessly with the existing TMH dashboard architecture, reusing existing components like `EmptyState`, utility functions like `cn`, and the mock data structure.

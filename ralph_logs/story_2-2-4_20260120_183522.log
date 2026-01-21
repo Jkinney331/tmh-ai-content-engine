@@ -1,0 +1,22 @@
+## Completed Acceptance Criteria:
+
+✅ **Textarea with `name="customPrompt"` and placeholder "Any specific things to research?"**
+   - Added textarea at line 241-249 with `name="customPrompt"` 
+   - Placeholder text "Any specific things to research?" included
+
+✅ **Textarea is optional (can be empty)**
+   - Field is not required for form submission
+   - No validation added for this field
+   - Form can be submitted with empty customPrompt
+
+✅ **Max length 500 characters with counter**
+   - `maxLength={500}` attribute set on textarea
+   - Character counter displays at lines 252-253 showing "{current}/500"
+   - Counter changes to red color when at max (500 characters)
+   - `onChange` handler enforces 500 character limit with `.slice(0, 500)`
+
+Additional implementation details:
+- State management added for `customPrompt` 
+- Form reset includes clearing `customPrompt` when modal closes
+- Console logs custom prompt value on form submission for debugging
+- Styled consistently with existing form elements
