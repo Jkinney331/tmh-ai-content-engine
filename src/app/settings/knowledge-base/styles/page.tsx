@@ -2,17 +2,21 @@
 
 import React, { useState, useEffect } from 'react'
 import { StyleGender } from '@/types/database'
-import { Edit2, Shirt, Star, Flame, X, Check } from 'lucide-react'
+import { Edit2, Shirt, X, Check } from 'lucide-react'
 
 type StyleSlot = {
   id: string
+  slot_code: string
   slot_number: number
   gender: StyleGender
   name: string
   top: string
   bottom: string
-  sneaker_tier: 'grail' | 'heat'
+  sneaker_vibe: string | null
+  pants_style: string | null
+  chain_style: string | null
   accessories: string[]
+  best_for: string | null
   mood: string | null
   is_active: boolean
 }
@@ -23,7 +27,7 @@ export default function StylesPage() {
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [editingStyle, setEditingStyle] = useState<StyleSlot | null>(null)
   const [formData, setFormData] = useState({
-    name: '', top: '', bottom: '', sneaker_tier: 'heat' as 'grail' | 'heat', accessories: [] as string[], mood: '', is_active: true
+    name: '', top: '', bottom: '', sneaker_vibe: '', pants_style: '', chain_style: '', accessories: [] as string[], best_for: '', mood: '', is_active: true
   })
   const [accessoryInput, setAccessoryInput] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
@@ -42,8 +46,9 @@ export default function StylesPage() {
     setEditingStyle(style)
     setFormData({
       name: style.name, top: style.top, bottom: style.bottom,
-      sneaker_tier: style.sneaker_tier, accessories: style.accessories || [],
-      mood: style.mood || '', is_active: style.is_active
+      sneaker_vibe: style.sneaker_vibe || '', pants_style: style.pants_style || '',
+      chain_style: style.chain_style || '', accessories: style.accessories || [],
+      best_for: style.best_for || '', mood: style.mood || '', is_active: style.is_active
     })
     setAccessoryInput('')
     setIsModalOpen(true)
@@ -74,25 +79,29 @@ export default function StylesPage() {
   if (loading) return <div className="p-6"><div className="animate-pulse"><div className="h-8 bg-gray-200 rounded w-48 mb-8"></div><div className="grid grid-cols-2 gap-8"><div className="space-y-4">{[1,2,3].map(i => <div key={i} className="h-32 bg-gray-200 rounded-lg"></div>)}</div><div className="space-y-4">{[1,2,3].map(i => <div key={i} className="h-32 bg-gray-200 rounded-lg"></div>)}</div></div></div></div>
 
   const StyleCard = ({ style }: { style: StyleSlot }) => (
-    <div className={`p-4 rounded-lg border-2 ${style.sneaker_tier === 'grail' ? 'border-yellow-200 bg-yellow-50' : 'border-orange-200 bg-orange-50'} group relative`}>
+    <div className="p-4 rounded-lg border-2 border-gray-200 bg-gray-50 group relative hover:border-blue-200 transition-colors">
       <button onClick={() => openEditModal(style)} className="absolute top-2 right-2 p-1.5 bg-white rounded-lg shadow opacity-0 group-hover:opacity-100 transition-opacity">
         <Edit2 className="w-4 h-4 text-gray-600" />
       </button>
       <div className="flex items-center gap-2 mb-2">
         <span className="text-lg font-bold text-gray-400">#{style.slot_number}</span>
         <h3 className="font-semibold text-gray-900">{style.name}</h3>
-        {style.sneaker_tier === 'grail' ? <Star className="w-4 h-4 text-yellow-500" /> : <Flame className="w-4 h-4 text-orange-500" />}
+        <span className="text-xs px-2 py-0.5 bg-blue-100 text-blue-700 rounded">{style.slot_code}</span>
       </div>
       <div className="space-y-1 text-sm">
         <p><span className="font-medium text-gray-500">Top:</span> {style.top}</p>
         <p><span className="font-medium text-gray-500">Bottom:</span> {style.bottom}</p>
-        {style.accessories.length > 0 && (
+        {style.sneaker_vibe && <p><span className="font-medium text-gray-500">Sneaker Vibe:</span> {style.sneaker_vibe}</p>}
+        {style.pants_style && <p><span className="font-medium text-gray-500">Pants:</span> {style.pants_style}</p>}
+        {style.chain_style && <p><span className="font-medium text-gray-500">Chain:</span> {style.chain_style}</p>}
+        {style.accessories && style.accessories.length > 0 && (
           <div className="flex flex-wrap gap-1 mt-2">
             {style.accessories.map(a => <span key={a} className="px-2 py-0.5 bg-white/70 rounded-full text-xs">{a}</span>)}
           </div>
         )}
       </div>
-      {style.mood && <p className="mt-2 text-xs text-gray-600 italic">{style.mood}</p>}
+      {style.best_for && <p className="mt-2 text-xs text-blue-600"><span className="font-medium">Best for:</span> {style.best_for}</p>}
+      {style.mood && <p className="mt-1 text-xs text-gray-600 italic">{style.mood}</p>}
     </div>
   )
 
@@ -148,15 +157,18 @@ export default function StylesPage() {
                     <input type="text" value={formData.bottom} onChange={e => setFormData(p => ({ ...p, bottom: e.target.value }))} className="w-full px-3 py-2 border rounded-lg" />
                   </div>
                 </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Sneaker Tier</label>
-                  <div className="flex gap-2">
-                    <button type="button" onClick={() => setFormData(p => ({ ...p, sneaker_tier: 'grail' }))} className={`flex-1 flex items-center justify-center gap-2 px-3 py-2 rounded-lg border-2 ${formData.sneaker_tier === 'grail' ? 'border-yellow-400 bg-yellow-50 text-yellow-700' : 'border-gray-200'}`}>
-                      <Star className="w-4 h-4" /> Grail
-                    </button>
-                    <button type="button" onClick={() => setFormData(p => ({ ...p, sneaker_tier: 'heat' }))} className={`flex-1 flex items-center justify-center gap-2 px-3 py-2 rounded-lg border-2 ${formData.sneaker_tier === 'heat' ? 'border-orange-400 bg-orange-50 text-orange-700' : 'border-gray-200'}`}>
-                      <Flame className="w-4 h-4" /> Heat
-                    </button>
+                <div className="grid grid-cols-3 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Sneaker Vibe</label>
+                    <input type="text" value={formData.sneaker_vibe} onChange={e => setFormData(p => ({ ...p, sneaker_vibe: e.target.value }))} className="w-full px-3 py-2 border rounded-lg" placeholder="e.g., Classic, Bold" />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Pants Style</label>
+                    <input type="text" value={formData.pants_style} onChange={e => setFormData(p => ({ ...p, pants_style: e.target.value }))} className="w-full px-3 py-2 border rounded-lg" placeholder="e.g., Slim, Baggy" />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Chain Style</label>
+                    <input type="text" value={formData.chain_style} onChange={e => setFormData(p => ({ ...p, chain_style: e.target.value }))} className="w-full px-3 py-2 border rounded-lg" placeholder="e.g., Cuban, Rope" />
                   </div>
                 </div>
                 <div>
@@ -175,9 +187,15 @@ export default function StylesPage() {
                     </div>
                   )}
                 </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Mood</label>
-                  <input type="text" value={formData.mood} onChange={e => setFormData(p => ({ ...p, mood: e.target.value }))} className="w-full px-3 py-2 border rounded-lg" placeholder="e.g., Relaxed, confident" />
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Best For</label>
+                    <input type="text" value={formData.best_for} onChange={e => setFormData(p => ({ ...p, best_for: e.target.value }))} className="w-full px-3 py-2 border rounded-lg" placeholder="e.g., Street, Events" />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Mood</label>
+                    <input type="text" value={formData.mood} onChange={e => setFormData(p => ({ ...p, mood: e.target.value }))} className="w-full px-3 py-2 border rounded-lg" placeholder="e.g., Relaxed, confident" />
+                  </div>
                 </div>
                 <div className="flex justify-end gap-3 pt-4 border-t">
                   <button type="button" onClick={() => setIsModalOpen(false)} className="px-4 py-2 border rounded-lg">Cancel</button>

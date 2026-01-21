@@ -13,12 +13,26 @@ function getSupabaseClient() {
 }
 
 // Mock data for when Supabase isn't configured
-const mockSneakers = [
-  { id: '1', name: 'Air Jordan 1 Chicago', tier: 'grail' as SneakerTier, brand: 'Jordan', colorway: 'Chicago Red/White/Black', city_relevance: ['Chicago', 'New York'], notes: 'The OG', is_active: true, created_at: new Date().toISOString(), updated_at: new Date().toISOString() },
-  { id: '2', name: 'Air Jordan 11 Concord', tier: 'grail' as SneakerTier, brand: 'Jordan', colorway: 'White/Black/Concord', city_relevance: ['Atlanta', 'Detroit'], notes: 'Premium feel', is_active: true, created_at: new Date().toISOString(), updated_at: new Date().toISOString() },
-  { id: '3', name: 'Nike Cortez', tier: 'heat' as SneakerTier, brand: 'Nike', colorway: 'White/Red/Blue', city_relevance: ['Los Angeles', 'Oakland'], notes: 'West Coast essential', is_active: true, created_at: new Date().toISOString(), updated_at: new Date().toISOString() },
-  { id: '4', name: 'Air Force 1 White', tier: 'grail' as SneakerTier, brand: 'Nike', colorway: 'Triple White', city_relevance: ['New York', 'Baltimore'], notes: 'NYC staple', is_active: true, created_at: new Date().toISOString(), updated_at: new Date().toISOString() },
-  { id: '5', name: 'Balenciaga Triple S', tier: 'banned' as SneakerTier, brand: 'Balenciaga', colorway: 'Various', city_relevance: [], notes: 'Too luxury, not streetwear', is_active: true, created_at: new Date().toISOString(), updated_at: new Date().toISOString() },
+const mockSneakers: Array<{
+  id: string
+  name: string
+  tier: SneakerTier
+  brand: string | null
+  colorway: string | null
+  city_relevance: string[]
+  notes: string | null
+  is_active: boolean
+  created_at: string
+  updated_at: string
+}> = [
+  { id: '1', name: 'Air Jordan 1 Chicago', tier: 'ultra_grail', brand: 'Jordan', colorway: 'Chicago Red/White/Black', city_relevance: ['Chicago', 'New York'], notes: 'The OG', is_active: true, created_at: new Date().toISOString(), updated_at: new Date().toISOString() },
+  { id: '2', name: 'Air Jordan 11 Concord', tier: 'ultra_grail', brand: 'Jordan', colorway: 'White/Black/Concord', city_relevance: ['Atlanta', 'Detroit'], notes: 'Premium feel', is_active: true, created_at: new Date().toISOString(), updated_at: new Date().toISOString() },
+  { id: '3', name: 'Nike Cortez', tier: 'certified_heat', brand: 'Nike', colorway: 'White/Red/Blue', city_relevance: ['Los Angeles', 'Oakland'], notes: 'West Coast essential', is_active: true, created_at: new Date().toISOString(), updated_at: new Date().toISOString() },
+  { id: '4', name: 'Air Force 1 White', tier: 'heavy_heat', brand: 'Nike', colorway: 'Triple White', city_relevance: ['New York', 'Baltimore'], notes: 'NYC staple', is_active: true, created_at: new Date().toISOString(), updated_at: new Date().toISOString() },
+  { id: '5', name: 'Travis Scott Air Jordan 1', tier: 'heavy_heat', brand: 'Jordan', colorway: 'Mocha', city_relevance: ['Houston', 'Atlanta'], notes: 'Hype piece', is_active: true, created_at: new Date().toISOString(), updated_at: new Date().toISOString() },
+  { id: '6', name: 'New Balance 550', tier: 'new_heat', brand: 'New Balance', colorway: 'White/Green', city_relevance: ['Boston', 'New York'], notes: 'Clean retro style', is_active: true, created_at: new Date().toISOString(), updated_at: new Date().toISOString() },
+  { id: '7', name: 'Astros Jordan 1', tier: 'city_specific', brand: 'Jordan', colorway: 'Orange/Navy', city_relevance: ['Houston'], notes: 'Houston exclusive colorway', is_active: true, created_at: new Date().toISOString(), updated_at: new Date().toISOString() },
+  { id: '8', name: 'Balenciaga Triple S', tier: 'banned', brand: 'Balenciaga', colorway: 'Various', city_relevance: [], notes: 'Too luxury, not streetwear authentic', is_active: true, created_at: new Date().toISOString(), updated_at: new Date().toISOString() },
 ]
 
 export async function GET(req: NextRequest) {
@@ -61,15 +75,6 @@ export async function GET(req: NextRequest) {
 }
 
 export async function POST(req: NextRequest) {
-  const supabase = getSupabaseClient()
-
-  if (!supabase) {
-    return NextResponse.json(
-      { error: 'Supabase not configured' },
-      { status: 503 }
-    )
-  }
-
   try {
     const body = await req.json()
     const { name, tier, brand, colorway, city_relevance, notes, is_active } = body
@@ -79,6 +84,26 @@ export async function POST(req: NextRequest) {
         { error: 'Name and tier are required' },
         { status: 400 }
       )
+    }
+
+    const supabase = getSupabaseClient()
+
+    if (!supabase) {
+      // Mock mode - add to in-memory array
+      const newSneaker = {
+        id: `mock-${Date.now()}`,
+        name,
+        tier,
+        brand: brand || null,
+        colorway: colorway || null,
+        city_relevance: city_relevance || [],
+        notes: notes || null,
+        is_active: is_active ?? true,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      }
+      mockSneakers.push(newSneaker)
+      return NextResponse.json(newSneaker)
     }
 
     const { data, error } = await supabase

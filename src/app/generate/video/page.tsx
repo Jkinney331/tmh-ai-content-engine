@@ -6,28 +6,27 @@ import CitySelector from '../../../components/CitySelector';
 
 // Video generation model options
 type VideoModel = 'sora-2' | 'sora-2-pro' | 'veo-3';
-type VideoDuration = '5' | '10' | '15' | '20';
 type VideoResolution = '720p' | '1080p';
 type VideoAspectRatio = '16:9' | '9:16' | '1:1';
 
 interface VideoSettings {
   model: VideoModel;
-  duration: VideoDuration;
+  duration: number;
   resolution: VideoResolution;
   aspectRatio: VideoAspectRatio;
 }
 
-const VIDEO_MODELS: { id: VideoModel; name: string; description: string; cost: string }[] = [
-  { id: 'sora-2', name: 'Sora 2', description: 'Fast, cost-effective video generation', cost: '~$0.02/sec' },
-  { id: 'sora-2-pro', name: 'Sora 2 Pro', description: 'Higher quality, better motion', cost: '~$0.04/sec' },
-  { id: 'veo-3', name: 'VEO 3', description: 'Google video model via WaveSpeed', cost: '~$0.03/sec' },
-];
+// Model-specific durations based on API requirements
+const MODEL_DURATIONS: Record<VideoModel, number[]> = {
+  'sora-2': [4, 8, 12],      // Sora 2 Standard
+  'sora-2-pro': [10, 15, 25], // Sora 2 Pro
+  'veo-3': [5, 10, 15],       // VEO 3
+};
 
-const VIDEO_DURATIONS: { id: VideoDuration; label: string }[] = [
-  { id: '5', label: '5 seconds' },
-  { id: '10', label: '10 seconds' },
-  { id: '15', label: '15 seconds' },
-  { id: '20', label: '20 seconds' },
+const VIDEO_MODELS: { id: VideoModel; name: string; description: string; cost: string; durations: number[] }[] = [
+  { id: 'sora-2', name: 'Sora 2', description: 'Fast, cost-effective video generation', cost: '~$0.10/sec', durations: [4, 8, 12] },
+  { id: 'sora-2-pro', name: 'Sora 2 Pro', description: 'Higher quality, longer videos', cost: '~$0.30/sec', durations: [10, 15, 25] },
+  { id: 'veo-3', name: 'VEO 3', description: 'Google video model via WaveSpeed', cost: '~$0.03/sec', durations: [5, 10, 15] },
 ];
 
 const VIDEO_RESOLUTIONS: { id: VideoResolution; label: string }[] = [
@@ -85,16 +84,29 @@ export default function VideoGeneratePage() {
   const [currentReviewIndex, setCurrentReviewIndex] = useState(0);
   const [approvalSaved, setApprovalSaved] = useState(false);
   const [playingVideo, setPlayingVideo] = useState<{ index: number; model: 'A' | 'B' } | null>(null);
+  const [showCityWarning, setShowCityWarning] = useState(false);
   const videoRefsA = useRef<(HTMLVideoElement | null)[]>([]);
   const videoRefsB = useRef<(HTMLVideoElement | null)[]>([]);
+  const citySelectorRef = useRef<HTMLDivElement>(null);
 
   // Video generation settings
   const [videoSettings, setVideoSettings] = useState<VideoSettings>({
     model: 'sora-2',
-    duration: '10',
+    duration: 8, // Default to middle option for sora-2
     resolution: '1080p',
     aspectRatio: '16:9'
   });
+
+  // Update duration when model changes to ensure valid value
+  const handleModelChange = (newModel: VideoModel) => {
+    const validDurations = MODEL_DURATIONS[newModel];
+    const newDuration = validDurations[Math.floor(validDurations.length / 2)]; // Pick middle option
+    setVideoSettings(prev => ({
+      ...prev,
+      model: newModel,
+      duration: newDuration
+    }));
+  };
 
   // Polling state for video generation
   const [generationStatus, setGenerationStatus] = useState<string>('');
@@ -137,9 +149,23 @@ export default function VideoGeneratePage() {
     };
   }, []);
 
+  // Handle generate button click with city validation
+  const handleGenerateClick = () => {
+    if (!selectedCity) {
+      setShowCityWarning(true);
+      // Scroll to city selector and flash it
+      citySelectorRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      // Auto-hide warning after 5 seconds
+      setTimeout(() => setShowCityWarning(false), 5000);
+      return;
+    }
+    handleGenerate();
+  };
+
   const handleGenerate = async () => {
     if (!selectedCity) return;
 
+    setShowCityWarning(false);
     setIsGenerating(true);
     setGenerationStatus('Starting video generation...');
 
@@ -168,7 +194,7 @@ export default function VideoGeneratePage() {
       const requestBody = videoSettings.model === 'veo-3'
         ? {
             prompt,
-            duration: parseInt(videoSettings.duration),
+            duration: videoSettings.duration,
             aspectRatio: videoSettings.aspectRatio,
             cityId: selectedCity.id,
             cityName: selectedCity.name,
@@ -176,7 +202,7 @@ export default function VideoGeneratePage() {
         : {
             prompt,
             model: videoSettings.model === 'sora-2-pro' ? 'sora-2-pro' : 'sora-2',
-            duration: parseInt(videoSettings.duration),
+            duration: videoSettings.duration,
             resolution: videoSettings.resolution,
             aspectRatio: videoSettings.aspectRatio,
             cityId: selectedCity.id,
@@ -422,7 +448,20 @@ export default function VideoGeneratePage() {
       <p className="text-gray-600 mb-8">Create compelling video advertisements for your branded merchandise.</p>
 
       {/* City Selector */}
-      <div className="bg-white rounded-lg shadow-md p-6 mb-6">
+      <div
+        ref={citySelectorRef}
+        className={`bg-white rounded-lg shadow-md p-6 mb-6 transition-all ${
+          showCityWarning ? 'ring-2 ring-red-500 ring-offset-2 animate-pulse' : ''
+        }`}
+      >
+        {showCityWarning && (
+          <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg flex items-center gap-2">
+            <svg className="w-5 h-5 text-red-600 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+            </svg>
+            <span className="text-red-800 font-medium">Please select a city before generating</span>
+          </div>
+        )}
         <CitySelector />
       </div>
 
@@ -436,7 +475,7 @@ export default function VideoGeneratePage() {
             <label className="block text-sm font-medium text-gray-700 mb-2">Model</label>
             <select
               value={videoSettings.model}
-              onChange={(e) => setVideoSettings(prev => ({ ...prev, model: e.target.value as VideoModel }))}
+              onChange={(e) => handleModelChange(e.target.value as VideoModel)}
               className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
               disabled={isGenerating}
             >
@@ -451,19 +490,22 @@ export default function VideoGeneratePage() {
             </p>
           </div>
 
-          {/* Duration Selection */}
+          {/* Duration Selection - Model-specific options */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">Duration</label>
             <select
               value={videoSettings.duration}
-              onChange={(e) => setVideoSettings(prev => ({ ...prev, duration: e.target.value as VideoDuration }))}
+              onChange={(e) => setVideoSettings(prev => ({ ...prev, duration: parseInt(e.target.value) }))}
               className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
               disabled={isGenerating}
             >
-              {VIDEO_DURATIONS.map(duration => (
-                <option key={duration.id} value={duration.id}>{duration.label}</option>
+              {MODEL_DURATIONS[videoSettings.model].map(duration => (
+                <option key={duration} value={duration}>{duration} seconds</option>
               ))}
             </select>
+            <p className="mt-1 text-xs text-gray-500">
+              Available durations for {VIDEO_MODELS.find(m => m.id === videoSettings.model)?.name}
+            </p>
           </div>
 
           {/* Resolution Selection */}
@@ -505,7 +547,7 @@ export default function VideoGeneratePage() {
           <div className="flex items-center justify-between">
             <span className="text-sm text-gray-600">Estimated cost:</span>
             <span className="font-medium text-gray-900">
-              ${(parseFloat(VIDEO_MODELS.find(m => m.id === videoSettings.model)?.cost.replace(/[^0-9.]/g, '') || '0.03') * parseInt(videoSettings.duration)).toFixed(2)}
+              ${(parseFloat(VIDEO_MODELS.find(m => m.id === videoSettings.model)?.cost.replace(/[^0-9.]/g, '') || '0.03') * videoSettings.duration).toFixed(2)}
             </span>
           </div>
         </div>
@@ -532,13 +574,13 @@ export default function VideoGeneratePage() {
 
       {/* Generate Button */}
       {!generationResults.length && (
-        <div className="flex justify-center mb-8">
+        <div className="flex flex-col items-center mb-8 gap-3">
           <button
-            onClick={handleGenerate}
-            disabled={!selectedCity || isGenerating}
+            onClick={handleGenerateClick}
+            disabled={isGenerating}
             className={`
               px-8 py-4 rounded-lg font-medium text-lg transition-all
-              ${selectedCity && !isGenerating
+              ${!isGenerating
                 ? 'bg-blue-600 hover:bg-blue-700 text-white shadow-lg hover:shadow-xl'
                 : 'bg-gray-300 text-gray-500 cursor-not-allowed'
               }
@@ -558,6 +600,9 @@ export default function VideoGeneratePage() {
               <span>Generate Video with {VIDEO_MODELS.find(m => m.id === videoSettings.model)?.name}</span>
             )}
           </button>
+          {!selectedCity && (
+            <p className="text-sm text-gray-500">Select a city above to enable generation</p>
+          )}
         </div>
       )}
 
@@ -928,12 +973,6 @@ export default function VideoGeneratePage() {
         </div>
       )}
 
-      {/* Info Message when no city selected */}
-      {!selectedCity && (
-        <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 text-center">
-          <p className="text-yellow-800">Please select a city to generate video ads</p>
-        </div>
-      )}
     </div>
   );
 }

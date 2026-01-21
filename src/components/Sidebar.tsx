@@ -12,7 +12,13 @@ import {
   Settings,
 } from "lucide-react";
 
-const navigation = [
+interface NavItem {
+  name: string;
+  href: string;
+  icon: typeof MapPin;
+}
+
+const navigation: NavItem[] = [
   { name: "Cities", href: "/cities", icon: MapPin },
   { name: "Generate", href: "/generate", icon: Sparkles },
   { name: "Content", href: "/content", icon: FileText },
@@ -67,7 +73,7 @@ export default function Sidebar() {
                         ${isActive ? "text-blue-600" : "text-gray-400"}
                       `}
                     />
-                    {item.name}
+                    {item.name || 'Untitled'}
                   </Link>
                 </li>
               );

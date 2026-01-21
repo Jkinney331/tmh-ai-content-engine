@@ -30,46 +30,60 @@ export function getOpenRouterConfig(): OpenRouterConfig {
 // TMH Model Configuration
 // =============================================================================
 
-// Image generation models
+// Image generation models - Updated to verified 2026 model IDs
 export const TMH_IMAGE_MODELS = {
-  'nano-banana': {
-    id: 'nexa/nano-banana',
-    name: 'Nano Banana',
-    description: 'Primary image model - fast and cost-effective',
-    avgCostCents: 2,
-    avgLatencyMs: 3000,
-  },
-  'gpt-image': {
-    id: 'openai/gpt-image-1',
-    name: 'GPT Image',
-    description: 'OpenAI image generation - high quality',
+  'gpt-5-image': {
+    id: 'openai/gpt-5-image',
+    name: 'GPT-5 Image',
+    description: 'Best quality - recommended for final assets',
     avgCostCents: 4,
     avgLatencyMs: 5000,
   },
+  'gpt-5-image-mini': {
+    id: 'openai/gpt-5-image-mini',
+    name: 'GPT-5 Image Mini',
+    description: 'Fast iteration, lower cost',
+    avgCostCents: 2,
+    avgLatencyMs: 3000,
+  },
+  'gemini-flash': {
+    id: 'google/gemini-2.5-flash-image',
+    name: 'Gemini Flash',
+    description: 'Google model - good for variations',
+    avgCostCents: 3,
+    avgLatencyMs: 4000,
+  },
+  'gemini-pro': {
+    id: 'google/gemini-3-pro-image-preview',
+    name: 'Gemini Pro',
+    description: 'Google pro model - highest quality',
+    avgCostCents: 5,
+    avgLatencyMs: 6000,
+  },
 } as const;
 
-// Video generation models
+// Video generation models - Updated to verified 2026 model IDs
 export const TMH_VIDEO_MODELS = {
-  'nano-banana-video': {
-    id: 'nexa/nano-banana',
-    name: 'Nano Banana Video',
-    description: 'For GIFs/short clips from its own images',
-    avgCostCents: 5,
-    avgLatencyMs: 8000,
-  },
-  'veo3': {
-    id: 'google/veo-3',
-    name: 'VEO 3',
-    description: 'Google video model - longer clips, high quality',
-    avgCostCents: 15,
-    avgLatencyMs: 15000,
-  },
-  'sora2': {
+  'sora-2': {
     id: 'openai/sora-2',
     name: 'Sora 2',
-    description: 'OpenAI video - dynamic motion, lifestyle',
+    description: 'Fast, cost-effective video generation',
     avgCostCents: 20,
+    avgLatencyMs: 15000,
+  },
+  'sora-2-pro': {
+    id: 'openai/sora-2-pro',
+    name: 'Sora 2 Pro',
+    description: 'Higher quality, better motion',
+    avgCostCents: 40,
     avgLatencyMs: 20000,
+  },
+  'veo-3': {
+    id: 'google/veo-3',
+    name: 'VEO 3',
+    description: 'Google video model via WaveSpeed',
+    avgCostCents: 30,
+    avgLatencyMs: 18000,
   },
 } as const;
 
@@ -114,80 +128,89 @@ export interface VideoPipeline {
 
 export const TMH_VIDEO_PIPELINES: VideoPipeline[] = [
   {
-    id: 'nb-nb',
-    imageModel: 'nano-banana',
-    videoModel: 'nano-banana-video',
-    name: 'Nano Banana Full Stack',
-    bestFor: 'GIFs, short loops, product animations',
-    estimatedCostCents: 7,
-    estimatedLatencyMs: 11000,
-  },
-  {
-    id: 'nb-veo3',
-    imageModel: 'nano-banana',
-    videoModel: 'veo3',
-    name: 'Nano Banana + VEO 3',
-    bestFor: 'Longer clips, cinematic quality',
-    estimatedCostCents: 17,
+    id: 'gpt5mini-sora2',
+    imageModel: 'gpt-5-image-mini',
+    videoModel: 'sora-2',
+    name: 'Fast Pipeline',
+    bestFor: 'Quick iterations, social content',
+    estimatedCostCents: 22,
     estimatedLatencyMs: 18000,
   },
   {
-    id: 'nb-sora2',
-    imageModel: 'nano-banana',
-    videoModel: 'sora2',
-    name: 'Nano Banana + Sora 2',
-    bestFor: 'Dynamic motion, lifestyle content',
-    estimatedCostCents: 22,
-    estimatedLatencyMs: 23000,
-  },
-  {
-    id: 'gpt-nb',
-    imageModel: 'gpt-image',
-    videoModel: 'nano-banana-video',
-    name: 'GPT Image + Nano Video',
-    bestFor: 'GIFs from high-quality GPT images',
-    estimatedCostCents: 9,
-    estimatedLatencyMs: 13000,
-  },
-  {
-    id: 'gpt-veo3',
-    imageModel: 'gpt-image',
-    videoModel: 'veo3',
-    name: 'GPT Image + VEO 3',
-    bestFor: 'Premium video from GPT images',
-    estimatedCostCents: 19,
+    id: 'gpt5-sora2',
+    imageModel: 'gpt-5-image',
+    videoModel: 'sora-2',
+    name: 'Standard Pipeline',
+    bestFor: 'Quality video from GPT-5 images',
+    estimatedCostCents: 24,
     estimatedLatencyMs: 20000,
   },
   {
-    id: 'gpt-sora2',
-    imageModel: 'gpt-image',
-    videoModel: 'sora2',
-    name: 'OpenAI Full Stack',
-    bestFor: 'Highest quality, full OpenAI pipeline',
-    estimatedCostCents: 24,
+    id: 'gpt5-sora2pro',
+    imageModel: 'gpt-5-image',
+    videoModel: 'sora-2-pro',
+    name: 'Premium Pipeline',
+    bestFor: 'Highest quality, cinematic content',
+    estimatedCostCents: 44,
     estimatedLatencyMs: 25000,
+  },
+  {
+    id: 'gemini-veo3',
+    imageModel: 'gemini-flash',
+    videoModel: 'veo-3',
+    name: 'Google Pipeline',
+    bestFor: 'Alternative provider, good for variety',
+    estimatedCostCents: 33,
+    estimatedLatencyMs: 22000,
+  },
+  {
+    id: 'geminipro-veo3',
+    imageModel: 'gemini-pro',
+    videoModel: 'veo-3',
+    name: 'Google Premium',
+    bestFor: 'Highest quality Google stack',
+    estimatedCostCents: 35,
+    estimatedLatencyMs: 24000,
   },
 ];
 
 // Static image-only pipelines
 export const TMH_IMAGE_PIPELINES: VideoPipeline[] = [
   {
-    id: 'nano-banana-only',
-    imageModel: 'nano-banana',
+    id: 'gpt5-mini-only',
+    imageModel: 'gpt-5-image-mini',
     videoModel: null,
-    name: 'Nano Banana (Static)',
-    bestFor: 'Product shots, design concepts',
+    name: 'GPT-5 Mini (Static)',
+    bestFor: 'Fast iteration, drafts',
     estimatedCostCents: 2,
     estimatedLatencyMs: 3000,
   },
   {
-    id: 'gpt-image-only',
-    imageModel: 'gpt-image',
+    id: 'gpt5-only',
+    imageModel: 'gpt-5-image',
     videoModel: null,
-    name: 'GPT Image (Static)',
+    name: 'GPT-5 Image (Static)',
     bestFor: 'High-quality product shots',
     estimatedCostCents: 4,
     estimatedLatencyMs: 5000,
+  },
+  {
+    id: 'gemini-flash-only',
+    imageModel: 'gemini-flash',
+    videoModel: null,
+    name: 'Gemini Flash (Static)',
+    bestFor: 'Fast variations',
+    estimatedCostCents: 3,
+    estimatedLatencyMs: 4000,
+  },
+  {
+    id: 'gemini-pro-only',
+    imageModel: 'gemini-pro',
+    videoModel: null,
+    name: 'Gemini Pro (Static)',
+    bestFor: 'Premium quality images',
+    estimatedCostCents: 5,
+    estimatedLatencyMs: 6000,
   },
 ];
 
@@ -204,12 +227,12 @@ export type ContentType =
   | 'design_concept';
 
 export const CONTENT_PIPELINE_MAP: Record<ContentType, string[]> = {
-  product_gif: ['nb-nb', 'gpt-nb'],
-  lifestyle_clip: ['nb-veo3', 'gpt-veo3', 'nb-sora2'],
-  ad_video: ['nb-sora2', 'gpt-sora2', 'nb-veo3'],
-  social_short: ['nb-nb', 'nb-sora2'],
-  product_shot: ['nano-banana-only', 'gpt-image-only'],
-  design_concept: ['nano-banana-only', 'gpt-image-only'],
+  product_gif: ['gpt5mini-sora2', 'gpt5-sora2'],
+  lifestyle_clip: ['gemini-veo3', 'gpt5-sora2', 'gpt5-sora2pro'],
+  ad_video: ['gpt5-sora2pro', 'gpt5-sora2', 'geminipro-veo3'],
+  social_short: ['gpt5mini-sora2', 'gemini-veo3'],
+  product_shot: ['gpt5-mini-only', 'gpt5-only', 'gemini-flash-only'],
+  design_concept: ['gpt5-mini-only', 'gpt5-only', 'gemini-pro-only'],
 };
 
 // =============================================================================
@@ -248,7 +271,7 @@ export interface GenerationResult {
  */
 export async function generateImageWithOpenRouter(
   prompt: string,
-  modelKey: keyof typeof TMH_IMAGE_MODELS = 'nano-banana'
+  modelKey: keyof typeof TMH_IMAGE_MODELS = 'gpt-5-image'
 ): Promise<GenerationResult> {
   const config = getOpenRouterConfig();
   const model = TMH_IMAGE_MODELS[modelKey];
