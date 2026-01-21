@@ -1,8 +1,45 @@
 'use client';
 
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { useGenerationStore } from '../../../stores/generationStore';
 import CitySelector from '../../../components/CitySelector';
+
+// Video generation model options
+type VideoModel = 'sora-2' | 'sora-2-pro' | 'veo-3';
+type VideoDuration = '5' | '10' | '15' | '20';
+type VideoResolution = '720p' | '1080p';
+type VideoAspectRatio = '16:9' | '9:16' | '1:1';
+
+interface VideoSettings {
+  model: VideoModel;
+  duration: VideoDuration;
+  resolution: VideoResolution;
+  aspectRatio: VideoAspectRatio;
+}
+
+const VIDEO_MODELS: { id: VideoModel; name: string; description: string; cost: string }[] = [
+  { id: 'sora-2', name: 'Sora 2', description: 'Fast, cost-effective video generation', cost: '~$0.02/sec' },
+  { id: 'sora-2-pro', name: 'Sora 2 Pro', description: 'Higher quality, better motion', cost: '~$0.04/sec' },
+  { id: 'veo-3', name: 'VEO 3', description: 'Google video model via WaveSpeed', cost: '~$0.03/sec' },
+];
+
+const VIDEO_DURATIONS: { id: VideoDuration; label: string }[] = [
+  { id: '5', label: '5 seconds' },
+  { id: '10', label: '10 seconds' },
+  { id: '15', label: '15 seconds' },
+  { id: '20', label: '20 seconds' },
+];
+
+const VIDEO_RESOLUTIONS: { id: VideoResolution; label: string }[] = [
+  { id: '720p', label: '720p (HD)' },
+  { id: '1080p', label: '1080p (Full HD)' },
+];
+
+const VIDEO_ASPECT_RATIOS: { id: VideoAspectRatio; label: string; description: string }[] = [
+  { id: '16:9', label: '16:9', description: 'Landscape (YouTube, TV)' },
+  { id: '9:16', label: '9:16', description: 'Vertical (TikTok, Reels)' },
+  { id: '1:1', label: '1:1', description: 'Square (Instagram Feed)' },
+];
 
 interface VideoVariation {
   id: string;
@@ -51,6 +88,18 @@ export default function VideoGeneratePage() {
   const videoRefsA = useRef<(HTMLVideoElement | null)[]>([]);
   const videoRefsB = useRef<(HTMLVideoElement | null)[]>([]);
 
+  // Video generation settings
+  const [videoSettings, setVideoSettings] = useState<VideoSettings>({
+    model: 'sora-2',
+    duration: '10',
+    resolution: '1080p',
+    aspectRatio: '16:9'
+  });
+
+  // Polling state for video generation
+  const [generationStatus, setGenerationStatus] = useState<string>('');
+  const pollingRef = useRef<NodeJS.Timeout | null>(null);
+
   // Predefined video ad variations
   const variations: VideoVariation[] = [
     {
@@ -79,67 +128,181 @@ export default function VideoGeneratePage() {
     }
   ];
 
+  // Cleanup polling on unmount
+  useEffect(() => {
+    return () => {
+      if (pollingRef.current) {
+        clearInterval(pollingRef.current);
+      }
+    };
+  }, []);
+
   const handleGenerate = async () => {
     if (!selectedCity) return;
 
     setIsGenerating(true);
+    setGenerationStatus('Starting video generation...');
 
-    // Initialize results for all variations
-    const initialResults: GenerationResult[] = variations.map(variation => ({
+    // Initialize results for first variation only (one at a time for real generation)
+    const variation = variations[0]; // Start with first variation
+    const initialResults: GenerationResult[] = [{
       variationId: variation.id,
       variationName: variation.name,
-      modelA: { status: 'generating' },
-      modelB: { status: 'generating' },
+      modelA: { status: 'generating', model: VIDEO_MODELS.find(m => m.id === videoSettings.model)?.name },
+      modelB: { status: 'idle' },
       winner: 'A',
-      feedback: {
-        thumbsUp: false,
-        thumbsDown: false,
-        tags: [],
-        text: ''
-      },
+      feedback: { thumbsUp: false, thumbsDown: false, tags: [], text: '' },
       approved: false
-    }));
+    }];
     setGenerationResults(initialResults);
 
-    // Simulate generation for each variation
-    for (let i = 0; i < variations.length; i++) {
-      const variation = variations[i];
+    try {
+      // Build prompt with city context
+      const prompt = `${variation.prompt}, featuring ${selectedCity.name} city culture and landmarks, ${videoSettings.duration} seconds, ${videoSettings.aspectRatio} aspect ratio`;
 
-      // Simulate API call delay
-      await new Promise(resolve => setTimeout(resolve, 1500));
+      // Determine which API to call based on model
+      const endpoint = videoSettings.model === 'veo-3'
+        ? '/api/generate/video/veo'
+        : '/api/generate/video/sora';
 
-      // Update results for this variation with placeholder videos
+      const requestBody = videoSettings.model === 'veo-3'
+        ? {
+            prompt,
+            duration: parseInt(videoSettings.duration),
+            aspectRatio: videoSettings.aspectRatio,
+            cityId: selectedCity.id,
+            cityName: selectedCity.name,
+          }
+        : {
+            prompt,
+            model: videoSettings.model === 'sora-2-pro' ? 'sora-2-pro' : 'sora-2',
+            duration: parseInt(videoSettings.duration),
+            resolution: videoSettings.resolution,
+            aspectRatio: videoSettings.aspectRatio,
+            cityId: selectedCity.id,
+            cityName: selectedCity.name,
+          };
+
+      setGenerationStatus(`Submitting to ${VIDEO_MODELS.find(m => m.id === videoSettings.model)?.name}...`);
+
+      const response = await fetch(endpoint, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(requestBody)
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to start video generation');
+      }
+
+      // For async APIs, poll for status
+      if (data.taskId || data.id) {
+        const taskId = data.taskId || data.id;
+        const statusEndpoint = videoSettings.model === 'veo-3'
+          ? `/api/generate/video/veo/status?taskId=${taskId}`
+          : `/api/generate/video/sora/status?taskId=${taskId}`;
+
+        setGenerationStatus('Video generation in progress...');
+
+        // Poll for completion
+        let attempts = 0;
+        const maxAttempts = 60; // 5 minutes max
+
+        pollingRef.current = setInterval(async () => {
+          attempts++;
+
+          try {
+            const statusResponse = await fetch(statusEndpoint);
+            const statusData = await statusResponse.json();
+
+            setGenerationStatus(`Generating video... (${Math.round(statusData.progress || 0)}%)`);
+
+            if (statusData.status === 'completed' && statusData.videoUrl) {
+              if (pollingRef.current) clearInterval(pollingRef.current);
+
+              setGenerationResults(prev => {
+                const updated = [...prev];
+                updated[0] = {
+                  ...updated[0],
+                  modelA: {
+                    videoUrl: statusData.videoUrl,
+                    thumbnailUrl: statusData.thumbnailUrl || undefined,
+                    status: 'completed',
+                    model: VIDEO_MODELS.find(m => m.id === videoSettings.model)?.name
+                  }
+                };
+                return updated;
+              });
+
+              setIsGenerating(false);
+              setGenerationStatus('Video generation complete!');
+            } else if (statusData.status === 'failed') {
+              if (pollingRef.current) clearInterval(pollingRef.current);
+
+              setGenerationResults(prev => {
+                const updated = [...prev];
+                updated[0] = {
+                  ...updated[0],
+                  modelA: {
+                    status: 'error',
+                    error: statusData.error || 'Generation failed',
+                    model: VIDEO_MODELS.find(m => m.id === videoSettings.model)?.name
+                  }
+                };
+                return updated;
+              });
+
+              setIsGenerating(false);
+              setGenerationStatus('Generation failed');
+            } else if (attempts >= maxAttempts) {
+              if (pollingRef.current) clearInterval(pollingRef.current);
+              setIsGenerating(false);
+              setGenerationStatus('Generation timed out');
+            }
+          } catch (err) {
+            console.error('Status poll error:', err);
+          }
+        }, 5000); // Poll every 5 seconds
+      } else if (data.videoUrl) {
+        // Synchronous response
+        setGenerationResults(prev => {
+          const updated = [...prev];
+          updated[0] = {
+            ...updated[0],
+            modelA: {
+              videoUrl: data.videoUrl,
+              thumbnailUrl: data.thumbnailUrl || undefined,
+              status: 'completed',
+              model: VIDEO_MODELS.find(m => m.id === videoSettings.model)?.name
+            }
+          };
+          return updated;
+        });
+
+        setIsGenerating(false);
+        setGenerationStatus('Video generation complete!');
+      }
+    } catch (error) {
+      console.error('Video generation error:', error);
       setGenerationResults(prev => {
         const updated = [...prev];
-        updated[i] = {
-          variationId: variation.id,
-          variationName: variation.name,
-          modelA: {
-            videoUrl: `https://storage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4`,
-            thumbnailUrl: `https://via.placeholder.com/600x400/4F46E5/ffffff?text=Model+A+${variation.name}`,
-            status: 'completed',
-            model: 'Sora Video'
-          },
-          modelB: {
-            videoUrl: `https://storage.googleapis.com/gtv-videos-bucket/sample/ElephantsDream.mp4`,
-            thumbnailUrl: `https://via.placeholder.com/600x400/10B981/ffffff?text=Model+B+${variation.name}`,
-            status: 'completed',
-            model: 'Nano Video'
-          },
-          winner: 'A',
-          feedback: {
-            thumbsUp: false,
-            thumbsDown: false,
-            tags: [],
-            text: ''
-          },
-          approved: false
-        };
+        if (updated[0]) {
+          updated[0] = {
+            ...updated[0],
+            modelA: {
+              status: 'error',
+              error: error instanceof Error ? error.message : 'Unknown error',
+              model: VIDEO_MODELS.find(m => m.id === videoSettings.model)?.name
+            }
+          };
+        }
         return updated;
       });
+      setIsGenerating(false);
+      setGenerationStatus('Generation failed');
     }
-
-    setIsGenerating(false);
   };
 
   const handleReset = () => {
@@ -263,6 +426,91 @@ export default function VideoGeneratePage() {
         <CitySelector />
       </div>
 
+      {/* Video Generation Settings */}
+      <div className="bg-white rounded-lg shadow-md p-6 mb-6">
+        <h2 className="text-lg font-semibold text-gray-800 mb-4">Video Generation Settings</h2>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+          {/* Model Selection */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Model</label>
+            <select
+              value={videoSettings.model}
+              onChange={(e) => setVideoSettings(prev => ({ ...prev, model: e.target.value as VideoModel }))}
+              className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              disabled={isGenerating}
+            >
+              {VIDEO_MODELS.map(model => (
+                <option key={model.id} value={model.id}>
+                  {model.name} ({model.cost})
+                </option>
+              ))}
+            </select>
+            <p className="mt-1 text-xs text-gray-500">
+              {VIDEO_MODELS.find(m => m.id === videoSettings.model)?.description}
+            </p>
+          </div>
+
+          {/* Duration Selection */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Duration</label>
+            <select
+              value={videoSettings.duration}
+              onChange={(e) => setVideoSettings(prev => ({ ...prev, duration: e.target.value as VideoDuration }))}
+              className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              disabled={isGenerating}
+            >
+              {VIDEO_DURATIONS.map(duration => (
+                <option key={duration.id} value={duration.id}>{duration.label}</option>
+              ))}
+            </select>
+          </div>
+
+          {/* Resolution Selection */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Resolution</label>
+            <select
+              value={videoSettings.resolution}
+              onChange={(e) => setVideoSettings(prev => ({ ...prev, resolution: e.target.value as VideoResolution }))}
+              className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              disabled={isGenerating || videoSettings.model === 'veo-3'}
+            >
+              {VIDEO_RESOLUTIONS.map(res => (
+                <option key={res.id} value={res.id}>{res.label}</option>
+              ))}
+            </select>
+            {videoSettings.model === 'veo-3' && (
+              <p className="mt-1 text-xs text-gray-500">VEO 3 uses default resolution</p>
+            )}
+          </div>
+
+          {/* Aspect Ratio Selection */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Aspect Ratio</label>
+            <select
+              value={videoSettings.aspectRatio}
+              onChange={(e) => setVideoSettings(prev => ({ ...prev, aspectRatio: e.target.value as VideoAspectRatio }))}
+              className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              disabled={isGenerating}
+            >
+              {VIDEO_ASPECT_RATIOS.map(ratio => (
+                <option key={ratio.id} value={ratio.id}>{ratio.label} - {ratio.description}</option>
+              ))}
+            </select>
+          </div>
+        </div>
+
+        {/* Estimated Cost */}
+        <div className="mt-4 p-3 bg-gray-50 rounded-lg">
+          <div className="flex items-center justify-between">
+            <span className="text-sm text-gray-600">Estimated cost:</span>
+            <span className="font-medium text-gray-900">
+              ${(parseFloat(VIDEO_MODELS.find(m => m.id === videoSettings.model)?.cost.replace(/[^0-9.]/g, '') || '0.03') * parseInt(videoSettings.duration)).toFixed(2)}
+            </span>
+          </div>
+        </div>
+      </div>
+
       {/* Variation Preview Cards */}
       {!generationResults.length && (
         <div className="bg-white rounded-lg shadow-md p-6 mb-6">
@@ -297,15 +545,17 @@ export default function VideoGeneratePage() {
             `}
           >
             {isGenerating ? (
-              <div className="flex items-center space-x-3">
-                <svg className="animate-spin h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                </svg>
-                <span>Generating Video Ads...</span>
+              <div className="flex flex-col items-center space-y-2">
+                <div className="flex items-center space-x-3">
+                  <svg className="animate-spin h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                  </svg>
+                  <span>{generationStatus || 'Generating Video...'}</span>
+                </div>
               </div>
             ) : (
-              <span>Generate Video Ads</span>
+              <span>Generate Video with {VIDEO_MODELS.find(m => m.id === videoSettings.model)?.name}</span>
             )}
           </button>
         </div>
