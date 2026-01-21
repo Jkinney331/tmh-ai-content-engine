@@ -27,7 +27,7 @@ interface GenerationRequest {
   modelDescription?: string;
   sneaker?: string;
   location?: string;
-  model?: 'flux-pro' | 'flux-max' | 'flux-klein' | 'gemini-flash';
+  model?: 'gpt-5-image' | 'gpt-5-image-mini' | 'gemini-flash' | 'gemini-pro';
   aspectRatio?: '1:1' | '4:3' | '3:4' | '16:9' | '9:16';
   generateBothModels?: boolean;
 }
@@ -70,7 +70,7 @@ export async function POST(request: NextRequest) {
     const modelDescription = variation?.model || body.modelDescription;
     const sneaker = body.sneaker;
     const location = variation?.location || body.location;
-    const primaryModel = body.model || 'flux-pro';
+    const primaryModel = body.model || 'gpt-5-image-mini';
     const aspectRatio = body.aspectRatio || '4:3';
 
     console.log('[Lifestyle Shot] Generating with:', {
@@ -103,7 +103,7 @@ export async function POST(request: NextRequest) {
     // Generate with secondary model if requested
     if (generateBothModels) {
       try {
-        const secondaryModel = primaryModel === 'flux-pro' ? 'gemini-flash' : 'flux-pro';
+        const secondaryModel = primaryModel === 'gpt-5-image-mini' ? 'gemini-flash' : 'gpt-5-image-mini';
         const resultB = await generateLifestyleShot({
           description,
           cityName,
@@ -174,9 +174,10 @@ export async function POST(request: NextRequest) {
 export async function GET() {
   return NextResponse.json({
     models: [
-      { id: 'flux-pro', name: 'Flux Pro', description: 'Best quality, recommended for finals' },
-      { id: 'flux-klein', name: 'Flux Schnell', description: 'Fast iteration, lower cost' },
-      { id: 'gemini-flash', name: 'Gemini Flash', description: 'Google model, supports aspect ratios' }
+      { id: 'gpt-5-image', name: 'GPT-5 Image', description: 'Best quality, recommended for finals' },
+      { id: 'gpt-5-image-mini', name: 'GPT-5 Image Mini', description: 'Fast iteration, lower cost' },
+      { id: 'gemini-flash', name: 'Gemini Flash', description: 'Google model, supports aspect ratios' },
+      { id: 'gemini-pro', name: 'Gemini Pro', description: 'Google pro model, highest quality' }
     ],
     aspectRatios: [
       { id: '1:1', name: 'Square', description: 'Instagram feed' },

@@ -18,7 +18,7 @@ interface ProductShotRequest {
   cityName?: string;
   productType?: string;
   style?: string;
-  model?: 'flux-pro' | 'flux-max' | 'flux-klein' | 'gemini-flash';
+  model?: 'gpt-5-image' | 'gpt-5-image-mini' | 'gemini-flash' | 'gemini-pro';
   generateBothModels?: boolean;
 }
 
@@ -53,8 +53,8 @@ export async function POST(request: NextRequest) {
     const style = body.style || 'urban luxury streetwear';
     const cityName = body.cityName;
 
-    // Generate with primary model (flux-pro by default)
-    const primaryModel = body.model || 'flux-pro';
+    // Generate with primary model (gpt-5-image-mini by default)
+    const primaryModel = body.model || 'gpt-5-image-mini';
 
     console.log('[Product Shot] Generating with:', { shotType: body.shotType, productType, style, cityName, model: primaryModel });
 
@@ -79,7 +79,7 @@ export async function POST(request: NextRequest) {
     // Generate with secondary model if requested
     if (body.generateBothModels) {
       try {
-        const secondaryModel = primaryModel === 'flux-pro' ? 'gemini-flash' : 'flux-pro';
+        const secondaryModel = primaryModel === 'gpt-5-image-mini' ? 'gemini-flash' : 'gpt-5-image-mini';
         const resultB = await generateProductShot({
           productType,
           style,
@@ -145,9 +145,10 @@ export async function GET() {
       { id: 'macro', name: 'Macro Detail', description: 'Close-up of fabric and stitching' }
     ],
     models: [
-      { id: 'flux-pro', name: 'Flux Pro', description: 'Best quality, recommended for finals' },
-      { id: 'flux-klein', name: 'Flux Schnell', description: 'Fast iteration, lower cost' },
-      { id: 'gemini-flash', name: 'Gemini Flash', description: 'Google model, good for variations' }
+      { id: 'gpt-5-image', name: 'GPT-5 Image', description: 'Best quality, recommended for finals' },
+      { id: 'gpt-5-image-mini', name: 'GPT-5 Image Mini', description: 'Fast iteration, lower cost' },
+      { id: 'gemini-flash', name: 'Gemini Flash', description: 'Google model, good for variations' },
+      { id: 'gemini-pro', name: 'Gemini Pro', description: 'Google pro model, highest quality' }
     ],
     configured: isImageGenerationConfigured()
   });
