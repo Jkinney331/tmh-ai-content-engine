@@ -3,7 +3,7 @@ export interface City {
   name: string
   state: string
   country: string
-  status: 'active' | 'paused' | 'inactive'
+  status: 'active' | 'paused' | 'inactive' | 'ready' | 'approved' | 'draft' | 'researching' | 'error'
   areaCodes: string[]
   nicknameCount: number
   population?: number
