@@ -35,6 +35,7 @@ export default function ChatPanel() {
   const [input, setInput] = useState('')
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLTextAreaElement>(null)
+  const [showFloating, setShowFloating] = useState(false)
 
   // Update context when page or city changes
   useEffect(() => {
@@ -55,6 +56,15 @@ export default function ChatPanel() {
       inputRef.current?.focus()
     }
   }, [isOpen])
+
+  useEffect(() => {
+    const handleResize = () => {
+      setShowFloating(window.innerWidth < 1024)
+    }
+    handleResize()
+    window.addEventListener('resize', handleResize)
+    return () => window.removeEventListener('resize', handleResize)
+  }, [])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -131,21 +141,23 @@ export default function ChatPanel() {
   return (
     <>
       {/* Chat Toggle Button */}
-      <button
-        onClick={toggleChat}
-        className={`fixed bottom-6 right-6 z-40 p-4 rounded-full shadow-lg transition-all duration-200 lg:hidden ${
-          isOpen
-            ? 'bg-gray-600 hover:bg-gray-700'
-            : 'bg-indigo-600 hover:bg-indigo-700'
-        }`}
-        aria-label={isOpen ? 'Close chat' : 'Open chat'}
-      >
-        {isOpen ? (
-          <ChevronDown className="w-6 h-6 text-white" />
-        ) : (
-          <MessageSquare className="w-6 h-6 text-white" />
-        )}
-      </button>
+      {showFloating && (
+        <button
+          onClick={toggleChat}
+          className={`fixed bottom-6 right-6 z-40 rounded-full p-4 shadow-lg transition-all duration-200 ${
+            isOpen
+              ? 'bg-gray-600 hover:bg-gray-700'
+              : 'bg-indigo-600 hover:bg-indigo-700'
+          }`}
+          aria-label={isOpen ? 'Close chat' : 'Open chat'}
+        >
+          {isOpen ? (
+            <ChevronDown className="w-6 h-6 text-white" />
+          ) : (
+            <MessageSquare className="w-6 h-6 text-white" />
+          )}
+        </button>
+      )}
 
       {/* Chat Panel */}
       <div
