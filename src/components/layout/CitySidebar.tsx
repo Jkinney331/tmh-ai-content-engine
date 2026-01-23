@@ -85,7 +85,7 @@ export function CitySidebar({ collapsed }: CitySidebarProps) {
             <Plus className="h-4 w-4" />
             Add New City
           </Button>
-          <ScrollArea className="h-full pr-2">
+          <ScrollArea className="h-full pr-2 pl-1">
             <div className="flex flex-col gap-2">
               {filtered.map((city, index) => {
                 const isActive = selectedCity?.id === city.id;

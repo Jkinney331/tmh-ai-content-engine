@@ -149,7 +149,7 @@ export default function ChatPanel() {
 
       {/* Chat Panel */}
       <div
-        className={`fixed bottom-24 right-6 z-40 w-96 max-w-[calc(100vw-3rem)] bg-white rounded-lg shadow-2xl border border-gray-200 transition-all duration-300 lg:hidden ${
+        className={`fixed bottom-24 right-6 z-40 w-96 max-w-[calc(100vw-3rem)] bg-white rounded-lg shadow-2xl border border-gray-200 transition-all duration-300 ${
           isOpen
             ? 'opacity-100 translate-y-0 pointer-events-auto'
             : 'opacity-0 translate-y-4 pointer-events-none'
