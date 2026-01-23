@@ -1,5 +1,6 @@
 import { perplexitySearch, isPerplexityError } from './perplexity';
 import { claudeGenerateJSON } from './claude';
+import { callOpenRouter } from './openrouter';
 import { supabase } from './supabase';
 
 interface ResearchCategory {
@@ -104,6 +105,9 @@ export async function runCityResearch(
 
     // Step 3: Execute Perplexity searches for each category
     const perplexityResults: PerplexityResearchData[] = [];
+    const hasPerplexityKey = Boolean(process.env.PERPLEXITY_API_KEY);
+    const hasAnthropicKey = Boolean(process.env.ANTHROPIC_API_KEY);
+    const hasOpenRouterKey = Boolean(process.env.OPENROUTER_API_KEY);
 
     for (const category of categories) {
       const categoryInfo = categoryMap[category];
@@ -118,18 +122,36 @@ export async function runCityResearch(
 
       console.log(`Researching ${category} for ${name}...`);
 
-      const perplexityResponse = await perplexitySearch(query, {
-        model: 'sonar-small-online',
-        temperature: 0.3,
-        max_tokens: 2000
-      });
+      let content: string | undefined;
+      if (hasPerplexityKey) {
+        const perplexityResponse = await perplexitySearch(query, {
+          model: 'sonar-small-online',
+          temperature: 0.3,
+          max_tokens: 2000
+        });
 
-      if (isPerplexityError(perplexityResponse)) {
-        console.error(`Perplexity error for ${category}:`, perplexityResponse.error);
-        continue;
+        if (isPerplexityError(perplexityResponse)) {
+          console.error(`Perplexity error for ${category}:`, perplexityResponse.error);
+        } else {
+          content = perplexityResponse.choices[0]?.message?.content;
+        }
       }
 
-      const content = perplexityResponse.choices[0]?.message?.content;
+      if (!content && hasOpenRouterKey) {
+        const openRouterResponse = await callOpenRouter({
+          model: 'perplexity/sonar-pro',
+          messages: [
+            {
+              role: 'system',
+              content: 'You are a cultural research assistant specializing in urban fashion and city-specific elements.'
+            },
+            { role: 'user', content: query }
+          ],
+          max_tokens: 2000,
+          temperature: 0.3
+        });
+        content = openRouterResponse.choices[0]?.message?.content;
+      }
       if (content) {
         perplexityResults.push({
           query,
@@ -200,15 +222,40 @@ Focus on accuracy and local authenticity. Only mark as "approved" if you have hi
 
     console.log(`Synthesizing research with Claude for ${name}...`);
 
-    const synthesisResult = await claudeGenerateJSON<ClaudeSynthesisResult>(
-      synthesisPrompt,
-      {
-        model: 'claude-3-haiku-20240307',
-        temperature: 0.3,
-        maxTokens: 4000,
-        systemPrompt: 'You are an expert research analyst specializing in urban culture and city-specific elements. Ensure you extract AT LEAST 5 slang terms, 5 landmarks, and 3 sports teams from the research data.'
+    let synthesisResult: ClaudeSynthesisResult;
+    if (hasAnthropicKey) {
+      synthesisResult = await claudeGenerateJSON<ClaudeSynthesisResult>(
+        synthesisPrompt,
+        {
+          model: 'claude-3-haiku-20240307',
+          temperature: 0.3,
+          maxTokens: 4000,
+          systemPrompt: 'You are an expert research analyst specializing in urban culture and city-specific elements. Ensure you extract AT LEAST 5 slang terms, 5 landmarks, and 3 sports teams from the research data.'
+        }
+      );
+    } else if (hasOpenRouterKey) {
+      const openRouterResponse = await callOpenRouter({
+        model: 'anthropic/claude-3-5-sonnet',
+        messages: [
+          {
+            role: 'system',
+            content: 'You are an expert research analyst specializing in urban culture and city-specific elements. Ensure you extract AT LEAST 5 slang terms, 5 landmarks, and 3 sports teams from the research data.'
+          },
+          { role: 'user', content: synthesisPrompt }
+        ],
+        max_tokens: 4000,
+        temperature: 0.3
+      });
+
+      const raw = openRouterResponse.choices[0]?.message?.content || '';
+      const jsonMatch = raw.match(/\{[\s\S]*\}/);
+      if (!jsonMatch) {
+        throw new Error('OpenRouter synthesis did not return JSON');
       }
-    );
+      synthesisResult = JSON.parse(jsonMatch[0]) as ClaudeSynthesisResult;
+    } else {
+      throw new Error('Research requires PERPLEXITY_API_KEY or OPENROUTER_API_KEY for research, and ANTHROPIC_API_KEY or OPENROUTER_API_KEY for synthesis.');
+    }
 
     // Validate minimum requirements
     const elementCounts = validateElementCounts(synthesisResult.elements);

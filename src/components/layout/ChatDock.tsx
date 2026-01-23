@@ -13,7 +13,7 @@ export function ChatDock({ collapsed }: ChatDockProps) {
   return (
     <aside
       className={cn(
-        "flex h-full flex-col border-l border-[color:var(--surface-border)] bg-[color:var(--surface-muted)] transition-all duration-300",
+        "hidden h-full flex-col border-l border-[color:var(--surface-border)] bg-[color:var(--surface-muted)] transition-all duration-300 lg:flex",
         collapsed ? "w-0 overflow-hidden" : "w-[360px]",
       )}
     >

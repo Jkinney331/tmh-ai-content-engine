@@ -133,7 +133,7 @@ export default function ChatPanel() {
       {/* Chat Toggle Button */}
       <button
         onClick={toggleChat}
-        className={`fixed bottom-6 right-6 z-40 p-4 rounded-full shadow-lg transition-all duration-200 ${
+        className={`fixed bottom-6 right-6 z-40 p-4 rounded-full shadow-lg transition-all duration-200 lg:hidden ${
           isOpen
             ? 'bg-gray-600 hover:bg-gray-700'
             : 'bg-indigo-600 hover:bg-indigo-700'
@@ -149,7 +149,7 @@ export default function ChatPanel() {
 
       {/* Chat Panel */}
       <div
-        className={`fixed bottom-24 right-6 z-40 w-96 max-w-[calc(100vw-3rem)] bg-white rounded-lg shadow-2xl border border-gray-200 transition-all duration-300 ${
+        className={`fixed bottom-24 right-6 z-40 w-96 max-w-[calc(100vw-3rem)] bg-white rounded-lg shadow-2xl border border-gray-200 transition-all duration-300 lg:hidden ${
           isOpen
             ? 'opacity-100 translate-y-0 pointer-events-auto'
             : 'opacity-0 translate-y-4 pointer-events-none'
