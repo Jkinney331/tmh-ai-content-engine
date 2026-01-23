@@ -2,12 +2,13 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { usePathname } from "next/navigation";
-import { Menu } from "lucide-react";
+import { Menu, MessageSquare } from "lucide-react";
 import { IconRail } from "@/components/layout/IconRail";
 import { CitySidebar } from "@/components/layout/CitySidebar";
 import { ChatDock } from "@/components/layout/ChatDock";
 import { ThemeToggle } from "@/components/shared/ThemeToggle";
 import { Button } from "@/components/ui/button";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import ChatPanel from "@/components/ChatPanel";
 import { cn } from "@/lib/utils";
 
@@ -55,10 +56,11 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
             <div className="flex items-center gap-3">
               <ThemeToggle isDark={isDark} onToggle={() => setIsDark((prev) => !prev)} />
               <Button variant="secondary" size="icon" onClick={() => setChatCollapsed((prev) => !prev)}>
-                <span className={cn("text-xs", chatCollapsed ? "text-muted-foreground" : "text-primary")}>
-                  AI
-                </span>
+                <MessageSquare className={cn("h-4 w-4", chatCollapsed ? "text-muted-foreground" : "text-primary")} />
               </Button>
+              <Avatar>
+                <AvatarFallback>TM</AvatarFallback>
+              </Avatar>
             </div>
           </header>
           <div className="flex-1 overflow-y-auto p-6">

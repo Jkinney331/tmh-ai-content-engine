@@ -1,6 +1,8 @@
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { Plus, Search } from "lucide-react";
+import { CityThreadCard } from "@/components/city/CityThreadCard";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -28,7 +30,8 @@ export function CitySidebar({ collapsed }: CitySidebarProps) {
         name: "Drop 1",
         status: "Draft",
         cityCount: Math.min(3, cities.length),
-        launchDate: null,
+        totalAssets: 0,
+        launchDate: "TBD",
       },
     ];
   }, [cities.length]);
@@ -86,60 +89,69 @@ export function CitySidebar({ collapsed }: CitySidebarProps) {
             Add New City
           </Button>
           <ScrollArea className="h-full pr-2 pl-1">
-            <div className="flex flex-col gap-2">
-              {filtered.map((city, index) => {
-                const isActive = selectedCity?.id === city.id;
-                return (
-                  <button
-                    key={city.id}
-                    className={cn(
-                      "rounded-lg border border-[color:var(--surface-border)] bg-[color:var(--surface-muted)] p-3 text-left transition hover:border-primary/40 animate-[page-enter_400ms_ease-out_forwards]",
-                      isActive && "border-primary/50 bg-primary/10",
-                    )}
-                    style={{ animationDelay: `${50 * (index + 1)}ms` }}
-                    onClick={() => handleSelect(city)}
-                  >
-                    <p className="text-sm font-semibold">{city.name}</p>
-                    <p className="mt-1 text-xs text-muted-foreground">{city.country}</p>
-                  </button>
-                );
-              })}
+            <div className="flex flex-col gap-3">
+              <div className="flex flex-col gap-2">
+                {filtered.map((city, index) => {
+                  const isActive = selectedCity?.id === city.id;
+                  return (
+                    <div
+                      key={city.id}
+                      className="animate-[page-enter_400ms_ease-out_forwards]"
+                      style={{ animationDelay: `${50 * (index + 1)}ms` }}
+                    >
+                      <CityThreadCard
+                        city={city}
+                        isActive={isActive}
+                        onClick={() => handleSelect(city)}
+                      />
+                    </div>
+                  );
+                })}
+              </div>
               {filtered.length === 0 && (
                 <div className="rounded-lg border border-dashed border-[color:var(--surface-border)] p-3 text-xs text-muted-foreground">
                   No cities match this search.
                 </div>
               )}
             </div>
-            <div className="mt-6 space-y-3">
+            <div className="mt-4 border-t border-[color:var(--surface-border)] pt-4">
               <div className="flex items-center justify-between">
-                <p className="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">Drops</p>
-                <Link
-                  href="/drops"
-                  className="text-xs text-primary hover:text-primary/80"
-                >
-                  New
-                </Link>
+                <p className="text-sm font-semibold text-foreground">Drops</p>
+                <Button variant="secondary" size="sm">
+                  New Drop
+                </Button>
               </div>
-              {drops.length === 0 && (
-                <div className="rounded-lg border border-dashed border-[color:var(--surface-border)] p-3 text-xs text-muted-foreground">
-                  No drops yet.
-                </div>
-              )}
-              {drops.map((drop) => (
-                <Link
-                  key={drop.id}
-                  href={`/drops/${drop.id}`}
-                  className="rounded-lg border border-[color:var(--surface-border)] bg-[color:var(--surface-muted)] p-3 text-left transition hover:border-primary/40"
-                >
-                  <div className="flex items-center justify-between">
-                    <p className="text-sm font-semibold text-foreground">{drop.name}</p>
-                    <span className="rounded-full bg-primary/15 px-2 py-0.5 text-[10px] uppercase tracking-[0.16em] text-primary">
-                      {drop.status}
-                    </span>
+              <div className="mt-3 flex flex-col gap-2">
+                {drops.length === 0 && (
+                  <div className="rounded-lg border border-dashed border-[color:var(--surface-border)] p-3 text-xs text-muted-foreground">
+                    No drops yet.
                   </div>
-                  <p className="mt-1 text-xs text-muted-foreground">{drop.cityCount} cities</p>
-                </Link>
-              ))}
+                )}
+                {drops.map((drop) => (
+                  <Link
+                    key={drop.id}
+                    href={`/drops/${drop.id}`}
+                    className="rounded-lg border border-[color:var(--surface-border)] bg-[color:var(--surface-muted)] p-3 text-left transition hover:border-primary/40"
+                  >
+                    <div className="flex items-center justify-between gap-2">
+                      <p className="text-sm font-semibold text-foreground">{drop.name}</p>
+                      <Badge variant={drop.status === "Launched" ? "amber" : "teal"}>
+                        {drop.status}
+                      </Badge>
+                    </div>
+                    <div className="mt-2 flex items-center justify-between text-xs text-muted-foreground">
+                      <span>{drop.cityCount} cities</span>
+                      <span>{drop.totalAssets} assets</span>
+                    </div>
+                    <div className="mt-2 flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
+                      <span>Launch: {drop.launchDate}</span>
+                    </div>
+                  </Link>
+                ))}
+              </div>
+              <div className="mt-3 rounded-lg border border-dashed border-[color:var(--surface-border)] p-3 text-xs text-muted-foreground">
+                Active drop is highlighted and synced with the profile view.
+              </div>
             </div>
           </ScrollArea>
         </div>

@@ -4,20 +4,17 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import { getCityById, getCityElementsByType } from '@/lib/supabase'
 import { Database } from '@/types/database'
+import { GlassCard } from '@/components/shared/GlassCard'
+import { Button } from '@/components/ui/button'
 import {
-  ArrowLeft,
-  CheckCircle,
-  MapPin,
-  Save,
+  BarChart3,
+  Check,
+  ChevronDown,
+  FileText,
+  Image,
   Sparkles,
-  Flag,
   ThumbsDown,
   ThumbsUp,
-  RefreshCw,
-  FileText,
-  Download,
-  ChevronDown,
-  ChevronUp,
 } from 'lucide-react'
 
 type City = Database['public']['Tables']['cities']['Row']
@@ -39,15 +36,6 @@ type GeneratedAsset = {
   model?: string
 }
 
-const STATUS_STYLES: Record<string, string> = {
-  ready: 'bg-success/15 text-success',
-  active: 'bg-success/15 text-success',
-  approved: 'bg-primary/15 text-primary',
-  researching: 'bg-warning/15 text-warning',
-  draft: 'bg-muted text-muted-foreground',
-  error: 'bg-destructive/15 text-destructive',
-}
-
 const FLAG_BY_COUNTRY: Record<string, string> = {
   USA: '🇺🇸',
   Japan: '🇯🇵',
@@ -57,7 +45,45 @@ const FLAG_BY_COUNTRY: Record<string, string> = {
   China: '🇨🇳',
 }
 
- export default function CityDetailPage() {
+function SectionHeader({
+  icon: Icon,
+  title,
+  actions,
+}: {
+  icon: typeof Sparkles
+  title: string
+  actions?: React.ReactNode
+}) {
+  return (
+    <div className="flex flex-wrap items-center justify-between gap-3">
+      <div className="flex items-center gap-2 text-sm font-semibold">
+        <Icon className="h-4 w-4 text-primary" />
+        {title}
+      </div>
+      {actions ? <div className="flex gap-2">{actions}</div> : null}
+    </div>
+  )
+}
+
+function CollapsibleBlock({
+  title,
+  children,
+}: {
+  title: string
+  children: React.ReactNode
+}) {
+  return (
+    <details className="group rounded-lg border border-[color:var(--surface-border)] bg-[color:var(--surface-muted)] p-4">
+      <summary className="flex cursor-pointer list-none items-center justify-between text-sm font-semibold text-foreground">
+        {title}
+        <ChevronDown className="h-4 w-4 text-muted-foreground transition group-open:rotate-180" />
+      </summary>
+      <div className="mt-3 text-sm text-muted-foreground">{children}</div>
+    </details>
+  )
+}
+
+export default function CityDetailPage() {
   const params = useParams()
   const router = useRouter()
   const cityId = params.cityId as string
@@ -72,7 +98,6 @@ const FLAG_BY_COUNTRY: Record<string, string> = {
   const [showToast, setShowToast] = useState(false)
   const [approvingCity, setApprovingCity] = useState(false)
   const [isResearching, setIsResearching] = useState(false)
-  const [collapsedSections, setCollapsedSections] = useState<Record<string, boolean>>({})
   const [notes, setNotes] = useState('')
   const notesRef = useRef<HTMLDivElement>(null)
 
@@ -191,13 +216,14 @@ const FLAG_BY_COUNTRY: Record<string, string> = {
       })
 
       if (!response.ok) {
-        throw new Error('Research failed to start')
+        const data = await response.json().catch(() => ({}))
+        throw new Error(data.error || 'Research failed to start')
       }
 
       await fetchCityData()
     } catch (err) {
       console.error('Error running research:', err)
-      setError('Failed to run research. Please try again.')
+      setError(err instanceof Error ? err.message : 'Failed to run research. Please try again.')
     } finally {
       setIsResearching(false)
     }
@@ -208,10 +234,6 @@ const FLAG_BY_COUNTRY: Record<string, string> = {
     window.localStorage.setItem(`tmh-city-notes-${cityId}`, notes)
     setShowToast(true)
     setTimeout(() => setShowToast(false), 3000)
-  }
-
-  const toggleSection = (key: string) => {
-    setCollapsedSections(prev => ({ ...prev, [key]: !prev[key] }))
   }
 
   const totalElements = useMemo(() => {
@@ -227,15 +249,20 @@ const FLAG_BY_COUNTRY: Record<string, string> = {
     }, {})
   }, [assets])
 
-  const statusLabel = city?.status || 'draft'
-  const statusStyle = STATUS_STYLES[statusLabel] || 'bg-muted text-muted-foreground'
   const flag = city?.country ? (FLAG_BY_COUNTRY[city.country] || '🏙️') : '🏙️'
 
-  const insightBlocks = [
-    { key: 'slang', label: 'Local Slang', icon: Flag },
-    { key: 'landmark', label: 'Landmarks', icon: MapPin },
-    { key: 'sport', label: 'Sports Culture', icon: Sparkles },
-    { key: 'cultural', label: 'Cultural Signals', icon: Sparkles },
+  const statCards = [
+    { label: 'Population', value: city?.population_notes || 'Not set' },
+    { label: 'Streetwear Shops', value: (city?.visual_identity as any)?.shops || 'Not set' },
+    { label: 'Market Growth', value: (city?.visual_identity as any)?.growth || 'Not set' },
+    { label: 'Avg Spend', value: (city?.visual_identity as any)?.avg_spend || 'Not set' },
+  ]
+
+  const researchBlocks = [
+    { key: 'slang', title: 'Local Slang' },
+    { key: 'landmark', title: 'Key Landmarks' },
+    { key: 'sport', title: 'Sports Culture' },
+    { key: 'cultural', title: 'Cultural Signals' },
   ]
 
   if (loading) {
@@ -250,278 +277,245 @@ const FLAG_BY_COUNTRY: Record<string, string> = {
     return (
       <div className="flex h-full flex-col items-center justify-center gap-4 text-muted-foreground">
         <p>City not found.</p>
-        <button
-          onClick={() => router.push('/cities')}
-          className="rounded-lg border border-[color:var(--surface-border)] px-4 py-2"
-        >
+        <Button variant="secondary" onClick={() => router.push('/cities')}>
           Back to Cities
-        </button>
+        </Button>
       </div>
     )
   }
 
   return (
-    <div className="mx-auto flex h-full max-w-7xl flex-col gap-6">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-4">
-          <button
-            onClick={() => router.back()}
-            className="flex h-10 w-10 items-center justify-center rounded-full border border-[color:var(--surface-border)] bg-[color:var(--surface-muted)] text-muted-foreground hover:text-foreground"
-          >
-            <ArrowLeft className="h-4 w-4" />
-          </button>
-          <div>
-            <p className="text-xs uppercase tracking-[0.2em] text-muted-foreground">City Profile</p>
-            <h1 className="text-3xl font-bold text-foreground">
-              {flag} {city.name}
-            </h1>
-            <p className="text-sm text-muted-foreground">{city.country || 'City Intelligence'}</p>
-          </div>
-        </div>
-        <div className="flex items-center gap-3">
-          <span className={`rounded-full px-3 py-1 text-xs font-semibold uppercase tracking-[0.2em] ${statusStyle}`}>
-            {statusLabel}
-          </span>
-          <button
-            onClick={() => notesRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })}
-            className="rounded-lg border border-[color:var(--surface-border)] px-3 py-2 text-sm text-muted-foreground hover:text-foreground"
-          >
-            Add Note
-          </button>
-          <button
-            onClick={handleRunResearch}
-            disabled={isResearching}
-            className="rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground hover:bg-primary/90 disabled:opacity-60"
-          >
-            {isResearching ? 'Researching...' : 'Start Research'}
-          </button>
-          <button
-            className="rounded-lg border border-[color:var(--surface-border)] px-3 py-2 text-sm text-muted-foreground hover:text-foreground"
-          >
-            Export
-          </button>
-        </div>
-      </div>
-
+    <div className="flex flex-col gap-8">
       {error && (
         <div className="rounded-xl border border-destructive/30 bg-destructive/10 p-4 text-sm text-destructive">
           {error}
         </div>
       )}
 
-      <div className="grid grid-cols-1 gap-4 md:grid-cols-4">
-        {[
-          { label: 'Population', value: city.population_notes || 'Not set' },
-          { label: 'Market Growth', value: (city.visual_identity as any)?.growth || 'Not set' },
-          { label: 'Avg Spend', value: (city.visual_identity as any)?.avg_spend || 'Not set' },
-          { label: 'Last Updated', value: city.updated_at ? new Date(city.updated_at).toLocaleDateString() : 'Unknown' },
-        ].map((stat) => (
-          <div key={stat.label} className="surface rounded-xl p-4">
-            <p className="text-xs uppercase tracking-[0.2em] text-muted-foreground">{stat.label}</p>
-            <p className="mt-2 text-lg font-semibold text-foreground">{stat.value}</p>
-          </div>
-        ))}
-      </div>
-
-      {totalElements > 0 && (
-        <section className="surface rounded-xl p-6">
-          <div className="mb-4 flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <Sparkles className="h-5 w-5 text-primary" />
-              <h2 className="text-lg font-semibold text-foreground">Research Insights</h2>
+      <GlassCard className="p-6">
+        <div className="flex flex-wrap items-start justify-between gap-4">
+          <div>
+            <p className="text-3xl font-display font-semibold">
+              {flag} {city.name}
+            </p>
+            <p className="text-sm text-muted-foreground">{city.country || 'City Intelligence'}</p>
+            <div className="mt-2 inline-flex items-center gap-2 rounded-full border border-[color:var(--surface-border)] bg-[color:var(--surface-muted)] px-3 py-1 text-xs text-muted-foreground">
+              <span className="h-2 w-2 rounded-full bg-primary" />
+              {totalElements > 0 ? 'Research Complete' : 'Research Pending'}
             </div>
-            <div className="flex items-center gap-2">
-              <button
-                onClick={() => handleSaveDecisions()}
+          </div>
+          <div className="flex gap-2">
+            <Button onClick={handleRunResearch} disabled={isResearching}>
+              <Sparkles className="h-4 w-4" />
+              {isResearching ? 'Researching...' : 'Start Research'}
+            </Button>
+            <Button variant="secondary" onClick={() => notesRef.current?.scrollIntoView({ behavior: 'smooth' })}>
+              Add Note
+            </Button>
+            <Button variant="secondary">Export</Button>
+          </div>
+        </div>
+        <div className="mt-5 grid grid-cols-2 gap-3 lg:grid-cols-4">
+          {statCards.map((stat) => (
+            <GlassCard key={stat.label} className="p-4">
+              <p className="text-xs text-muted-foreground">{stat.label}</p>
+              <p className="mt-2 text-lg font-semibold">{stat.value}</p>
+            </GlassCard>
+          ))}
+        </div>
+      </GlassCard>
+
+      <section className="space-y-4">
+        <SectionHeader
+          icon={BarChart3}
+          title="Research Insights"
+          actions={
+            <>
+              <Button variant="secondary" size="sm">
+                Ask AI about Research
+              </Button>
+              <Button variant="secondary" size="sm">
+                Add Research Note
+              </Button>
+              <Button
+                variant="secondary"
+                size="sm"
+                onClick={handleSaveDecisions}
                 disabled={saving || approvals.size === 0}
-                className="inline-flex items-center gap-2 rounded-lg border border-[color:var(--surface-border)] px-3 py-2 text-sm text-muted-foreground hover:text-foreground disabled:opacity-50"
               >
-                <Save className="h-4 w-4" />
                 Save Decisions
-              </button>
-            </div>
-          </div>
-
-          <div className="space-y-4">
-            {insightBlocks.map((block) => {
-              const blockElements = elements[block.key] || []
-              if (!blockElements.length) return null
-              const isCollapsed = collapsedSections[block.key]
-              const Icon = block.icon
-
-              return (
-                <div key={block.key} className="rounded-xl border border-[color:var(--surface-border)] bg-[color:var(--surface-muted)]">
-                  <button
-                    onClick={() => toggleSection(block.key)}
-                    className="flex w-full items-center justify-between px-4 py-3"
-                  >
-                    <div className="flex items-center gap-2">
-                      <Icon className="h-4 w-4 text-primary" />
-                      <span className="text-sm font-semibold text-foreground">{block.label}</span>
-                      <span className="rounded-full bg-primary/10 px-2 py-0.5 text-xs text-primary">
-                        {blockElements.length}
-                      </span>
-                    </div>
-                    {isCollapsed ? <ChevronDown className="h-4 w-4 text-muted-foreground" /> : <ChevronUp className="h-4 w-4 text-muted-foreground" />}
-                  </button>
-                  {!isCollapsed && (
-                    <div className="space-y-3 px-4 pb-4">
-                      {blockElements.map((element) => {
-                        const approval = approvals.get(element.id)
-                        const status = approval?.status || element.status
-                        return (
-                          <div key={element.id} className="rounded-lg bg-[color:var(--surface-strong)] p-4">
-                            <div className="flex items-center justify-between">
-                              <div>
-                                <p className="text-sm font-semibold text-foreground">{element.element_key}</p>
-                                <p className="text-xs text-muted-foreground">{element.element_type}</p>
-                              </div>
-                              <div className="flex items-center gap-2">
-                                <button
-                                  onClick={() => handleApprovalChange(element.id, 'approved')}
-                                  className={`rounded-lg px-2 py-1 text-xs ${status === 'approved' ? 'bg-success/20 text-success' : 'text-muted-foreground hover:text-success'}`}
-                                >
-                                  <ThumbsUp className="h-3 w-3" />
-                                </button>
-                                <button
-                                  onClick={() => handleApprovalChange(element.id, 'rejected')}
-                                  className={`rounded-lg px-2 py-1 text-xs ${status === 'rejected' ? 'bg-destructive/20 text-destructive' : 'text-muted-foreground hover:text-destructive'}`}
-                                >
-                                  <ThumbsDown className="h-3 w-3" />
-                                </button>
-                              </div>
-                            </div>
-                            <div className="mt-3 text-sm text-muted-foreground">
-                              {typeof element.element_value === 'string'
-                                ? element.element_value
-                                : JSON.stringify(element.element_value)}
+              </Button>
+            </>
+          }
+        />
+        <div className="grid gap-4">
+          {researchBlocks.map((block) => {
+            const blockElements = elements[block.key] || []
+            return (
+              <CollapsibleBlock key={block.key} title={block.title}>
+                {blockElements.length === 0 ? (
+                  <p>No research items yet.</p>
+                ) : (
+                  <div className="space-y-3">
+                    {blockElements.map((element) => {
+                      const approval = approvals.get(element.id)
+                      const status = approval?.status || element.status
+                      return (
+                        <div key={element.id} className="rounded-lg bg-[color:var(--surface-strong)] p-3">
+                          <div className="flex items-center justify-between">
+                            <p className="text-sm font-semibold text-foreground">{element.element_key}</p>
+                            <div className="flex items-center gap-2">
+                              <button
+                                onClick={() => handleApprovalChange(element.id, 'approved')}
+                                className={status === 'approved' ? 'text-primary' : 'text-muted-foreground'}
+                                aria-label="Approve"
+                              >
+                                <ThumbsUp className="h-4 w-4" />
+                              </button>
+                              <button
+                                onClick={() => handleApprovalChange(element.id, 'rejected')}
+                                className={status === 'rejected' ? 'text-destructive' : 'text-muted-foreground'}
+                                aria-label="Reject"
+                              >
+                                <ThumbsDown className="h-4 w-4" />
+                              </button>
                             </div>
                           </div>
-                        )
-                      })}
-                    </div>
-                  )}
-                </div>
-              )
-            })}
-          </div>
-        </section>
-      )}
-
-      <section ref={notesRef} className="surface rounded-xl p-6">
-        <div className="mb-4 flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <FileText className="h-5 w-5 text-primary" />
-            <h2 className="text-lg font-semibold text-foreground">Your Notes</h2>
-          </div>
-          <button
-            onClick={handleNotesSave}
-            className="inline-flex items-center gap-2 rounded-lg border border-[color:var(--surface-border)] px-3 py-2 text-sm text-muted-foreground hover:text-foreground"
-          >
-            <Save className="h-4 w-4" />
-            Save
-          </button>
+                          <div className="mt-2 text-xs text-muted-foreground">
+                            {typeof element.element_value === 'string'
+                              ? element.element_value
+                              : JSON.stringify(element.element_value)}
+                          </div>
+                        </div>
+                      )
+                    })}
+                  </div>
+                )}
+              </CollapsibleBlock>
+            )
+          })}
         </div>
-        <textarea
-          value={notes}
-          onChange={(event) => setNotes(event.target.value)}
-          placeholder="Capture local insights, design ideas, or operator notes..."
-          className="h-32 w-full rounded-lg border border-[color:var(--surface-border)] bg-[color:var(--surface-muted)] p-3 text-sm text-foreground placeholder:text-muted-foreground"
+      </section>
+
+      <div className="h-px w-full bg-[color:var(--surface-border)]" />
+
+      <section ref={notesRef} className="space-y-4">
+        <SectionHeader
+          icon={FileText}
+          title="Your Notes"
+          actions={
+            <Button variant="secondary" size="sm" onClick={handleNotesSave}>
+              Save Note
+            </Button>
+          }
         />
+        <GlassCard className="p-5">
+          <textarea
+            placeholder="Add notes for this city. The AI will reference these when generating assets."
+            className="min-h-[140px] w-full rounded-lg border border-[color:var(--surface-border)] bg-[color:var(--surface-muted)] p-3 text-sm text-foreground"
+            value={notes}
+            onChange={(event) => setNotes(event.target.value)}
+          />
+          <div className="mt-3 flex items-center justify-between text-xs text-muted-foreground">
+            <span>Local notes saved on this device.</span>
+            <span>{notes.length} / 1200</span>
+          </div>
+        </GlassCard>
       </section>
 
-      <section className="surface rounded-xl p-6">
-        <div className="mb-4 flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <Sparkles className="h-5 w-5 text-primary" />
-            <h2 className="text-lg font-semibold text-foreground">Design Concepts</h2>
-          </div>
-          <div className="flex gap-2">
-            <button className="rounded-lg bg-primary px-3 py-2 text-sm font-semibold text-primary-foreground">Generate 5 Concepts</button>
-            <button className="rounded-lg border border-[color:var(--surface-border)] px-3 py-2 text-sm text-muted-foreground">Generate More</button>
-          </div>
-        </div>
-        <div className="rounded-lg border border-dashed border-[color:var(--surface-border)] p-6 text-sm text-muted-foreground">
+      <section className="space-y-4">
+        <SectionHeader
+          icon={Sparkles}
+          title="Design Concepts"
+          actions={
+            <>
+              <Button size="sm">
+                <Sparkles className="h-4 w-4" />
+                Generate 5 Concepts
+              </Button>
+              <Button variant="secondary" size="sm">
+                Generate More
+              </Button>
+            </>
+          }
+        />
+        <GlassCard className="p-5 text-sm text-muted-foreground">
           No concepts yet. Generate a batch to begin ideation.
-        </div>
+        </GlassCard>
       </section>
 
-      <section className="surface rounded-xl p-6">
-        <div className="mb-4 flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <Sparkles className="h-5 w-5 text-primary" />
-            <h2 className="text-lg font-semibold text-foreground">Generated Assets</h2>
-          </div>
-          <div className="flex gap-2">
-            <button className="rounded-lg bg-primary px-3 py-2 text-sm font-semibold text-primary-foreground">Generate New Assets</button>
-            <button className="rounded-lg border border-[color:var(--surface-border)] px-3 py-2 text-sm text-muted-foreground">Upload</button>
-          </div>
-        </div>
+      <section className="space-y-4">
+        <SectionHeader
+          icon={Image}
+          title="Generated Assets"
+          actions={
+            <>
+              <Button size="sm">Generate New Assets</Button>
+              <Button variant="secondary" size="sm">Upload</Button>
+            </>
+          }
+        />
         {Object.keys(groupedAssets).length === 0 && (
-          <div className="rounded-lg border border-dashed border-[color:var(--surface-border)] p-6 text-sm text-muted-foreground">
+          <GlassCard className="p-5 text-sm text-muted-foreground">
             No assets yet. Generate images or videos to populate this section.
-          </div>
+          </GlassCard>
         )}
-        <div className="space-y-6">
+        <div className="grid gap-4">
           {Object.entries(groupedAssets).map(([type, items]) => (
-            <div key={type} className="space-y-3">
+            <GlassCard key={type} className="p-5">
               <div className="flex items-center justify-between">
-                <h3 className="text-sm font-semibold uppercase tracking-[0.2em] text-muted-foreground">{type.replace(/_/g, ' ')}</h3>
+                <p className="text-sm font-semibold text-foreground">{type.replace(/_/g, ' ')}</p>
                 <span className="text-xs text-muted-foreground">{items.length} assets</span>
               </div>
-              <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
+              <div className="mt-4 grid grid-cols-1 gap-3 md:grid-cols-3">
                 {items.map((asset) => (
                   <div key={asset.id} className="rounded-lg border border-[color:var(--surface-border)] bg-[color:var(--surface-muted)] p-3">
                     <div className="flex items-center justify-between">
                       <p className="text-sm font-semibold text-foreground">{asset.content_type}</p>
-                      <span className="rounded-full bg-primary/10 px-2 py-0.5 text-xs text-primary">{asset.status}</span>
+                      <span className="text-xs text-muted-foreground">{asset.status}</span>
                     </div>
-                    <div className="mt-3 h-32 w-full rounded-lg bg-[color:var(--surface-strong)]" />
+                    <div className="mt-3 h-28 w-full rounded-lg bg-[color:var(--surface-strong)]" />
                     <div className="mt-3 flex items-center justify-between text-xs text-muted-foreground">
                       <span>{asset.model || 'model'}</span>
                       <button className="inline-flex items-center gap-1 text-primary">
-                        <Download className="h-3 w-3" /> Download
+                        Download
                       </button>
                     </div>
                   </div>
                 ))}
               </div>
-            </div>
+            </GlassCard>
           ))}
         </div>
       </section>
 
-      <section className="surface rounded-xl p-6">
-        <div className="mb-4 flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <CheckCircle className="h-5 w-5 text-primary" />
-            <h2 className="text-lg font-semibold text-foreground">Approved for Drop</h2>
-          </div>
-          <button onClick={handleApproveCityProfile} disabled={approvingCity} className="rounded-lg bg-primary px-3 py-2 text-sm font-semibold text-primary-foreground">
-            {approvingCity ? 'Approving...' : 'Approve City Profile'}
-          </button>
-        </div>
-        <div className="rounded-lg border border-dashed border-[color:var(--surface-border)] p-6 text-sm text-muted-foreground">
+      <section className="space-y-4">
+        <SectionHeader
+          icon={Check}
+          title="Approved for Drop"
+          actions={
+            <Button size="sm" onClick={handleApproveCityProfile} disabled={approvingCity}>
+              {approvingCity ? 'Approving...' : 'Approve City Profile'}
+            </Button>
+          }
+        />
+        <GlassCard className="p-5 text-sm text-muted-foreground">
           Approve assets and concepts to surface them in drop workflows.
-        </div>
+        </GlassCard>
       </section>
 
-      <section className="surface rounded-xl p-6">
-        <div className="mb-4 flex items-center gap-2">
-          <RefreshCw className="h-5 w-5 text-primary" />
-          <h2 className="text-lg font-semibold text-foreground">Agentic Insights</h2>
-        </div>
-        <div className="rounded-lg border border-dashed border-[color:var(--surface-border)] p-6 text-sm text-muted-foreground">
+      <section className="space-y-4">
+        <SectionHeader icon={Sparkles} title="Agentic Insights" />
+        <GlassCard className="p-5 text-sm text-muted-foreground">
           AI insights will appear here once you start running city workflows.
-        </div>
+        </GlassCard>
       </section>
 
       {showToast && (
         <div className="fixed bottom-6 right-6 flex items-center gap-2 rounded-lg bg-success px-4 py-3 text-sm text-primary-foreground shadow-lg">
-          <CheckCircle className="h-4 w-4" />
           Saved.
         </div>
       )}
     </div>
   )
- }
+}
