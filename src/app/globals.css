@@ -87,3 +87,31 @@ body {
 .glow-border {
   box-shadow: 0 0 0 1px rgba(45, 212, 191, 0.3), 0 10px 30px rgba(45, 212, 191, 0.15);
 }
+
+/* Map legacy light-theme utility classes to dark tokens */
+.dark .bg-white {
+  background: var(--surface) !important;
+}
+
+.dark .bg-gray-50,
+.dark .bg-gray-100,
+.dark .bg-gray-200 {
+  background: var(--surface-muted) !important;
+}
+
+.dark .border-gray-200,
+.dark .border-gray-300 {
+  border-color: var(--surface-border) !important;
+}
+
+.dark .text-gray-900,
+.dark .text-gray-800,
+.dark .text-gray-700 {
+  color: hsl(var(--foreground)) !important;
+}
+
+.dark .text-gray-600,
+.dark .text-gray-500,
+.dark .text-gray-400 {
+  color: hsl(var(--muted-foreground)) !important;
+}
