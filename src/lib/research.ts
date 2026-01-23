@@ -1,7 +1,14 @@
+import { createClient } from '@supabase/supabase-js';
 import { perplexitySearch, isPerplexityError } from './perplexity';
 import { claudeGenerateJSON } from './claude';
 import { callOpenRouter } from './openrouter';
-import { supabase } from './supabase';
+
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://placeholder.supabase.co';
+const supabaseServiceKey =
+  process.env.SUPABASE_SERVICE_KEY ||
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ||
+  'placeholder-key';
+const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey);
 
 interface ResearchCategory {
   name: string;
@@ -280,7 +287,7 @@ Focus on accuracy and local authenticity. Only mark as "approved" if you have hi
         // Ensure status defaults to 'pending' unless explicitly set to 'approved'
         const elementStatus = element.status === 'approved' && element.element_value ? 'approved' : 'pending';
 
-        const { error } = await supabase
+        const { error } = await supabaseAdmin
           .from('city_elements')
           .upsert({
             city_id: cityId,
@@ -366,7 +373,7 @@ Focus on accuracy and local authenticity. Only mark as "approved" if you have hi
  */
 async function updateCityStatus(cityId: string, status: 'draft' | 'active' | 'archived') {
   try {
-    const { error } = await (supabase as any)
+    const { error } = await (supabaseAdmin as any)
       .from('cities')
       .update({
         status,
@@ -392,7 +399,7 @@ async function logResearchAnalytics(
   categories: string[]
 ) {
   try {
-    const { error } = await supabase
+    const { error } = await supabaseAdmin
       .from('analytics')
       .insert({
         date: new Date().toISOString().split('T')[0],
@@ -419,7 +426,7 @@ async function logResearchAnalytics(
  */
 export async function getCityResearch(cityId: string): Promise<CityElement[]> {
   try {
-    const { data, error } = await supabase
+    const { data, error } = await supabaseAdmin
       .from('city_elements')
       .select('*')
       .eq('city_id', cityId)
@@ -447,7 +454,7 @@ export async function getCityResearch(cityId: string): Promise<CityElement[]> {
  */
 export async function getCityElementCounts(cityId: string): Promise<Record<string, number>> {
   try {
-    const { data, error } = await supabase
+    const { data, error } = await supabaseAdmin
       .from('city_elements')
       .select('element_type')
       .eq('city_id', cityId);
@@ -496,7 +503,7 @@ export async function updateElementStatus(
       updateData.notes = notes;
     }
 
-    const { error } = await (supabase as any)
+    const { error } = await (supabaseAdmin as any)
       .from('city_elements')
       .update(updateData)
       .eq('city_id', cityId)
