@@ -67,85 +67,84 @@ const knowledgeCategories = [
 
 export default function KnowledgeBasePage() {
   return (
-    <div className="p-6 max-w-7xl mx-auto">
-      {/* Header */}
-      <div className="mb-8">
-        <div className="flex items-center gap-3 mb-2">
-          <div className="p-2 bg-indigo-100 rounded-lg">
-            <Database className="w-6 h-6 text-indigo-600" />
+    <div className="mx-auto flex max-w-6xl flex-col gap-8">
+      <div className="surface-strong rounded-2xl p-6 shadow-glass">
+        <div className="flex items-center gap-3">
+          <div className="rounded-xl border border-[color:var(--surface-border)] bg-[color:var(--surface-muted)] p-2">
+            <Database className="h-6 w-6 text-primary" />
           </div>
-          <h1 className="text-3xl font-bold text-gray-900">Knowledge Base</h1>
+          <div>
+            <p className="text-xs uppercase tracking-[0.2em] text-muted-foreground">Knowledge Base</p>
+            <h1 className="text-2xl font-semibold text-foreground">
+              Institutional memory for TMH generation
+            </h1>
+          </div>
         </div>
-        <p className="text-gray-600">
-          Configure all TMH institutional knowledge for AI-powered content generation
+        <p className="mt-3 text-sm text-muted-foreground">
+          Keep city insights, brand intelligence, and design rules centralized so the AI can
+          generate culturally tuned outputs across campaigns.
         </p>
       </div>
 
-      {/* Info Banner */}
-      <div className="mb-8 p-4 bg-blue-50 border border-blue-200 rounded-lg">
-        <div className="flex gap-3">
-          <Lightbulb className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" />
+      <div className="surface rounded-2xl p-5">
+        <div className="flex items-start gap-3">
+          <div className="rounded-full bg-primary/15 p-2 text-primary">
+            <Lightbulb className="h-5 w-5" />
+          </div>
           <div>
-            <h3 className="font-medium text-blue-900">How the Knowledge Base Works</h3>
-            <p className="text-sm text-blue-700 mt-1">
-              Everything you configure here is used by the AI to make smarter content decisions.
-              The chat agent can access this data to answer questions, and the decision engine
-              uses it to auto-generate culturally appropriate content for each city.
+            <p className="text-sm font-semibold text-foreground">How this fuels generation</p>
+            <p className="mt-1 text-sm text-muted-foreground">
+              Categories below power your city research, prompt templates, and decision engine.
+              Keep them updated to improve accuracy, consistency, and brand alignment.
             </p>
           </div>
         </div>
       </div>
 
-      {/* Category Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
         {knowledgeCategories.map((category) => {
           const Icon = category.icon
           return (
             <Link
               key={category.name}
               href={category.href}
-              className="group p-5 bg-white rounded-lg border border-gray-200 hover:border-indigo-300 hover:shadow-md transition-all"
+              className="surface group flex flex-col gap-3 rounded-2xl p-5 transition hover:border-primary/40"
             >
               <div className="flex items-start justify-between">
-                <div className={`p-2 rounded-lg ${category.color}`}>
-                  <Icon className="w-5 h-5" />
+                <div className="rounded-xl border border-[color:var(--surface-border)] bg-[color:var(--surface-muted)] p-2 text-primary">
+                  <Icon className="h-5 w-5" />
                 </div>
-                <ChevronRight className="w-5 h-5 text-gray-400 group-hover:text-indigo-600 transition-colors" />
+                <ChevronRight className="h-5 w-5 text-muted-foreground transition group-hover:text-primary" />
               </div>
-              <h3 className="mt-4 font-semibold text-gray-900 group-hover:text-indigo-600 transition-colors">
-                {category.name}
-              </h3>
-              <p className="mt-1 text-sm text-gray-600">
-                {category.description}
-              </p>
+              <div>
+                <h3 className="text-sm font-semibold text-foreground">{category.name}</h3>
+                <p className="mt-1 text-sm text-muted-foreground">{category.description}</p>
+              </div>
             </Link>
           )
         })}
       </div>
 
-      {/* Quick Stats */}
-      <div className="mt-8 p-6 bg-gray-50 rounded-lg border border-gray-200">
-        <h3 className="font-semibold text-gray-900 mb-4">Knowledge Base Stats</h3>
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          <div className="text-center">
-            <p className="text-2xl font-bold text-gray-900">—</p>
-            <p className="text-sm text-gray-500">Sneakers</p>
-          </div>
-          <div className="text-center">
-            <p className="text-2xl font-bold text-gray-900">—</p>
-            <p className="text-sm text-gray-500">Model Specs</p>
-          </div>
-          <div className="text-center">
-            <p className="text-2xl font-bold text-gray-900">12</p>
-            <p className="text-sm text-gray-500">Style Slots</p>
-          </div>
-          <div className="text-center">
-            <p className="text-2xl font-bold text-gray-900">—</p>
-            <p className="text-sm text-gray-500">Learnings</p>
-          </div>
+      <div className="surface-strong rounded-2xl p-6">
+        <div className="flex items-center justify-between">
+          <p className="text-sm font-semibold text-foreground">Knowledge Base Stats</p>
+          <span className="text-xs text-muted-foreground">Supabase sync pending</span>
         </div>
-        <p className="mt-4 text-xs text-gray-500 text-center">
-          Stats will populate once connected to Supabase
+        <div className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          {[
+            { label: "Sneakers", value: "—" },
+            { label: "Model Specs", value: "—" },
+            { label: "Style Slots", value: "12" },
+            { label: "Learnings", value: "—" },
+          ].map((stat) => (
+            <div key={stat.label} className="surface rounded-xl p-4 text-center">
+              <p className="text-2xl font-semibold text-foreground">{stat.value}</p>
+              <p className="text-xs text-muted-foreground">{stat.label}</p>
+            </div>
+          ))}
+        </div>
+        <p className="mt-4 text-xs text-muted-foreground">
+          Stats will populate once knowledge tables are connected to Supabase.
         </p>
       </div>
     </div>

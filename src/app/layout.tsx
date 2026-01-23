@@ -1,12 +1,11 @@
 import type { Metadata } from "next";
-import { Inter } from "next/font/google";
+import { Inter, Plus_Jakarta_Sans, JetBrains_Mono } from "next/font/google";
 import "./globals.css";
-import Sidebar from "@/components/Sidebar";
-import MobileNav from "@/components/MobileNav";
-import Breadcrumb from "@/components/Breadcrumb";
-import ChatPanel from "@/components/ChatPanel";
+import AppShell from "@/components/layout/AppShell";
 
-const inter = Inter({ subsets: ["latin"] });
+const inter = Inter({ subsets: ["latin"], variable: "--font-body" });
+const jakarta = Plus_Jakarta_Sans({ subsets: ["latin"], variable: "--font-display" });
+const jetbrains = JetBrains_Mono({ subsets: ["latin"], variable: "--font-mono" });
 
 export const metadata: Metadata = {
   title: "TMH AI Content Engine",
@@ -20,18 +19,8 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
-      <body className={inter.className}>
-        <div className="flex h-screen bg-gray-50">
-          <Sidebar />
-          <MobileNav />
-          <main className="flex-1 md:ml-60 overflow-y-auto">
-            <div className="p-8 pt-20 md:pt-8">
-              <Breadcrumb />
-              {children}
-            </div>
-          </main>
-          <ChatPanel />
-        </div>
+      <body className={`${inter.variable} ${jakarta.variable} ${jetbrains.variable}`}>
+        <AppShell>{children}</AppShell>
       </body>
     </html>
   );
