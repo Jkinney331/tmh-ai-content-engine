@@ -1,5 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getCityById, hasRealCredentials } from '@/lib/supabase'
+import { Database } from '@/types/database'
+
+type CityRow = Database['public']['Tables']['cities']['Row']
 import { runCityResearch } from '@/lib/research'
 
 export async function POST(
@@ -20,7 +23,7 @@ export async function POST(
       )
     }
 
-    const city = await getCityById(cityId)
+    const city = (await getCityById(cityId)) as CityRow | null
     if (!city) {
       return NextResponse.json({ error: 'City not found' }, { status: 404 })
     }
