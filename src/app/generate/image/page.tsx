@@ -99,7 +99,7 @@ export default function ImageGeneratePage() {
 
   // Image generation settings
   const [imageSettings, setImageSettings] = useState<ImageSettings>({
-    model: 'gpt-5-image-mini',
+    model: 'gemini-pro',
     aspectRatio: '1:1',
     generateBothModels: false
   });
@@ -371,18 +371,61 @@ export default function ImageGeneratePage() {
   };
 
   const handleApproveSelected = async () => {
-    const approvedImages = generationResults.map(result => ({
-      ...result,
-      approved: true,
-      content_type: result.type === 'product' ? 'product_shot' : 'lifestyle_shot'
-    }));
+    const imagesToApprove = generationResults.filter(r =>
+      r.modelA.status === 'completed' && r.modelA.imageUrl
+    );
 
-    console.log('Saving approved images to generated_content:', approvedImages.filter(v => v.winner));
+    if (imagesToApprove.length === 0) {
+      alert('No completed images to approve');
+      return;
+    }
 
-    setGenerationResults(approvedImages);
-    setApprovalSaved(true);
+    console.log('Saving approved images to generated_content:', imagesToApprove);
 
-    alert(`Successfully approved ${approvedImages.filter(v => v.winner).length} images!`);
+    try {
+      // Save each approved image to the database
+      const savePromises = imagesToApprove.map(async (result) => {
+        const winnerImage = result.winner === 'B' && result.modelB?.imageUrl
+          ? result.modelB
+          : result.modelA;
+
+        const response = await fetch('/api/generated-content', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            city_id: selectedCity?.id,
+            content_type: result.type === 'product' ? 'product_shot' : 'lifestyle_shot',
+            title: result.presetName || (result.shotType ? `Product Shot - ${result.shotType}` : 'Generated Image'),
+            prompt: winnerImage.prompt,
+            model: winnerImage.model,
+            output_url: winnerImage.imageUrl,
+            status: 'approved',
+            feedback: result.feedback
+          })
+        });
+
+        if (!response.ok) {
+          const error = await response.json();
+          throw new Error(error.error || 'Failed to save image');
+        }
+
+        return response.json();
+      });
+
+      await Promise.all(savePromises);
+
+      // Update local state
+      setGenerationResults(prev => prev.map(result => ({
+        ...result,
+        approved: true
+      })));
+      setApprovalSaved(true);
+
+      console.log(`Successfully approved ${imagesToApprove.length} images`);
+    } catch (error) {
+      console.error('Error saving approved images:', error);
+      alert(`Error saving images: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
   };
 
   const availableTags = ['Sharp', 'Clean', 'Vibrant', 'Brand-focused', 'Professional', 'Creative'];

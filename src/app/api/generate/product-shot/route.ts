@@ -33,43 +33,47 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Check if image generation is configured
-    if (!isImageGenerationConfigured()) {
-      // Return placeholder for development
-      console.warn('[Product Shot] OpenRouter not configured, returning placeholder');
-      return NextResponse.json({
-        modelA: {
-          url: `https://placehold.co/1024x1024/1a1a2e/ffffff?text=${encodeURIComponent(body.shotType)}`,
-          model: 'placeholder',
-          prompt: 'Development mode - no API key',
-          generatedAt: new Date().toISOString()
-        },
-        shotType: body.shotType,
-        note: 'Using placeholder - configure OPENROUTER_API_KEY for real generation'
-      });
-    }
-
     const productType = body.productType || 'premium streetwear hoodie';
     const style = body.style || 'urban luxury streetwear';
     const cityName = body.cityName;
 
     // Generate with primary model (gpt-5-image-mini by default)
-    const primaryModel = body.model || 'gpt-5-image-mini';
+    const primaryModel = body.model || 'gemini-pro';
 
     console.log('[Product Shot] Generating with:', { shotType: body.shotType, productType, style, cityName, model: primaryModel });
 
-    const result = await generateProductShot({
-      productType,
-      style,
-      shotType: body.shotType,
-      cityName,
-      model: primaryModel
-    });
+    let result;
+    try {
+      result = await generateProductShot({
+        productType,
+        style,
+        shotType: body.shotType,
+        cityName,
+        model: primaryModel
+      });
+    } catch (error) {
+      if (!isImageGenerationConfigured()) {
+        console.warn('[Product Shot] OpenRouter not configured, returning placeholder');
+        return NextResponse.json({
+          modelA: {
+            url: `https://placehold.co/1024x1024/1a1a2e/ffffff?text=${encodeURIComponent(body.shotType)}`,
+            model: 'placeholder',
+            provider: 'placeholder',
+            prompt: 'Development mode - no API key',
+            generatedAt: new Date().toISOString()
+          },
+          shotType: body.shotType,
+          note: 'Using placeholder - configure OPENROUTER_API_KEY for real generation'
+        });
+      }
+      throw error;
+    }
 
     const response: Record<string, unknown> = {
       modelA: {
         url: result.imageUrl,
         model: result.model,
+        provider: result.provider,
         prompt: result.prompt,
         generatedAt: result.generatedAt
       },
@@ -91,6 +95,7 @@ export async function POST(request: NextRequest) {
         response.modelB = {
           url: resultB.imageUrl,
           model: resultB.model,
+          provider: resultB.provider,
           prompt: resultB.prompt,
           generatedAt: resultB.generatedAt
         };

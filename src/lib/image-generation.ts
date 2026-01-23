@@ -15,16 +15,17 @@ export interface ImageGenerationOptions {
 export interface ImageGenerationResult {
   imageUrl: string;  // Base64 data URL or hosted URL
   model: string;
+  provider: 'openrouter';
   prompt: string;
   generatedAt: string;
 }
 
 // Model mapping - Updated with actual OpenRouter available models
 const MODEL_IDS: Record<string, string> = {
-  'gpt-5-image': 'openai/gpt-5-image',           // Best quality
-  'gpt-5-image-mini': 'openai/gpt-5-image-mini', // Faster, cheaper
-  'gemini-flash': 'google/gemini-2.5-flash-image', // Google fast model
-  'gemini-pro': 'google/gemini-3-pro-image-preview', // Google pro model
+  'gpt-5-image': 'openai/gpt-5-image',              // OpenAI image
+  'gpt-5-image-mini': 'openai/gpt-5-image-mini',    // OpenAI image mini
+  'gemini-flash': 'google/gemini-2.5-flash-image',  // Google flash image
+  'gemini-pro': 'google/gemini-3-pro-image-preview' // Google pro image
 };
 
 /**
@@ -34,7 +35,7 @@ const MODEL_IDS: Record<string, string> = {
 export async function generateImage(options: ImageGenerationOptions): Promise<ImageGenerationResult> {
   const {
     prompt,
-    model = 'gpt-5-image-mini',
+    model = 'gemini-pro',
     aspectRatio = '1:1',
   } = options;
 
@@ -102,6 +103,7 @@ export async function generateImage(options: ImageGenerationOptions): Promise<Im
       return {
         imageUrl,
         model: modelId,
+        provider: 'openrouter',
         prompt,
         generatedAt: new Date().toISOString()
       };
@@ -115,6 +117,7 @@ export async function generateImage(options: ImageGenerationOptions): Promise<Im
         return {
           imageUrl: part.image_url.url,
           model: modelId,
+          provider: 'openrouter',
           prompt,
           generatedAt: new Date().toISOString()
         };
@@ -123,6 +126,7 @@ export async function generateImage(options: ImageGenerationOptions): Promise<Im
         return {
           imageUrl: `data:${part.source.media_type || 'image/png'};base64,${part.source.data}`,
           model: modelId,
+          provider: 'openrouter',
           prompt,
           generatedAt: new Date().toISOString()
         };

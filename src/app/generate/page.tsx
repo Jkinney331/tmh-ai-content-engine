@@ -77,6 +77,7 @@ export default function GeneratePage() {
   const handleGenerate = async () => {
     if (!canGenerate || !selectedCity) return;
 
+    const startTime = Date.now();
     setIsGenerating(true);
 
     // Create initial generation objects for both models
@@ -103,32 +104,68 @@ export default function GeneratePage() {
     // Set initial generation results
     setGenerationResults({ modelA: modelAGeneration, modelB: modelBGeneration });
 
-    // Simulate generation process (replace with actual API call later)
-    setTimeout(() => {
-      // Simulate completed generations with mock image URLs
+    try {
+      const response = await fetch('/api/generate/product-shot', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          shotType: 'flat-front',
+          productType: selectedProductType,
+          style: selectedDesignStyle,
+          cityName: selectedCity.name,
+          model: 'gemini-pro',
+          generateBothModels: true
+        })
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Generation failed');
+      }
+
       const completedModelA: Generation = {
         ...modelAGeneration,
         status: 'completed',
-        imageUrl: `https://via.placeholder.com/400x400/4F46E5/ffffff?text=Model+A+${selectedProductType}`,
+        imageUrl: data.modelA?.url,
+        model: data.modelA?.model,
         metadata: {
-          processingTime: 2500,
+          processingTime: Date.now() - startTime,
         },
         updatedAt: new Date(),
       };
 
       const completedModelB: Generation = {
         ...modelBGeneration,
-        status: 'completed',
-        imageUrl: `https://via.placeholder.com/400x400/10B981/ffffff?text=Model+B+${selectedProductType}`,
-        metadata: {
-          processingTime: 3200,
-        },
+        status: data.modelB?.error ? 'failed' : 'completed',
+        imageUrl: data.modelB?.url,
+        model: data.modelB?.model,
+        metadata: data.modelB?.error
+          ? { error: data.modelB.error }
+          : { processingTime: Date.now() - startTime },
         updatedAt: new Date(),
       };
 
       setGenerationResults({ modelA: completedModelA, modelB: completedModelB });
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Unknown error';
+      setGenerationResults({
+        modelA: {
+          ...modelAGeneration,
+          status: 'failed',
+          metadata: { error: message },
+          updatedAt: new Date(),
+        },
+        modelB: {
+          ...modelBGeneration,
+          status: 'failed',
+          metadata: { error: message },
+          updatedAt: new Date(),
+        }
+      });
+    } finally {
       setIsGenerating(false);
-    }, 3000);
+    }
   };
 
   // Fetch approved slang terms when city changes

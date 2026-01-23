@@ -67,9 +67,9 @@ async function performCityResearch(cityId: string, cityName: string, categories:
       return null
     }
 
-    if (!apiKey.startsWith('sk-or-')) {
+    if (!apiKey.startsWith('sk-')) {
       console.error(`[City Research] OPENROUTER_API_KEY has invalid format`)
-      await updateCityError(cityId, 'API key has invalid format. Should start with sk-or-')
+      await updateCityError(cityId, 'API key has invalid format. Should start with sk-')
       return null
     }
 
@@ -150,12 +150,30 @@ Format your response as valid JSON with these fields:
       researchData = { rawContent: content }
     }
 
-    // Update the city with research results
+    // Update the city with research results and insert city_elements
     if (hasRealCredentials) {
       const updateData: Record<string, unknown> = {
         status: 'active', // Use 'active' which is guaranteed to be valid
         updated_at: new Date().toISOString()
       }
+
+      const slugify = (value: string) =>
+        value
+          .toLowerCase()
+          .replace(/[^a-z0-9]+/g, '_')
+          .replace(/^_+|_+$/g, '')
+          .slice(0, 64);
+
+      const elementsToInsert: Array<{
+        city_id: string;
+        element_type: 'slang' | 'landmark' | 'sport' | 'cultural';
+        element_key: string;
+        element_value: Record<string, unknown>;
+        status: 'pending';
+        notes?: string;
+        created_at: string;
+        updated_at: string;
+      }> = [];
 
       // Map research results to city fields
       if (researchData) {
@@ -164,16 +182,129 @@ Format your response as valid JSON with these fields:
         if (researchData.sports) updateData.sports_teams = researchData.sports
         if (researchData.culture) updateData.culture = researchData.culture
         if (researchData.visualIdentity) {
-          // Merge with existing visual_identity
           updateData.visual_identity = researchData.visualIdentity
         }
         if (researchData.areaCodes) {
           updateData.area_codes = researchData.areaCodes.map((ac: { code: string }) => ac.code)
         }
         if (researchData.avoid) updateData.avoid = researchData.avoid
-        // Store raw content for debugging
         updateData.research_raw = content
         updateData.research_completed_at = new Date().toISOString()
+
+        const now = new Date().toISOString();
+
+        if (Array.isArray(researchData.slang)) {
+          researchData.slang.forEach((item: { term?: string; meaning?: string; usage?: string }) => {
+            const key = slugify(item.term || 'slang');
+            if (!key) return;
+            elementsToInsert.push({
+              city_id: cityId,
+              element_type: 'slang',
+              element_key: key,
+              element_value: item,
+              status: 'pending',
+              notes: 'Auto-generated from research',
+              created_at: now,
+              updated_at: now
+            });
+          });
+        }
+
+        if (Array.isArray(researchData.landmarks)) {
+          researchData.landmarks.forEach((item: { name?: string; description?: string; significance?: string }) => {
+            const key = slugify(item.name || 'landmark');
+            if (!key) return;
+            elementsToInsert.push({
+              city_id: cityId,
+              element_type: 'landmark',
+              element_key: key,
+              element_value: item,
+              status: 'pending',
+              notes: 'Auto-generated from research',
+              created_at: now,
+              updated_at: now
+            });
+          });
+        }
+
+        if (researchData.sports?.teams && Array.isArray(researchData.sports.teams)) {
+          researchData.sports.teams.forEach((team: { name?: string; team?: string } | string) => {
+            const teamName = typeof team === 'string' ? team : (team.name || team.team || 'team');
+            const key = slugify(teamName);
+            if (!key) return;
+            elementsToInsert.push({
+              city_id: cityId,
+              element_type: 'sport',
+              element_key: key,
+              element_value: typeof team === 'string' ? { team: teamName } : team,
+              status: 'pending',
+              notes: 'Auto-generated from research',
+              created_at: now,
+              updated_at: now
+            });
+          });
+        }
+
+        if (researchData.culture) {
+          const culturalSources: Array<{ type: string; values: string[] }> = [];
+          if (Array.isArray(researchData.culture.localBrands)) {
+            culturalSources.push({ type: 'brand', values: researchData.culture.localBrands });
+          }
+          if (Array.isArray(researchData.culture.influencers)) {
+            culturalSources.push({ type: 'influencer', values: researchData.culture.influencers });
+          }
+          if (Array.isArray(researchData.culture.styles)) {
+            culturalSources.push({ type: 'style', values: researchData.culture.styles });
+          }
+          if (Array.isArray(researchData.culture.events)) {
+            culturalSources.push({ type: 'event', values: researchData.culture.events });
+          }
+          culturalSources.forEach(({ type, values }) => {
+            values.forEach((value) => {
+              const key = slugify(`${type}_${value}`);
+              if (!key) return;
+              elementsToInsert.push({
+                city_id: cityId,
+                element_type: 'cultural',
+                element_key: key,
+                element_value: { type, name: value },
+                status: 'pending',
+                notes: 'Auto-generated from research',
+                created_at: now,
+                updated_at: now
+              });
+            });
+          });
+        }
+
+        if (Array.isArray(researchData.areaCodes)) {
+          researchData.areaCodes.forEach((item: { code?: string; area?: string; significance?: string }) => {
+            const key = slugify(item.code || 'area_code');
+            if (!key) return;
+            elementsToInsert.push({
+              city_id: cityId,
+              element_type: 'cultural',
+              element_key: key,
+              element_value: { type: 'area_code', ...item },
+              status: 'pending',
+              notes: 'Auto-generated from research',
+              created_at: now,
+              updated_at: now
+            });
+          });
+        }
+      }
+
+      if (elementsToInsert.length > 0) {
+        const { error: insertError } = await (supabase as any)
+          .from('city_elements')
+          .upsert(elementsToInsert as any, {
+            onConflict: 'city_id,element_type,element_key'
+          });
+
+        if (insertError) {
+          console.error(`[City Research] Failed to upsert city elements for ${cityName}:`, insertError)
+        }
       }
 
       const { error: updateError } = await (supabase as any)
@@ -183,7 +314,6 @@ Format your response as valid JSON with these fields:
 
       if (updateError) {
         console.error(`[City Research] Failed to update ${cityName}:`, updateError)
-        // Try updating just the status to 'draft' (always valid)
         await (supabase as any).from('cities').update({
           status: 'draft',
           user_notes: `Research completed but failed to save: ${updateError.message}. Raw: ${content.slice(0, 500)}`

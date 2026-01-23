@@ -53,6 +53,7 @@ interface GenerationResult {
   variationId: string;
   variationName: string;
   modelA: {
+    jobId?: string;
     videoUrl?: string;
     thumbnailUrl?: string;
     status: 'idle' | 'generating' | 'completed' | 'error';
@@ -60,6 +61,7 @@ interface GenerationResult {
     model?: string;
   };
   modelB: {
+    jobId?: string;
     videoUrl?: string;
     thumbnailUrl?: string;
     status: 'idle' | 'generating' | 'completed' | 'error';
@@ -110,7 +112,8 @@ export default function VideoGeneratePage() {
 
   // Polling state for video generation
   const [generationStatus, setGenerationStatus] = useState<string>('');
-  const pollingRef = useRef<NodeJS.Timeout | null>(null);
+  const pollingRef = useRef<{ sora?: NodeJS.Timeout; veo?: NodeJS.Timeout }>({});
+  const completedRef = useRef<{ sora: boolean; veo: boolean }>({ sora: false, veo: false });
 
   // Predefined video ad variations
   const variations: VideoVariation[] = [
@@ -143,8 +146,11 @@ export default function VideoGeneratePage() {
   // Cleanup polling on unmount
   useEffect(() => {
     return () => {
-      if (pollingRef.current) {
-        clearInterval(pollingRef.current);
+      if (pollingRef.current.sora) {
+        clearInterval(pollingRef.current.sora);
+      }
+      if (pollingRef.current.veo) {
+        clearInterval(pollingRef.current.veo);
       }
     };
   }, []);
@@ -167,15 +173,16 @@ export default function VideoGeneratePage() {
 
     setShowCityWarning(false);
     setIsGenerating(true);
-    setGenerationStatus('Starting video generation...');
+    setGenerationStatus('Starting video generation (Sora + VEO)...');
+    completedRef.current = { sora: false, veo: false };
 
     // Initialize results for first variation only (one at a time for real generation)
     const variation = variations[0]; // Start with first variation
     const initialResults: GenerationResult[] = [{
       variationId: variation.id,
       variationName: variation.name,
-      modelA: { status: 'generating', model: VIDEO_MODELS.find(m => m.id === videoSettings.model)?.name },
-      modelB: { status: 'idle' },
+      modelA: { status: 'generating', model: 'Sora 2' },
+      modelB: { status: 'generating', model: 'VEO 3' },
       winner: 'A',
       feedback: { thumbsUp: false, thumbsDown: false, tags: [], text: '' },
       approved: false
@@ -186,141 +193,139 @@ export default function VideoGeneratePage() {
       // Build prompt with city context
       const prompt = `${variation.prompt}, featuring ${selectedCity.name} city culture and landmarks, ${videoSettings.duration} seconds, ${videoSettings.aspectRatio} aspect ratio`;
 
-      // Determine which API to call based on model
-      const endpoint = videoSettings.model === 'veo-3'
-        ? '/api/generate/video/veo'
-        : '/api/generate/video/sora';
+      const selectedSoraModel = videoSettings.model === 'sora-2-pro' ? 'sora-2-pro' : 'sora-2';
 
-      const requestBody = videoSettings.model === 'veo-3'
-        ? {
-            prompt,
-            duration: videoSettings.duration,
-            aspectRatio: videoSettings.aspectRatio,
-            cityId: selectedCity.id,
-            cityName: selectedCity.name,
-          }
-        : {
-            prompt,
-            model: videoSettings.model === 'sora-2-pro' ? 'sora-2-pro' : 'sora-2',
-            duration: videoSettings.duration,
-            resolution: videoSettings.resolution,
-            aspectRatio: videoSettings.aspectRatio,
-            cityId: selectedCity.id,
-            cityName: selectedCity.name,
-          };
+      const soraRequestBody = {
+        prompt,
+        model: selectedSoraModel,
+        duration: videoSettings.duration,
+        resolution: videoSettings.resolution,
+        aspectRatio: videoSettings.aspectRatio,
+        cityId: selectedCity.id,
+        cityName: selectedCity.name,
+      };
 
-      setGenerationStatus(`Submitting to ${VIDEO_MODELS.find(m => m.id === videoSettings.model)?.name}...`);
+      const veoRequestBody = {
+        prompt,
+        model: 'veo-3',
+        duration: videoSettings.duration,
+        aspectRatio: videoSettings.aspectRatio,
+        resolution: videoSettings.resolution,
+        cityId: selectedCity.id,
+        cityName: selectedCity.name,
+      };
 
-      const response = await fetch(endpoint, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(requestBody)
-      });
+      setGenerationStatus('Submitting to Sora and VEO...');
 
-      const data = await response.json();
+      const [soraResponse, veoResponse] = await Promise.all([
+        fetch('/api/generate/video/sora', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(soraRequestBody)
+        }),
+        fetch('/api/generate/video/veo', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(veoRequestBody)
+        })
+      ]);
 
-      if (!response.ok) {
-        throw new Error(data.error || 'Failed to start video generation');
+      const soraData = await soraResponse.json();
+      const veoData = await veoResponse.json();
+
+      if (!soraResponse.ok) {
+        throw new Error(soraData.error || 'Failed to start Sora generation');
+      }
+      if (!veoResponse.ok) {
+        throw new Error(veoData.error || 'Failed to start VEO generation');
       }
 
-      // For async APIs, poll for status
-      if (data.taskId || data.id) {
-        const taskId = data.taskId || data.id;
-        const statusEndpoint = videoSettings.model === 'veo-3'
-          ? `/api/generate/video/veo/status?taskId=${taskId}`
-          : `/api/generate/video/sora/status?taskId=${taskId}`;
-
-        setGenerationStatus('Video generation in progress...');
-
-        // Poll for completion
+      const startPolling = (
+        key: 'sora' | 'veo',
+        jobId: string,
+        statusEndpoint: string,
+        updateModel: 'modelA' | 'modelB'
+      ) => {
         let attempts = 0;
-        const maxAttempts = 60; // 5 minutes max
+        const maxAttempts = 60;
 
-        pollingRef.current = setInterval(async () => {
+        pollingRef.current[key] = setInterval(async () => {
           attempts++;
-
           try {
             const statusResponse = await fetch(statusEndpoint);
             const statusData = await statusResponse.json();
 
-            setGenerationStatus(`Generating video... (${Math.round(statusData.progress || 0)}%)`);
-
             if (statusData.status === 'completed' && statusData.videoUrl) {
-              if (pollingRef.current) clearInterval(pollingRef.current);
+              if (pollingRef.current[key]) clearInterval(pollingRef.current[key]);
+              completedRef.current[key] = true;
 
               setGenerationResults(prev => {
                 const updated = [...prev];
                 updated[0] = {
                   ...updated[0],
-                  modelA: {
+                  [updateModel]: {
                     videoUrl: statusData.videoUrl,
                     thumbnailUrl: statusData.thumbnailUrl || undefined,
                     status: 'completed',
-                    model: VIDEO_MODELS.find(m => m.id === videoSettings.model)?.name
+                    model: updateModel === 'modelA' ? 'Sora 2' : 'VEO 3',
+                    jobId
                   }
                 };
                 return updated;
               });
-
-              setIsGenerating(false);
-              setGenerationStatus('Video generation complete!');
             } else if (statusData.status === 'failed') {
-              if (pollingRef.current) clearInterval(pollingRef.current);
+              if (pollingRef.current[key]) clearInterval(pollingRef.current[key]);
+              completedRef.current[key] = true;
 
               setGenerationResults(prev => {
                 const updated = [...prev];
                 updated[0] = {
                   ...updated[0],
-                  modelA: {
+                  [updateModel]: {
                     status: 'error',
                     error: statusData.error || 'Generation failed',
-                    model: VIDEO_MODELS.find(m => m.id === videoSettings.model)?.name
+                    model: updateModel === 'modelA' ? 'Sora 2' : 'VEO 3',
+                    jobId
                   }
                 };
                 return updated;
               });
-
-              setIsGenerating(false);
-              setGenerationStatus('Generation failed');
             } else if (attempts >= maxAttempts) {
-              if (pollingRef.current) clearInterval(pollingRef.current);
+              if (pollingRef.current[key]) clearInterval(pollingRef.current[key]);
+              completedRef.current[key] = true;
+            }
+
+            if (completedRef.current.sora && completedRef.current.veo) {
               setIsGenerating(false);
-              setGenerationStatus('Generation timed out');
+              setGenerationStatus('Video generation complete!');
             }
           } catch (err) {
             console.error('Status poll error:', err);
           }
-        }, 5000); // Poll every 5 seconds
-      } else if (data.videoUrl) {
-        // Synchronous response
-        setGenerationResults(prev => {
-          const updated = [...prev];
-          updated[0] = {
-            ...updated[0],
-            modelA: {
-              videoUrl: data.videoUrl,
-              thumbnailUrl: data.thumbnailUrl || undefined,
-              status: 'completed',
-              model: VIDEO_MODELS.find(m => m.id === videoSettings.model)?.name
-            }
-          };
-          return updated;
-        });
+        }, 5000);
+      };
 
-        setIsGenerating(false);
-        setGenerationStatus('Video generation complete!');
-      }
+      setGenerationStatus('Video generation in progress...');
+
+      startPolling('sora', soraData.jobId, `/api/generate/video/sora/status?jobId=${soraData.jobId}`, 'modelA');
+      startPolling('veo', veoData.jobId, `/api/generate/video/veo/status?jobId=${veoData.jobId}`, 'modelB');
     } catch (error) {
       console.error('Video generation error:', error);
       setGenerationResults(prev => {
         const updated = [...prev];
         if (updated[0]) {
+          const errorMessage = error instanceof Error ? error.message : 'Unknown error';
           updated[0] = {
             ...updated[0],
             modelA: {
               status: 'error',
-              error: error instanceof Error ? error.message : 'Unknown error',
-              model: VIDEO_MODELS.find(m => m.id === videoSettings.model)?.name
+              error: errorMessage,
+              model: 'Sora 2'
+            },
+            modelB: {
+              status: 'error',
+              error: errorMessage,
+              model: 'VEO 3'
             }
           };
         }

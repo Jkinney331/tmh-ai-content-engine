@@ -59,14 +59,13 @@ export async function generateSoraVideo(options: VideoGenerationOptions): Promis
     model = 'sora-2',
     duration = 8,
     resolution = '720p',
+    aspectRatio = '16:9',
   } = options;
 
-  const apiKey = process.env.OPENAI_API_KEY;
-  if (!apiKey) {
-    throw new Error('OPENAI_API_KEY not configured');
-  }
+  const openAiKey = process.env.OPENAI_API_KEY;
+  const waveSpeedKey = process.env.WAVESPEED_API_KEY;
 
-  // Map resolution to size
+  // Map resolution to size (OpenAI)
   const sizeMap: Record<Resolution, string> = {
     '480p': '854x480',
     '720p': '1280x720',
@@ -75,80 +74,169 @@ export async function generateSoraVideo(options: VideoGenerationOptions): Promis
 
   const soraModel = model === 'sora-2-pro' ? 'sora-2-pro' : 'sora-2';
 
-  console.log('[Sora] Starting video generation:', { model: soraModel, duration, resolution });
+  if (openAiKey) {
+    try {
+      console.log('[Sora] Starting OpenAI video generation:', { model: soraModel, duration, resolution });
 
-  const response = await fetch('https://api.openai.com/v1/videos', {
+      const response = await fetch('https://api.openai.com/v1/videos', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${openAiKey}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          model: soraModel,
+          prompt,
+          size: sizeMap[resolution],
+          seconds: `${duration}`,
+        }),
+      });
+
+      if (!response.ok) {
+        const error = await response.json().catch(() => ({}));
+        console.error('[Sora] OpenAI API error:', error);
+        throw new Error(error.error?.message || `Sora API error: ${response.status}`);
+      }
+
+      const data = await response.json();
+
+      return {
+        jobId: data.id,
+        status: 'processing',
+        provider: 'openai',
+        model: soraModel,
+        estimatedCost: duration * COST_PER_SECOND[model as VideoModel],
+      };
+    } catch (error) {
+      if (!waveSpeedKey) {
+        throw error;
+      }
+      console.warn('[Sora] OpenAI failed, falling back to WaveSpeed:', error);
+    }
+  }
+
+  if (!waveSpeedKey) {
+    throw new Error('No Sora provider configured (OPENAI_API_KEY or WAVESPEED_API_KEY required)');
+  }
+
+  // WaveSpeed expects size as width*height and duration as integer
+  const waveSpeedSize = aspectRatio === '9:16' ? '720*1280' : '1280*720';
+
+  console.log('[Sora] Starting WaveSpeed video generation:', { model: 'sora-2', duration, size: waveSpeedSize });
+
+  const waveSpeedResponse = await fetch('https://api.wavespeed.ai/api/v3/openai/sora-2/text-to-video', {
     method: 'POST',
     headers: {
-      'Authorization': `Bearer ${apiKey}`,
+      'Authorization': `Bearer ${waveSpeedKey}`,
       'Content-Type': 'application/json',
     },
     body: JSON.stringify({
-      model: soraModel,
       prompt,
-      size: sizeMap[resolution],
-      seconds: duration,
+      size: waveSpeedSize,
+      duration,
     }),
   });
 
-  if (!response.ok) {
-    const error = await response.json().catch(() => ({}));
-    console.error('[Sora] API error:', error);
-    throw new Error(error.error?.message || `Sora API error: ${response.status}`);
+  if (!waveSpeedResponse.ok) {
+    const error = await waveSpeedResponse.json().catch(() => ({}));
+    console.error('[Sora] WaveSpeed API error:', error);
+    throw new Error(error.message || error.error || `WaveSpeed Sora API error: ${waveSpeedResponse.status}`);
   }
 
-  const data = await response.json();
+  const waveSpeedData = await waveSpeedResponse.json();
+  const jobId =
+    waveSpeedData?.data?.id ||
+    waveSpeedData?.id ||
+    waveSpeedData?.job_id ||
+    waveSpeedData?.prediction_id;
+
+  if (!jobId) {
+    throw new Error('WaveSpeed Sora response missing job id');
+  }
 
   return {
-    jobId: data.id,
+    jobId,
     status: 'processing',
-    provider: 'openai',
-    model: soraModel,
+    provider: 'wavespeed',
+    model: 'sora-2',
     estimatedCost: duration * COST_PER_SECOND[model as VideoModel],
   };
 }
 
 export async function checkSoraStatus(videoId: string): Promise<VideoStatusResult> {
-  const apiKey = process.env.OPENAI_API_KEY;
-  if (!apiKey) {
-    throw new Error('OPENAI_API_KEY not configured');
-  }
+  const openAiKey = process.env.OPENAI_API_KEY;
+  const waveSpeedKey = process.env.WAVESPEED_API_KEY;
 
-  const response = await fetch(`https://api.openai.com/v1/videos/${videoId}`, {
-    headers: {
-      'Authorization': `Bearer ${apiKey}`,
-    },
-  });
+  if (openAiKey) {
+    try {
+      const response = await fetch(`https://api.openai.com/v1/videos/${videoId}`, {
+        headers: {
+          'Authorization': `Bearer ${openAiKey}`,
+        },
+      });
 
-  if (!response.ok) {
-    const error = await response.json().catch(() => ({}));
-    throw new Error(error.error?.message || `Failed to check status: ${response.status}`);
-  }
+      if (!response.ok) {
+        const error = await response.json().catch(() => ({}));
+        throw new Error(error.error?.message || `Failed to check status: ${response.status}`);
+      }
 
-  const data = await response.json();
+      const data = await response.json();
 
-  if (data.status === 'completed') {
-    // Get the video content URL
-    const contentResponse = await fetch(`https://api.openai.com/v1/videos/${videoId}/content`, {
-      headers: {
-        'Authorization': `Bearer ${apiKey}`,
-      },
-    });
+      if (data.status === 'completed') {
+        // Get the video content URL
+        const contentResponse = await fetch(`https://api.openai.com/v1/videos/${videoId}/content`, {
+          headers: {
+            'Authorization': `Bearer ${openAiKey}`,
+          },
+        });
 
-    if (contentResponse.ok) {
-      // The content endpoint returns the video URL or binary
-      const contentData = await contentResponse.json().catch(() => null);
+        if (contentResponse.ok) {
+          const contentData = await contentResponse.json().catch(() => null);
+          return {
+            status: 'completed',
+            videoUrl: contentData?.url || contentData,
+          };
+        }
+      }
+
       return {
-        status: 'completed',
-        videoUrl: contentData?.url || contentData,
+        status: data.status === 'succeeded' ? 'completed' : data.status,
+        progress: data.progress,
+        error: data.error?.message,
       };
+    } catch (error) {
+      if (!waveSpeedKey) {
+        throw error;
+      }
     }
   }
 
+  if (!waveSpeedKey) {
+    throw new Error('No Sora provider configured (OPENAI_API_KEY or WAVESPEED_API_KEY required)');
+  }
+
+  const response = await fetch(
+    `https://api.wavespeed.ai/api/v3/predictions/${videoId}/result`,
+    {
+      headers: {
+        'Authorization': `Bearer ${waveSpeedKey}`,
+      },
+    }
+  );
+
+  if (!response.ok) {
+    const error = await response.json().catch(() => ({}));
+    throw new Error(error.message || `Failed to check status: ${response.status}`);
+  }
+
+  const data = await response.json();
+  const status = data?.data?.status || data?.status;
+  const outputs = data?.data?.outputs || data?.outputs;
+
   return {
-    status: data.status === 'succeeded' ? 'completed' : data.status,
-    progress: data.progress,
-    error: data.error?.message,
+    status: status === 'completed' || status === 'succeeded' ? 'completed' : status,
+    videoUrl: Array.isArray(outputs) ? outputs[0] : undefined,
+    error: data?.data?.error || data?.error,
   };
 }
 
@@ -198,9 +286,24 @@ export async function generateVeoVideo(options: VideoGenerationOptions): Promise
   }
 
   const data = await response.json();
+  const jobId =
+    data.id ||
+    data.job_id ||
+    data.prediction_id ||
+    data.task_id ||
+    data.predictionId ||
+    data.prediction?.id ||
+    data.data?.id ||
+    data.result?.id;
+
+  if (!jobId) {
+    const topKeys = Object.keys(data || {});
+    const nestedPredictionKeys = data?.prediction ? Object.keys(data.prediction) : [];
+    throw new Error(`WaveSpeed response missing job id. keys=${JSON.stringify(topKeys)} predictionKeys=${JSON.stringify(nestedPredictionKeys)}`);
+  }
 
   return {
-    jobId: data.id,
+    jobId,
     status: 'processing',
     provider: 'wavespeed',
     model: veoModel,
@@ -276,7 +379,7 @@ export function isVideoGenerationConfigured(): {
   veo: boolean;
 } {
   return {
-    sora: !!process.env.OPENAI_API_KEY,
+    sora: !!process.env.OPENAI_API_KEY || !!process.env.WAVESPEED_API_KEY,
     veo: !!process.env.WAVESPEED_API_KEY,
   };
 }

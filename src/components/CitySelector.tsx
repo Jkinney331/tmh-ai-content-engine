@@ -162,8 +162,8 @@ export default function CitySelector() {
             Selected: {selectedCity.name}, {selectedCity.state}
           </p>
           <p className="text-xs text-blue-700 mt-1">
-            Population: {selectedCity.population?.toLocaleString() || 'N/A'} |
-            Area Codes: {selectedCity.areaCodes.join(', ')}
+            Population: {selectedCity.population?.toLocaleString() || 'N/A'}
+            {selectedCity.areaCodes?.length > 0 && ` | Area Codes: ${selectedCity.areaCodes.join(', ')}`}
           </p>
         </div>
       )}

@@ -44,33 +44,12 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Check if image generation is configured
-    if (!isImageGenerationConfigured()) {
-      console.warn('[Lifestyle Shot] OpenRouter not configured, returning placeholder');
-      return NextResponse.json({
-        modelA: {
-          imageUrl: `https://placehold.co/800x600/4F46E5/ffffff?text=${encodeURIComponent(cityName + ' Lifestyle')}`,
-          model: 'placeholder',
-          prompt: 'Development mode - no API key',
-          generatedAt: new Date().toISOString()
-        },
-        metadata: {
-          cityId,
-          cityName,
-          variation: variation?.id,
-          variationName: variation?.name,
-          generatedAt: new Date().toISOString()
-        },
-        note: 'Using placeholder - configure OPENROUTER_API_KEY for real generation'
-      });
-    }
-
     // Build description from variation or direct input
     const description = variation?.description || body.description || `Urban lifestyle scene in ${cityName}`;
     const modelDescription = variation?.model || body.modelDescription;
     const sneaker = body.sneaker;
     const location = variation?.location || body.location;
-    const primaryModel = body.model || 'gpt-5-image-mini';
+    const primaryModel = body.model || 'gemini-pro';
     const aspectRatio = body.aspectRatio || '4:3';
 
     console.log('[Lifestyle Shot] Generating with:', {
@@ -81,21 +60,47 @@ export async function POST(request: NextRequest) {
     });
 
     // Generate with primary model
-    const result = await generateLifestyleShot({
-      description,
-      cityName,
-      modelDescription,
-      sneaker,
-      location,
-      model: primaryModel,
-      aspectRatio
-    });
+    let result;
+    try {
+      result = await generateLifestyleShot({
+        description,
+        cityName,
+        modelDescription,
+        sneaker,
+        location,
+        model: primaryModel,
+        aspectRatio
+      });
+    } catch (error) {
+      if (!isImageGenerationConfigured()) {
+        console.warn('[Lifestyle Shot] OpenRouter not configured, returning placeholder');
+        return NextResponse.json({
+          modelA: {
+            imageUrl: `https://placehold.co/800x600/4F46E5/ffffff?text=${encodeURIComponent(cityName + ' Lifestyle')}`,
+            model: 'placeholder',
+            provider: 'placeholder',
+            prompt: 'Development mode - no API key',
+            generatedAt: new Date().toISOString()
+          },
+          metadata: {
+            cityId,
+            cityName,
+            variation: variation?.id,
+            variationName: variation?.name,
+            generatedAt: new Date().toISOString()
+          },
+          note: 'Using placeholder - configure OPENROUTER_API_KEY for real generation'
+        });
+      }
+      throw error;
+    }
 
     const responseData: Record<string, unknown> = {
       modelA: {
         imageUrl: result.imageUrl,
         prompt: result.prompt,
         model: result.model,
+        provider: result.provider,
         generatedAt: result.generatedAt
       }
     };
@@ -118,6 +123,7 @@ export async function POST(request: NextRequest) {
           imageUrl: resultB.imageUrl,
           prompt: resultB.prompt,
           model: resultB.model,
+          provider: resultB.provider,
           generatedAt: resultB.generatedAt
         };
       } catch (error) {

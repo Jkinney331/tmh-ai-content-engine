@@ -18,7 +18,7 @@ export async function GET() {
     // OpenRouter (main AI gateway)
     openRouter: {
       apiKey: !!process.env.OPENROUTER_API_KEY,
-      keyFormat: process.env.OPENROUTER_API_KEY?.startsWith('sk-or-') ? 'valid format (sk-or-...)' : 'invalid or missing',
+      keyFormat: process.env.OPENROUTER_API_KEY?.startsWith('sk-') ? 'valid format (sk-...)' : 'invalid or missing',
       keyLength: process.env.OPENROUTER_API_KEY?.length || 0,
     },
 
@@ -59,8 +59,8 @@ export async function GET() {
   }
   if (!process.env.OPENROUTER_API_KEY) {
     checks.criticalIssues.push('OPENROUTER_API_KEY is missing - AI generation and research will not work')
-  } else if (!process.env.OPENROUTER_API_KEY.startsWith('sk-or-')) {
-    checks.criticalIssues.push('OPENROUTER_API_KEY has wrong format - should start with sk-or-')
+  } else if (!process.env.OPENROUTER_API_KEY.startsWith('sk-')) {
+    checks.criticalIssues.push('OPENROUTER_API_KEY has wrong format - should start with sk-')
   }
 
   // Check for warnings

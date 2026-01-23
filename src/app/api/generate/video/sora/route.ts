@@ -18,6 +18,7 @@ export async function POST(request: NextRequest) {
       model = 'sora-2',
       duration = 8,
       resolution = '720p',
+      aspectRatio = '16:9',
       cityId,
       cityName,
     } = body;
@@ -60,6 +61,7 @@ export async function POST(request: NextRequest) {
       model,
       duration: actualDuration,
       resolution,
+      aspectRatio,
     });
 
     // Save to database
