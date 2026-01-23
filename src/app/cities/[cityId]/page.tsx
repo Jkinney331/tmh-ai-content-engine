@@ -1,10 +1,24 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import { getCityById, getCityElementsByType } from '@/lib/supabase'
 import { Database } from '@/types/database'
-import { ArrowLeft, MapPin, Hash, Clock, AlertCircle, CheckCircle, XCircle, Save } from 'lucide-react'
+import {
+  ArrowLeft,
+  CheckCircle,
+  MapPin,
+  Save,
+  Sparkles,
+  Flag,
+  ThumbsDown,
+  ThumbsUp,
+  RefreshCw,
+  FileText,
+  Download,
+  ChevronDown,
+  ChevronUp,
+} from 'lucide-react'
 
 type City = Database['public']['Tables']['cities']['Row']
 type CityElement = Database['public']['Tables']['city_elements']['Row']
@@ -16,37 +30,82 @@ type ElementApproval = {
   notes?: string
 }
 
-export default function CityDetailPage() {
+type GeneratedAsset = {
+  id: string
+  output_url: string
+  content_type: string
+  status: string
+  prompt?: string
+  model?: string
+}
+
+const STATUS_STYLES: Record<string, string> = {
+  ready: 'bg-success/15 text-success',
+  active: 'bg-success/15 text-success',
+  approved: 'bg-primary/15 text-primary',
+  researching: 'bg-warning/15 text-warning',
+  draft: 'bg-muted text-muted-foreground',
+  error: 'bg-destructive/15 text-destructive',
+}
+
+const FLAG_BY_COUNTRY: Record<string, string> = {
+  USA: '🇺🇸',
+  Japan: '🇯🇵',
+  Korea: '🇰🇷',
+  France: '🇫🇷',
+  UK: '🇬🇧',
+  China: '🇨🇳',
+}
+
+ export default function CityDetailPage() {
   const params = useParams()
   const router = useRouter()
   const cityId = params.cityId as string
 
   const [city, setCity] = useState<City | null>(null)
   const [elements, setElements] = useState<ElementsByType>({})
+  const [assets, setAssets] = useState<GeneratedAsset[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
-  const [activeTab, setActiveTab] = useState<string>('all')
   const [approvals, setApprovals] = useState<Map<string, ElementApproval>>(new Map())
   const [saving, setSaving] = useState(false)
   const [showToast, setShowToast] = useState(false)
   const [approvingCity, setApprovingCity] = useState(false)
+  const [isResearching, setIsResearching] = useState(false)
+  const [collapsedSections, setCollapsedSections] = useState<Record<string, boolean>>({})
+  const [notes, setNotes] = useState('')
+  const notesRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
     fetchCityData()
   }, [cityId])
+
+  useEffect(() => {
+    if (!cityId) return
+    const stored = window.localStorage.getItem(`tmh-city-notes-${cityId}`)
+    if (stored) {
+      setNotes(stored)
+    } else if (city?.user_notes) {
+      setNotes(city.user_notes)
+    }
+  }, [cityId, city?.user_notes])
 
   const fetchCityData = async () => {
     try {
       setLoading(true)
       setError(null)
 
-      // Fetch city data
       const cityData = await getCityById(cityId)
       setCity(cityData)
 
-      // Fetch city elements grouped by type
       const elementsData = await getCityElementsByType(cityId)
       setElements(elementsData)
+
+      const assetsResponse = await fetch(`/api/generated-content?city_id=${cityId}`)
+      if (assetsResponse.ok) {
+        const data = await assetsResponse.json()
+        setAssets(data.data || [])
+      }
     } catch (err) {
       console.error('Error fetching city data:', err)
       setError('Failed to load city data. Please try again.')
@@ -59,24 +118,6 @@ export default function CityDetailPage() {
     const newApprovals = new Map(approvals)
     newApprovals.set(elementId, { elementId, status, notes })
     setApprovals(newApprovals)
-  }
-
-  const getApprovedElementsCount = () => {
-    // Count elements with approved status from both saved and pending approvals
-    let approvedCount = 0
-
-    // Count already approved elements
-    Object.values(elements).forEach(typeElements => {
-      typeElements.forEach(element => {
-        const pendingApproval = approvals.get(element.id)
-        if (pendingApproval?.status === 'approved' ||
-            (!pendingApproval && element.status === 'approved')) {
-          approvedCount++
-        }
-      })
-    })
-
-    return approvedCount
   }
 
   const handleApproveCityProfile = async () => {
@@ -94,11 +135,9 @@ export default function CityDetailPage() {
         throw new Error('Failed to approve city profile')
       }
 
-      // Show success toast
       setShowToast(true)
       setTimeout(() => setShowToast(false), 3000)
 
-      // Refresh data to get updated status
       await fetchCityData()
     } catch (err) {
       console.error('Error approving city profile:', err)
@@ -127,14 +166,10 @@ export default function CityDetailPage() {
         throw new Error('Failed to save decisions')
       }
 
-      // Show success toast
       setShowToast(true)
       setTimeout(() => setShowToast(false), 3000)
 
-      // Refresh data to get updated statuses
       await fetchCityData()
-
-      // Clear approvals after successful save
       setApprovals(new Map())
     } catch (err) {
       console.error('Error saving decisions:', err)
@@ -144,490 +179,349 @@ export default function CityDetailPage() {
     }
   }
 
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'active':
-      case 'ready':
-        return 'text-green-600 bg-green-100'
-      case 'draft':
-      case 'researching':
-        return 'text-yellow-600 bg-yellow-100'
-      case 'archived':
-      case 'error':
-        return 'text-red-600 bg-red-100'
-      default:
-        return 'text-gray-600 bg-gray-100'
+  const handleRunResearch = async () => {
+    setIsResearching(true)
+    try {
+      const response = await fetch(`/api/cities/${cityId}/research`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ categories: ['slang', 'landmark', 'sport', 'cultural'] }),
+      })
+
+      if (!response.ok) {
+        throw new Error('Research failed to start')
+      }
+
+      await fetchCityData()
+    } catch (err) {
+      console.error('Error running research:', err)
+      setError('Failed to run research. Please try again.')
+    } finally {
+      setIsResearching(false)
     }
   }
 
-  const getElementStatusIcon = (status: string) => {
-    switch (status) {
-      case 'approved':
-        return <CheckCircle className="w-4 h-4 text-green-500" />
-      case 'rejected':
-        return <XCircle className="w-4 h-4 text-red-500" />
-      case 'pending':
-        return <Clock className="w-4 h-4 text-yellow-500" />
-      default:
-        return <AlertCircle className="w-4 h-4 text-gray-500" />
-    }
+  const handleNotesSave = () => {
+    if (!cityId) return
+    window.localStorage.setItem(`tmh-city-notes-${cityId}`, notes)
+    setShowToast(true)
+    setTimeout(() => setShowToast(false), 3000)
   }
 
-  const getElementTypeLabel = (type: string) => {
-    switch (type) {
-      case 'slang':
-        return 'Slang & Language'
-      case 'landmark':
-        return 'Landmarks'
-      case 'sport':
-        return 'Sports'
-      case 'cultural':
-        return 'Culture'
-      default:
-        return type.charAt(0).toUpperCase() + type.slice(1)
-    }
+  const toggleSection = (key: string) => {
+    setCollapsedSections(prev => ({ ...prev, [key]: !prev[key] }))
   }
 
-  const renderElementContent = (element: CityElement) => {
-    const value = element.element_value as any
+  const totalElements = useMemo(() => {
+    return Object.values(elements).reduce((acc, group) => acc + group.length, 0)
+  }, [elements])
 
-    switch (element.element_type) {
-      case 'slang':
-        return (
-          <div className="space-y-1">
-            <p className="font-medium text-gray-900">{value.term || element.element_key}</p>
-            {value.meaning && (
-              <p className="text-sm text-gray-600">Meaning: {value.meaning}</p>
-            )}
-            {value.usage && (
-              <p className="text-sm text-gray-500">Usage: {value.usage}</p>
-            )}
-            {value.popularity && (
-              <span className="inline-block px-2 py-1 mt-1 text-xs bg-blue-100 text-blue-700 rounded">
-                {value.popularity} popularity
-              </span>
-            )}
-          </div>
-        )
+  const groupedAssets = useMemo(() => {
+    return assets.reduce<Record<string, GeneratedAsset[]>>((acc, asset) => {
+      const type = asset.content_type || 'other'
+      if (!acc[type]) acc[type] = []
+      acc[type].push(asset)
+      return acc
+    }, {})
+  }, [assets])
 
-      case 'landmark':
-        return (
-          <div className="space-y-1">
-            <p className="font-medium text-gray-900">{value.name || element.element_key}</p>
-            {value.type && (
-              <p className="text-sm text-gray-600">Type: {value.type}</p>
-            )}
-            {value.significance && (
-              <p className="text-sm text-gray-500">{value.significance}</p>
-            )}
-            {value.year_built && (
-              <p className="text-sm text-gray-400">Built: {value.year_built}</p>
-            )}
-          </div>
-        )
+  const statusLabel = city?.status || 'draft'
+  const statusStyle = STATUS_STYLES[statusLabel] || 'bg-muted text-muted-foreground'
+  const flag = city?.country ? (FLAG_BY_COUNTRY[city.country] || '🏙️') : '🏙️'
 
-      case 'sport':
-        return (
-          <div className="space-y-1">
-            <p className="font-medium text-gray-900">{value.team || element.element_key}</p>
-            {value.sport && value.league && (
-              <p className="text-sm text-gray-600">{value.sport} - {value.league}</p>
-            )}
-            {value.venue && (
-              <p className="text-sm text-gray-500">Venue: {value.venue}</p>
-            )}
-            {value.championships && (
-              <span className="inline-block px-2 py-1 mt-1 text-xs bg-yellow-100 text-yellow-700 rounded">
-                {value.championships} championships
-              </span>
-            )}
-          </div>
-        )
-
-      case 'cultural':
-        return (
-          <div className="space-y-1">
-            <p className="font-medium text-gray-900">{value.name || element.element_key}</p>
-            {value.type && (
-              <p className="text-sm text-gray-600">Type: {value.type}</p>
-            )}
-            {value.significance && (
-              <p className="text-sm text-gray-500">{value.significance}</p>
-            )}
-            {value.founded && (
-              <p className="text-sm text-gray-400">Founded: {value.founded}</p>
-            )}
-            {value.famous_acts && Array.isArray(value.famous_acts) && (
-              <div className="flex flex-wrap gap-1 mt-1">
-                {value.famous_acts.map((act: string, idx: number) => (
-                  <span key={idx} className="text-xs px-2 py-1 bg-purple-100 text-purple-700 rounded">
-                    {act}
-                  </span>
-                ))}
-              </div>
-            )}
-          </div>
-        )
-
-      default:
-        return (
-          <div className="space-y-1">
-            <p className="font-medium text-gray-900">{element.element_key}</p>
-            <pre className="text-sm text-gray-600 whitespace-pre-wrap">
-              {JSON.stringify(value, null, 2)}
-            </pre>
-          </div>
-        )
-    }
-  }
-
-  const elementTypes = Object.keys(elements)
-  const tabs = ['all', ...elementTypes]
-
-  const getFilteredElements = () => {
-    if (activeTab === 'all') {
-      return Object.entries(elements).flatMap(([type, items]) =>
-        items.map(item => ({ ...item, displayType: type }))
-      )
-    }
-    return elements[activeTab]?.map(item => ({ ...item, displayType: activeTab })) || []
-  }
+  const insightBlocks = [
+    { key: 'slang', label: 'Local Slang', icon: Flag },
+    { key: 'landmark', label: 'Landmarks', icon: MapPin },
+    { key: 'sport', label: 'Sports Culture', icon: Sparkles },
+    { key: 'cultural', label: 'Cultural Signals', icon: Sparkles },
+  ]
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 p-8">
-        <div className="max-w-7xl mx-auto">
-          <div className="animate-pulse">
-            <div className="h-8 bg-gray-200 rounded w-1/4 mb-4"></div>
-            <div className="h-64 bg-gray-200 rounded mb-4"></div>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {[1, 2, 3, 4, 5, 6].map(i => (
-                <div key={i} className="h-32 bg-gray-200 rounded"></div>
-              ))}
-            </div>
-          </div>
-        </div>
-      </div>
-    )
-  }
-
-  if (error) {
-    return (
-      <div className="min-h-screen bg-gray-50 p-8">
-        <div className="max-w-7xl mx-auto">
-          <div className="bg-red-50 border border-red-200 rounded-lg p-6">
-            <div className="flex items-center space-x-2 text-red-600 mb-2">
-              <AlertCircle className="w-5 h-5" />
-              <h3 className="font-semibold">Error</h3>
-            </div>
-            <p className="text-red-700">{error}</p>
-            <button
-              onClick={() => router.push('/cities')}
-              className="mt-4 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
-            >
-              Back to Cities
-            </button>
-          </div>
-        </div>
+      <div className="flex h-full items-center justify-center text-muted-foreground">
+        Loading city profile...
       </div>
     )
   }
 
   if (!city) {
     return (
-      <div className="min-h-screen bg-gray-50 p-8">
-        <div className="max-w-7xl mx-auto">
-          <p className="text-gray-600">City not found</p>
-          <button
-            onClick={() => router.push('/cities')}
-            className="mt-4 px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors"
-          >
-            Back to Cities
-          </button>
-        </div>
+      <div className="flex h-full flex-col items-center justify-center gap-4 text-muted-foreground">
+        <p>City not found.</p>
+        <button
+          onClick={() => router.push('/cities')}
+          className="rounded-lg border border-[color:var(--surface-border)] px-4 py-2"
+        >
+          Back to Cities
+        </button>
       </div>
     )
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 p-8">
-      <div className="max-w-7xl mx-auto">
-        {/* Header with Back Button */}
-        <div className="mb-8">
+    <div className="mx-auto flex h-full max-w-7xl flex-col gap-6">
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-4">
           <button
-            onClick={() => router.push('/cities')}
-            className="flex items-center space-x-2 text-gray-600 hover:text-gray-900 transition-colors mb-4"
+            onClick={() => router.back()}
+            className="flex h-10 w-10 items-center justify-center rounded-full border border-[color:var(--surface-border)] bg-[color:var(--surface-muted)] text-muted-foreground hover:text-foreground"
           >
-            <ArrowLeft className="w-5 h-5" />
-            <span>Back to Cities</span>
+            <ArrowLeft className="h-4 w-4" />
           </button>
-
-          {/* City Header */}
-          <div className="bg-white rounded-xl shadow-sm p-6">
-            <div className="flex items-start justify-between">
-              <div>
-                <h1 className="text-3xl font-bold text-gray-900 mb-2">{city.name}</h1>
-
-                {/* Status Badge */}
-                <span className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${getStatusColor(city.status)}`}>
-                  {city.status}
-                </span>
-              </div>
-
-              <div className="text-right">
-                <p className="text-sm text-gray-500">Created</p>
-                <p className="text-sm font-medium text-gray-700">
-                  {new Date(city.created_at).toLocaleDateString()}
-                </p>
-              </div>
-            </div>
-
-            {/* City Info Grid */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-6">
-              {/* Area Codes */}
-              <div>
-                <div className="flex items-center space-x-2 text-gray-600 mb-2">
-                  <Hash className="w-4 h-4" />
-                  <span className="text-sm font-medium">Area Codes</span>
-                </div>
-                <div className="flex flex-wrap gap-2">
-                  {city.area_codes && city.area_codes.length > 0 ? (
-                    city.area_codes.map((code: any, idx: number) => (
-                      <span key={idx} className="px-3 py-1 bg-blue-100 text-blue-700 rounded-lg text-sm font-medium">
-                        {code}
-                      </span>
-                    ))
-                  ) : (
-                    <span className="text-gray-400 text-sm">No area codes</span>
-                  )}
-                </div>
-              </div>
-
-              {/* Nicknames */}
-              <div>
-                <div className="flex items-center space-x-2 text-gray-600 mb-2">
-                  <MapPin className="w-4 h-4" />
-                  <span className="text-sm font-medium">Nicknames</span>
-                </div>
-                <div className="flex flex-wrap gap-2">
-                  {city.nicknames && city.nicknames.length > 0 ? (
-                    city.nicknames.map((nickname: any, idx: number) => (
-                      <span key={idx} className="px-3 py-1 bg-purple-100 text-purple-700 rounded-lg text-sm font-medium">
-                        {nickname}
-                      </span>
-                    ))
-                  ) : (
-                    <span className="text-gray-400 text-sm">No nicknames</span>
-                  )}
-                </div>
-              </div>
-
-              {/* Visual Themes */}
-              <div>
-                <div className="flex items-center space-x-2 text-gray-600 mb-2">
-                  <AlertCircle className="w-4 h-4" />
-                  <span className="text-sm font-medium">Visual Themes</span>
-                </div>
-                <div className="flex flex-wrap gap-2">
-                  {city.visual_identity?.themes && Array.isArray(city.visual_identity.themes) ? (
-                    city.visual_identity.themes.map((theme: any, idx: number) => (
-                      <span key={idx} className="px-3 py-1 bg-green-100 text-green-700 rounded-lg text-sm font-medium">
-                        {theme}
-                      </span>
-                    ))
-                  ) : (
-                    <span className="text-gray-400 text-sm">No themes defined</span>
-                  )}
-                </div>
-              </div>
-            </div>
-
-            {/* User Notes */}
-            {city.user_notes && (
-              <div className="mt-6 pt-6 border-t border-gray-100">
-                <p className="text-sm font-medium text-gray-600 mb-2">Notes</p>
-                <p className="text-gray-700">{city.user_notes}</p>
-              </div>
-            )}
+          <div>
+            <p className="text-xs uppercase tracking-[0.2em] text-muted-foreground">City Profile</p>
+            <h1 className="text-3xl font-bold text-foreground">
+              {flag} {city.name}
+            </h1>
+            <p className="text-sm text-muted-foreground">{city.country || 'City Intelligence'}</p>
           </div>
         </div>
-
-        {/* Research Elements Section */}
-        <div className="bg-white rounded-xl shadow-sm p-6">
-          <h2 className="text-xl font-bold text-gray-900 mb-6">Research Elements</h2>
-
-          {/* Tabs */}
-          <div className="border-b border-gray-200 mb-6">
-            <nav className="flex space-x-8">
-              {tabs.map(tab => (
-                <button
-                  key={tab}
-                  onClick={() => setActiveTab(tab)}
-                  className={`py-2 px-1 border-b-2 font-medium text-sm transition-colors ${
-                    activeTab === tab
-                      ? 'border-blue-500 text-blue-600'
-                      : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                  }`}
-                >
-                  {tab === 'all' ? 'All Elements' : getElementTypeLabel(tab)}
-                  {tab !== 'all' && elements[tab] && (
-                    <span className="ml-2 px-2 py-0.5 bg-gray-100 text-gray-600 rounded-full text-xs">
-                      {elements[tab].length}
-                    </span>
-                  )}
-                </button>
-              ))}
-            </nav>
-          </div>
-
-          {/* Elements Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {getFilteredElements().length > 0 ? (
-              getFilteredElements().map((element: any) => {
-                const currentApproval = approvals.get(element.id)
-                const displayStatus = currentApproval?.status || element.status
-
-                return (
-                  <div
-                    key={element.id}
-                    className="bg-gray-50 rounded-lg p-4 hover:bg-gray-100 transition-colors"
-                  >
-                    <div className="flex items-start justify-between mb-2">
-                      <span className="text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        {getElementTypeLabel(element.displayType || element.element_type)}
-                      </span>
-                      {getElementStatusIcon(displayStatus)}
-                    </div>
-
-                    {renderElementContent(element)}
-
-                    {/* Approval Controls */}
-                    <div className="mt-4 pt-3 border-t border-gray-200">
-                      <div className="flex items-center space-x-2 mb-2">
-                        <button
-                          onClick={() => handleApprovalChange(element.id, 'approved')}
-                          className={`px-3 py-1 text-xs rounded-lg transition-colors ${
-                            displayStatus === 'approved'
-                              ? 'bg-green-500 text-white'
-                              : 'bg-gray-200 text-gray-600 hover:bg-green-100 hover:text-green-700'
-                          }`}
-                        >
-                          Approve
-                        </button>
-                        <button
-                          onClick={() => handleApprovalChange(element.id, 'rejected')}
-                          className={`px-3 py-1 text-xs rounded-lg transition-colors ${
-                            displayStatus === 'rejected'
-                              ? 'bg-red-500 text-white'
-                              : 'bg-gray-200 text-gray-600 hover:bg-red-100 hover:text-red-700'
-                          }`}
-                        >
-                          Reject
-                        </button>
-                        <button
-                          onClick={() => handleApprovalChange(element.id, 'pending')}
-                          className={`px-3 py-1 text-xs rounded-lg transition-colors ${
-                            displayStatus === 'pending'
-                              ? 'bg-yellow-500 text-white'
-                              : 'bg-gray-200 text-gray-600 hover:bg-yellow-100 hover:text-yellow-700'
-                          }`}
-                        >
-                          Pending
-                        </button>
-                      </div>
-
-                      {/* Notes input */}
-                      <input
-                        type="text"
-                        placeholder="Add notes (optional)"
-                        value={currentApproval?.notes || ''}
-                        onChange={(e) => handleApprovalChange(element.id, displayStatus || 'pending', e.target.value)}
-                        className="w-full px-2 py-1 text-xs border border-gray-200 rounded focus:outline-none focus:ring-1 focus:ring-blue-500"
-                      />
-                    </div>
-
-                    {element.notes && (
-                      <div className="mt-3 pt-3 border-t border-gray-200">
-                        <p className="text-xs text-gray-500 italic">{element.notes}</p>
-                      </div>
-                    )}
-                  </div>
-                )
-              })
-            ) : (
-              <div className="col-span-full text-center py-12">
-                <AlertCircle className="w-12 h-12 text-gray-300 mx-auto mb-3" />
-                <p className="text-gray-500">
-                  {activeTab === 'all'
-                    ? 'No research elements found for this city'
-                    : `No ${getElementTypeLabel(activeTab).toLowerCase()} elements found`}
-                </p>
-              </div>
-            )}
-          </div>
-
-          {/* Action Buttons */}
-          <div className="mt-6 flex justify-between items-center">
-            {/* City Approval Section */}
-            <div className="flex items-center space-x-4">
-              {city.status !== 'active' ? (
-                <>
-                  {getApprovedElementsCount() >= 3 ? (
-                    <button
-                      onClick={handleApproveCityProfile}
-                      disabled={approvingCity}
-                      className="flex items-center space-x-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                      <CheckCircle className="w-4 h-4" />
-                      <span>{approvingCity ? 'Approving...' : 'Approve City Profile'}</span>
-                    </button>
-                  ) : (
-                    <div className="text-sm text-gray-500">
-                      Approve at least {3 - getApprovedElementsCount()} more elements to approve the city profile
-                    </div>
-                  )}
-                </>
-              ) : (
-                <div className="flex items-center space-x-4">
-                  <button
-                    disabled
-                    className="flex items-center space-x-2 px-4 py-2 bg-green-100 text-green-700 rounded-lg cursor-not-allowed"
-                  >
-                    <CheckCircle className="w-4 h-4" />
-                    <span>City Approved</span>
-                  </button>
-                  <button
-                    onClick={() => router.push(`/generate?cityId=${cityId}`)}
-                    className="flex items-center space-x-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-                  >
-                    <span>Start Generating</span>
-                  </button>
-                </div>
-              )}
-            </div>
-
-            {/* Save Decisions Button */}
-            {approvals.size > 0 && (
-              <button
-                onClick={handleSaveDecisions}
-                disabled={saving}
-                className="flex items-center space-x-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                <Save className="w-4 h-4" />
-                <span>{saving ? 'Saving...' : 'Save Decisions'}</span>
-              </button>
-            )}
-          </div>
+        <div className="flex items-center gap-3">
+          <span className={`rounded-full px-3 py-1 text-xs font-semibold uppercase tracking-[0.2em] ${statusStyle}`}>
+            {statusLabel}
+          </span>
+          <button
+            onClick={() => notesRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })}
+            className="rounded-lg border border-[color:var(--surface-border)] px-3 py-2 text-sm text-muted-foreground hover:text-foreground"
+          >
+            Add Note
+          </button>
+          <button
+            onClick={handleRunResearch}
+            disabled={isResearching}
+            className="rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground hover:bg-primary/90 disabled:opacity-60"
+          >
+            {isResearching ? 'Researching...' : 'Start Research'}
+          </button>
+          <button
+            className="rounded-lg border border-[color:var(--surface-border)] px-3 py-2 text-sm text-muted-foreground hover:text-foreground"
+          >
+            Export
+          </button>
         </div>
       </div>
 
-      {/* Toast Notification */}
+      {error && (
+        <div className="rounded-xl border border-destructive/30 bg-destructive/10 p-4 text-sm text-destructive">
+          {error}
+        </div>
+      )}
+
+      <div className="grid grid-cols-1 gap-4 md:grid-cols-4">
+        {[
+          { label: 'Population', value: city.population_notes || 'Not set' },
+          { label: 'Market Growth', value: (city.visual_identity as any)?.growth || 'Not set' },
+          { label: 'Avg Spend', value: (city.visual_identity as any)?.avg_spend || 'Not set' },
+          { label: 'Last Updated', value: city.updated_at ? new Date(city.updated_at).toLocaleDateString() : 'Unknown' },
+        ].map((stat) => (
+          <div key={stat.label} className="surface rounded-xl p-4">
+            <p className="text-xs uppercase tracking-[0.2em] text-muted-foreground">{stat.label}</p>
+            <p className="mt-2 text-lg font-semibold text-foreground">{stat.value}</p>
+          </div>
+        ))}
+      </div>
+
+      {totalElements > 0 && (
+        <section className="surface rounded-xl p-6">
+          <div className="mb-4 flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Sparkles className="h-5 w-5 text-primary" />
+              <h2 className="text-lg font-semibold text-foreground">Research Insights</h2>
+            </div>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => handleSaveDecisions()}
+                disabled={saving || approvals.size === 0}
+                className="inline-flex items-center gap-2 rounded-lg border border-[color:var(--surface-border)] px-3 py-2 text-sm text-muted-foreground hover:text-foreground disabled:opacity-50"
+              >
+                <Save className="h-4 w-4" />
+                Save Decisions
+              </button>
+            </div>
+          </div>
+
+          <div className="space-y-4">
+            {insightBlocks.map((block) => {
+              const blockElements = elements[block.key] || []
+              if (!blockElements.length) return null
+              const isCollapsed = collapsedSections[block.key]
+              const Icon = block.icon
+
+              return (
+                <div key={block.key} className="rounded-xl border border-[color:var(--surface-border)] bg-[color:var(--surface-muted)]">
+                  <button
+                    onClick={() => toggleSection(block.key)}
+                    className="flex w-full items-center justify-between px-4 py-3"
+                  >
+                    <div className="flex items-center gap-2">
+                      <Icon className="h-4 w-4 text-primary" />
+                      <span className="text-sm font-semibold text-foreground">{block.label}</span>
+                      <span className="rounded-full bg-primary/10 px-2 py-0.5 text-xs text-primary">
+                        {blockElements.length}
+                      </span>
+                    </div>
+                    {isCollapsed ? <ChevronDown className="h-4 w-4 text-muted-foreground" /> : <ChevronUp className="h-4 w-4 text-muted-foreground" />}
+                  </button>
+                  {!isCollapsed && (
+                    <div className="space-y-3 px-4 pb-4">
+                      {blockElements.map((element) => {
+                        const approval = approvals.get(element.id)
+                        const status = approval?.status || element.status
+                        return (
+                          <div key={element.id} className="rounded-lg bg-[color:var(--surface-strong)] p-4">
+                            <div className="flex items-center justify-between">
+                              <div>
+                                <p className="text-sm font-semibold text-foreground">{element.element_key}</p>
+                                <p className="text-xs text-muted-foreground">{element.element_type}</p>
+                              </div>
+                              <div className="flex items-center gap-2">
+                                <button
+                                  onClick={() => handleApprovalChange(element.id, 'approved')}
+                                  className={`rounded-lg px-2 py-1 text-xs ${status === 'approved' ? 'bg-success/20 text-success' : 'text-muted-foreground hover:text-success'}`}
+                                >
+                                  <ThumbsUp className="h-3 w-3" />
+                                </button>
+                                <button
+                                  onClick={() => handleApprovalChange(element.id, 'rejected')}
+                                  className={`rounded-lg px-2 py-1 text-xs ${status === 'rejected' ? 'bg-destructive/20 text-destructive' : 'text-muted-foreground hover:text-destructive'}`}
+                                >
+                                  <ThumbsDown className="h-3 w-3" />
+                                </button>
+                              </div>
+                            </div>
+                            <div className="mt-3 text-sm text-muted-foreground">
+                              {typeof element.element_value === 'string'
+                                ? element.element_value
+                                : JSON.stringify(element.element_value)}
+                            </div>
+                          </div>
+                        )
+                      })}
+                    </div>
+                  )}
+                </div>
+              )
+            })}
+          </div>
+        </section>
+      )}
+
+      <section ref={notesRef} className="surface rounded-xl p-6">
+        <div className="mb-4 flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <FileText className="h-5 w-5 text-primary" />
+            <h2 className="text-lg font-semibold text-foreground">Your Notes</h2>
+          </div>
+          <button
+            onClick={handleNotesSave}
+            className="inline-flex items-center gap-2 rounded-lg border border-[color:var(--surface-border)] px-3 py-2 text-sm text-muted-foreground hover:text-foreground"
+          >
+            <Save className="h-4 w-4" />
+            Save
+          </button>
+        </div>
+        <textarea
+          value={notes}
+          onChange={(event) => setNotes(event.target.value)}
+          placeholder="Capture local insights, design ideas, or operator notes..."
+          className="h-32 w-full rounded-lg border border-[color:var(--surface-border)] bg-[color:var(--surface-muted)] p-3 text-sm text-foreground placeholder:text-muted-foreground"
+        />
+      </section>
+
+      <section className="surface rounded-xl p-6">
+        <div className="mb-4 flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <Sparkles className="h-5 w-5 text-primary" />
+            <h2 className="text-lg font-semibold text-foreground">Design Concepts</h2>
+          </div>
+          <div className="flex gap-2">
+            <button className="rounded-lg bg-primary px-3 py-2 text-sm font-semibold text-primary-foreground">Generate 5 Concepts</button>
+            <button className="rounded-lg border border-[color:var(--surface-border)] px-3 py-2 text-sm text-muted-foreground">Generate More</button>
+          </div>
+        </div>
+        <div className="rounded-lg border border-dashed border-[color:var(--surface-border)] p-6 text-sm text-muted-foreground">
+          No concepts yet. Generate a batch to begin ideation.
+        </div>
+      </section>
+
+      <section className="surface rounded-xl p-6">
+        <div className="mb-4 flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <Sparkles className="h-5 w-5 text-primary" />
+            <h2 className="text-lg font-semibold text-foreground">Generated Assets</h2>
+          </div>
+          <div className="flex gap-2">
+            <button className="rounded-lg bg-primary px-3 py-2 text-sm font-semibold text-primary-foreground">Generate New Assets</button>
+            <button className="rounded-lg border border-[color:var(--surface-border)] px-3 py-2 text-sm text-muted-foreground">Upload</button>
+          </div>
+        </div>
+        {Object.keys(groupedAssets).length === 0 && (
+          <div className="rounded-lg border border-dashed border-[color:var(--surface-border)] p-6 text-sm text-muted-foreground">
+            No assets yet. Generate images or videos to populate this section.
+          </div>
+        )}
+        <div className="space-y-6">
+          {Object.entries(groupedAssets).map(([type, items]) => (
+            <div key={type} className="space-y-3">
+              <div className="flex items-center justify-between">
+                <h3 className="text-sm font-semibold uppercase tracking-[0.2em] text-muted-foreground">{type.replace(/_/g, ' ')}</h3>
+                <span className="text-xs text-muted-foreground">{items.length} assets</span>
+              </div>
+              <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
+                {items.map((asset) => (
+                  <div key={asset.id} className="rounded-lg border border-[color:var(--surface-border)] bg-[color:var(--surface-muted)] p-3">
+                    <div className="flex items-center justify-between">
+                      <p className="text-sm font-semibold text-foreground">{asset.content_type}</p>
+                      <span className="rounded-full bg-primary/10 px-2 py-0.5 text-xs text-primary">{asset.status}</span>
+                    </div>
+                    <div className="mt-3 h-32 w-full rounded-lg bg-[color:var(--surface-strong)]" />
+                    <div className="mt-3 flex items-center justify-between text-xs text-muted-foreground">
+                      <span>{asset.model || 'model'}</span>
+                      <button className="inline-flex items-center gap-1 text-primary">
+                        <Download className="h-3 w-3" /> Download
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      <section className="surface rounded-xl p-6">
+        <div className="mb-4 flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <CheckCircle className="h-5 w-5 text-primary" />
+            <h2 className="text-lg font-semibold text-foreground">Approved for Drop</h2>
+          </div>
+          <button onClick={handleApproveCityProfile} disabled={approvingCity} className="rounded-lg bg-primary px-3 py-2 text-sm font-semibold text-primary-foreground">
+            {approvingCity ? 'Approving...' : 'Approve City Profile'}
+          </button>
+        </div>
+        <div className="rounded-lg border border-dashed border-[color:var(--surface-border)] p-6 text-sm text-muted-foreground">
+          Approve assets and concepts to surface them in drop workflows.
+        </div>
+      </section>
+
+      <section className="surface rounded-xl p-6">
+        <div className="mb-4 flex items-center gap-2">
+          <RefreshCw className="h-5 w-5 text-primary" />
+          <h2 className="text-lg font-semibold text-foreground">Agentic Insights</h2>
+        </div>
+        <div className="rounded-lg border border-dashed border-[color:var(--surface-border)] p-6 text-sm text-muted-foreground">
+          AI insights will appear here once you start running city workflows.
+        </div>
+      </section>
+
       {showToast && (
-        <div className="fixed bottom-4 right-4 bg-green-500 text-white px-4 py-2 rounded-lg shadow-lg flex items-center space-x-2 animate-slide-in-up">
-          <CheckCircle className="w-5 h-5" />
-          <span>Decisions saved</span>
+        <div className="fixed bottom-6 right-6 flex items-center gap-2 rounded-lg bg-success px-4 py-3 text-sm text-primary-foreground shadow-lg">
+          <CheckCircle className="h-4 w-4" />
+          Saved.
         </div>
       )}
     </div>
   )
-}
+ }

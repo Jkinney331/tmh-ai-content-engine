@@ -1,4 +1,5 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import Link from "next/link";
 import { Plus, Search } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -18,6 +19,19 @@ export function CitySidebar({ collapsed }: CitySidebarProps) {
   const { setSelectedCity } = useGenerationStore();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [query, setQuery] = useState("");
+
+  const drops = useMemo(() => {
+    if (!cities.length) return [];
+    return [
+      {
+        id: "drop-1",
+        name: "Drop 1",
+        status: "Draft",
+        cityCount: Math.min(3, cities.length),
+        launchDate: null,
+      },
+    ];
+  }, [cities.length]);
 
   useEffect(() => {
     const loadCities = async () => {
@@ -95,6 +109,37 @@ export function CitySidebar({ collapsed }: CitySidebarProps) {
                   No cities match this search.
                 </div>
               )}
+            </div>
+            <div className="mt-6 space-y-3">
+              <div className="flex items-center justify-between">
+                <p className="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">Drops</p>
+                <Link
+                  href="/drops"
+                  className="text-xs text-primary hover:text-primary/80"
+                >
+                  New
+                </Link>
+              </div>
+              {drops.length === 0 && (
+                <div className="rounded-lg border border-dashed border-[color:var(--surface-border)] p-3 text-xs text-muted-foreground">
+                  No drops yet.
+                </div>
+              )}
+              {drops.map((drop) => (
+                <Link
+                  key={drop.id}
+                  href={`/drops/${drop.id}`}
+                  className="rounded-lg border border-[color:var(--surface-border)] bg-[color:var(--surface-muted)] p-3 text-left transition hover:border-primary/40"
+                >
+                  <div className="flex items-center justify-between">
+                    <p className="text-sm font-semibold text-foreground">{drop.name}</p>
+                    <span className="rounded-full bg-primary/15 px-2 py-0.5 text-[10px] uppercase tracking-[0.16em] text-primary">
+                      {drop.status}
+                    </span>
+                  </div>
+                  <p className="mt-1 text-xs text-muted-foreground">{drop.cityCount} cities</p>
+                </Link>
+              ))}
             </div>
           </ScrollArea>
         </div>
