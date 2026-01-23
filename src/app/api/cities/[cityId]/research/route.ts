@@ -23,6 +23,13 @@ export async function POST(
       )
     }
 
+    if (!process.env.SUPABASE_SERVICE_KEY) {
+      return NextResponse.json(
+        { error: 'SUPABASE_SERVICE_KEY is required to write city research. Add it to the Vercel environment.' },
+        { status: 400 }
+      )
+    }
+
     const city = (await getCityById(cityId)) as CityRow | null
     if (!city) {
       return NextResponse.json({ error: 'City not found' }, { status: 404 })
