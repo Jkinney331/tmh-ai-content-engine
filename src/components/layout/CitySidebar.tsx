@@ -35,6 +35,7 @@ export function CitySidebar({ collapsed }: CitySidebarProps) {
       },
     ];
   }, [cities.length]);
+  const hasDraftDrop = drops.some((drop) => drop.status === "Draft");
 
   useEffect(() => {
     const loadCities = async () => {
@@ -117,9 +118,11 @@ export function CitySidebar({ collapsed }: CitySidebarProps) {
             <div className="mt-4 border-t border-[color:var(--surface-border)] pt-4">
               <div className="flex items-center justify-between">
                 <p className="text-sm font-semibold text-foreground">Drops</p>
-                <Button variant="secondary" size="sm">
-                  New Drop
-                </Button>
+                {!hasDraftDrop && (
+                  <Button variant="secondary" size="sm">
+                    New Drop
+                  </Button>
+                )}
               </div>
               <div className="mt-3 flex flex-col gap-2">
                 {drops.length === 0 && (

@@ -8,9 +8,6 @@ const items = [
   { id: "dashboard", label: "Dashboard", href: "/", icon: Grid2X2 },
   { id: "knowledge", label: "Knowledge Base", href: "/settings/knowledge-base", icon: Book },
   { id: "drops", label: "Drops", href: "/drops", icon: Layers },
-  { id: "generate", label: "Generate", href: "/generate", icon: Layers },
-  { id: "images", label: "Images", href: "/generate/image", icon: ImageIcon },
-  { id: "video", label: "Video", href: "/generate/video", icon: Video },
 ];
 
 export function IconRail() {

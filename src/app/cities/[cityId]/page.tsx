@@ -302,6 +302,7 @@ export default function CityDetailPage() {
             <div className="mt-2 inline-flex items-center gap-2 rounded-full border border-[color:var(--surface-border)] bg-[color:var(--surface-muted)] px-3 py-1 text-xs text-muted-foreground">
               <span className="h-2 w-2 rounded-full bg-primary" />
               {totalElements > 0 ? 'Research Complete' : 'Research Pending'}
+              {city.updated_at && `· Updated ${new Date(city.updated_at).toLocaleDateString()}`}
             </div>
           </div>
           <div className="flex gap-2">
