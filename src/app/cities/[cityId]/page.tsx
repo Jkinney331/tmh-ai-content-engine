@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import { getCityById, getCityElementsByType } from '@/lib/supabase'
+import { cityThreadSeeds } from '@/data/cityThreads'
 import { Database } from '@/types/database'
 import { GlassCard } from '@/components/shared/GlassCard'
 import { Button } from '@/components/ui/button'
@@ -114,6 +115,43 @@ export default function CityDetailPage() {
   const [notesUpdatedAt, setNotesUpdatedAt] = useState<Date | null>(null)
   const notesRef = useRef<HTMLDivElement>(null)
 
+  const isUuid = (value: string) =>
+    /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(value)
+
+  const resolveCityId = async (value: string) => {
+    if (isUuid(value)) return value
+
+    const seed = cityThreadSeeds.find((item) => item.id === value)
+    const nameFromSlug = seed?.name || value.split('-').map((part) => part[0]?.toUpperCase() + part.slice(1)).join(' ')
+
+    const createResponse = await fetch('/api/cities', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        name: nameFromSlug,
+        researchCategories: {
+          slang: true,
+          landmarks: true,
+          sports: true,
+          culture: true,
+          visualIdentity: true,
+          areaCodes: true,
+        },
+      }),
+    })
+
+    if (!createResponse.ok && createResponse.status !== 409) {
+      return value
+    }
+
+    const listResponse = await fetch('/api/cities')
+    if (!listResponse.ok) return value
+    const data = await listResponse.json()
+    const list = Array.isArray(data) ? data : data.cities || []
+    const match = list.find((item: City) => item.name?.toLowerCase() === nameFromSlug.toLowerCase())
+    return match?.id || value
+  }
+
   useEffect(() => {
     fetchCityData()
   }, [cityId])
@@ -133,13 +171,19 @@ export default function CityDetailPage() {
       setLoading(true)
       setError(null)
 
-      const cityData = await getCityById(cityId)
+      const resolvedId = await resolveCityId(cityId)
+      if (resolvedId !== cityId) {
+        router.replace(`/cities/${resolvedId}`)
+        return
+      }
+
+      const cityData = await getCityById(resolvedId)
       setCity(cityData)
 
-      const elementsData = await getCityElementsByType(cityId)
+      const elementsData = await getCityElementsByType(resolvedId)
       setElements(elementsData)
 
-      const assetsResponse = await fetch(`/api/generated-content?city_id=${cityId}`)
+      const assetsResponse = await fetch(`/api/generated-content?city_id=${resolvedId}`)
       if (assetsResponse.ok) {
         const data = await assetsResponse.json()
         setAssets(data.data || [])
