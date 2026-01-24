@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { supabase, hasRealCredentials } from '@/lib/supabase'
+import { supabase, supabaseAdmin, hasRealCredentials, hasServiceKey } from '@/lib/supabase'
 import { callOpenRouter } from '@/lib/openrouter'
 
 interface ResearchCategories {
@@ -61,9 +61,10 @@ const mockCities: City[] = [
  */
 async function updateCityError(cityId: string, errorMessage: string) {
   if (!hasRealCredentials) return
+  const cityDb = hasServiceKey ? supabaseAdmin : supabase
 
   try {
-    await (supabase as any).from('cities').update({
+    await (cityDb as any).from('cities').update({
       status: 'error',
       error_message: errorMessage,
       updated_at: new Date().toISOString()
@@ -71,7 +72,7 @@ async function updateCityError(cityId: string, errorMessage: string) {
   } catch (e) {
     // If error_message column doesn't exist, try without it
     console.warn('[City Research] error_message column may not exist, updating status only')
-    await (supabase as any).from('cities').update({
+    await (cityDb as any).from('cities').update({
       status: 'draft',
       updated_at: new Date().toISOString()
     }).eq('id', cityId)
@@ -100,9 +101,11 @@ async function performCityResearch(cityId: string, cityName: string, categories:
       return null
     }
 
+    const cityDb = hasServiceKey ? supabaseAdmin : supabase
+
     // Update status to researching
     if (hasRealCredentials) {
-      await (supabase as any).from('cities').update({
+      await (cityDb as any).from('cities').update({
         status: 'researching',
         error_message: null // Clear any previous error
       }).eq('id', cityId)
@@ -323,7 +326,7 @@ Format your response as valid JSON with these fields:
       }
 
       if (elementsToInsert.length > 0) {
-        const { error: insertError } = await (supabase as any)
+        const { error: insertError } = await (cityDb as any)
           .from('city_elements')
           .upsert(elementsToInsert as any, {
             onConflict: 'city_id,element_type,element_key'
@@ -334,14 +337,14 @@ Format your response as valid JSON with these fields:
         }
       }
 
-      const { error: updateError } = await (supabase as any)
+      const { error: updateError } = await (cityDb as any)
         .from('cities')
         .update(updateData)
         .eq('id', cityId)
 
       if (updateError) {
         console.error(`[City Research] Failed to update ${cityName}:`, updateError)
-        await (supabase as any).from('cities').update({
+        await (cityDb as any).from('cities').update({
           status: 'draft',
           user_notes: `Research completed but failed to save: ${updateError.message}. Raw: ${content.slice(0, 500)}`
         }).eq('id', cityId)
@@ -393,9 +396,10 @@ export async function POST(request: NextRequest) {
     // If we have real Supabase credentials, use Supabase
     if (hasRealCredentials) {
       try {
+        const cityDb = hasServiceKey ? supabaseAdmin : supabase
 
         // Check for existing city in Supabase
-        const { data: existingCity } = await supabase
+        const { data: existingCity } = await cityDb
           .from('cities')
           .select('id')
           .eq('name', cityName)
@@ -424,7 +428,7 @@ export async function POST(request: NextRequest) {
           updated_at: new Date().toISOString()
         }
 
-        const { data: newCity, error: insertError } = await supabase
+        const { data: newCity, error: insertError } = await cityDb
           .from('cities')
           .insert(cityData as any)
           .select()
@@ -500,7 +504,8 @@ export async function GET() {
     // If we have real Supabase credentials, use Supabase
     if (hasRealCredentials) {
       try {
-        const { data: cities, error } = await supabase
+        const cityDb = hasServiceKey ? supabaseAdmin : supabase
+        const { data: cities, error } = await cityDb
           .from('cities')
           .select('*')
           .order('name')

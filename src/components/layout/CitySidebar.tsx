@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { Plus, Search } from "lucide-react";
 import { CityThreadCard } from "@/components/city/CityThreadCard";
 import { Badge } from "@/components/ui/badge";
@@ -18,6 +19,7 @@ interface CitySidebarProps {
 }
 
 export function CitySidebar({ collapsed }: CitySidebarProps) {
+  const router = useRouter();
   const { cities, setCities, selectedCity, selectCity } = useCityStore();
   const { setSelectedCity } = useGenerationStore();
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -57,9 +59,54 @@ export function CitySidebar({ collapsed }: CitySidebarProps) {
     }
   }, [cities.length, setCities]);
 
-  const handleSelect = (city: City) => {
-    selectCity(city);
-    setSelectedCity(city);
+  const isUuid = (value: string) =>
+    /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(value);
+
+  const ensureCityExists = async (city: City) => {
+    if (isUuid(city.id)) return city;
+
+    const response = await fetch("/api/cities", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        name: city.name,
+        researchCategories: {
+          slang: true,
+          landmarks: true,
+          sports: true,
+          culture: true,
+          visualIdentity: true,
+          areaCodes: true,
+        },
+      }),
+    });
+
+    if (response.ok) {
+      const created = await response.json();
+      return { ...city, ...created };
+    }
+
+    if (response.status === 409) {
+      const listResponse = await fetch("/api/cities");
+      if (listResponse.ok) {
+        const data = await listResponse.json();
+        const list = Array.isArray(data) ? data : data.cities || [];
+        const match = list.find((item: City) => item.name.toLowerCase() === city.name.toLowerCase());
+        if (match) return { ...city, ...match };
+      }
+    }
+
+    return city;
+  };
+
+  const handleSelect = async (city: City) => {
+    const resolved = await ensureCityExists(city);
+    if (resolved.id !== city.id) {
+      setCities(cities.map((item) => (item.name === city.name ? resolved : item)));
+    }
+    selectCity(resolved);
+    setSelectedCity(resolved);
+    router.push(`/cities/${resolved.id}`);
   };
 
   const filtered = cities.filter((city) =>
