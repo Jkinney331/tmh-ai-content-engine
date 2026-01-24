@@ -405,7 +405,7 @@ export default function DropProfilePage() {
                   <CheckCircle2 className="h-4 w-4 text-muted-foreground" />
                   {item.label}
                 </div>
-                <Badge variant="secondary">{item.priority}</Badge>
+                <Badge variant="slate">{item.priority}</Badge>
               </div>
             ))}
           </div>
