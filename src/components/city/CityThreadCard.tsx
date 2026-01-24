@@ -36,7 +36,7 @@ export function CityThreadCard({ city, isActive, onClick }: CityThreadCardProps)
         <div className="flex items-center justify-between gap-2">
           <p className="text-sm font-semibold text-foreground">{city.name}</p>
           {tier && (
-            <Badge variant="secondary" className="text-[10px] uppercase tracking-wide">
+            <Badge variant="slate" className="text-[10px] uppercase tracking-wide">
               {tier}
             </Badge>
           )}

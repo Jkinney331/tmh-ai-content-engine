@@ -219,7 +219,7 @@ export default function DropProfilePage() {
                   <p className="text-xs text-muted-foreground">{city.country || 'City'}</p>
                 </div>
                 {city.metadata?.tier && (
-                  <Badge variant="secondary" className="text-[10px] uppercase tracking-wide">
+                  <Badge variant="slate" className="text-[10px] uppercase tracking-wide">
                     {city.metadata.tier}
                   </Badge>
                 )}
