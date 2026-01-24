@@ -5,7 +5,7 @@ import { useParams } from 'next/navigation'
 import Link from 'next/link'
 import { GlassCard } from '@/components/shared/GlassCard'
 import { Badge } from '@/components/ui/badge'
-import { Button } from '@/components/ui/button'
+import { Button, buttonVariants } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import {
   Calendar,
@@ -185,9 +185,12 @@ export default function DropProfilePage() {
               </div>
               <div className="mt-3 text-xs text-muted-foreground">Assets: {assetCountByCity[city.id] || 0}</div>
               <div className="mt-3 flex gap-2">
-                <Button variant="secondary" size="sm" asChild>
-                  <Link href={`/cities/${city.id}`}>View Assets</Link>
-                </Button>
+                <Link
+                  href={`/cities/${city.id}`}
+                  className={buttonVariants({ variant: 'secondary', size: 'sm' })}
+                >
+                  View Assets
+                </Link>
                 <Button variant="ghost" size="sm">Remove</Button>
               </div>
             </GlassCard>
