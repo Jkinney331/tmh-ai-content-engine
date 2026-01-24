@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { supabase, supabaseAdmin, hasRealCredentials, hasServiceKey } from '@/lib/supabase'
+import { supabase, hasRealCredentials } from '@/lib/supabase'
+import { supabaseAdmin, hasServiceKey } from '@/lib/supabaseAdmin'
 import { callOpenRouter } from '@/lib/openrouter'
 
 interface ResearchCategories {
