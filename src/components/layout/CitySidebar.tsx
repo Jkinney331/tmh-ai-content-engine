@@ -10,6 +10,7 @@ import AddCityModal from "@/components/AddCityModal";
 import { useCityStore } from "@/stores/cityStore";
 import { useGenerationStore } from "@/stores/generationStore";
 import type { City } from "@/types/city";
+import { mergeCityThreads } from "@/data/cityThreads";
 import { cn } from "@/lib/utils";
 
 interface CitySidebarProps {
@@ -43,7 +44,8 @@ export function CitySidebar({ collapsed }: CitySidebarProps) {
         const response = await fetch("/api/cities");
         if (response.ok) {
           const data = await response.json();
-          setCities(Array.isArray(data) ? data : data.cities || []);
+          const resolved = Array.isArray(data) ? data : data.cities || [];
+          setCities(mergeCityThreads(resolved));
         }
       } catch (error) {
         console.error("Failed to load cities:", error);

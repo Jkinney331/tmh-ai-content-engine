@@ -1,12 +1,16 @@
+import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import type { City } from "@/types/city";
 
 const FLAG_BY_COUNTRY: Record<string, string> = {
   USA: "🇺🇸",
+  "United States": "🇺🇸",
   Japan: "🇯🇵",
   Korea: "🇰🇷",
+  "South Korea": "🇰🇷",
   France: "🇫🇷",
   UK: "🇬🇧",
+  "United Kingdom": "🇬🇧",
   China: "🇨🇳",
 };
 
@@ -18,6 +22,7 @@ interface CityThreadCardProps {
 
 export function CityThreadCard({ city, isActive, onClick }: CityThreadCardProps) {
   const flag = city.country ? (FLAG_BY_COUNTRY[city.country] || "🏙️") : "🏙️";
+  const tier = city.metadata?.tier as string | undefined;
   return (
     <button
       onClick={onClick}
@@ -30,6 +35,11 @@ export function CityThreadCard({ city, isActive, onClick }: CityThreadCardProps)
       <div className="flex-1">
         <div className="flex items-center justify-between gap-2">
           <p className="text-sm font-semibold text-foreground">{city.name}</p>
+          {tier && (
+            <Badge variant="secondary" className="text-[10px] uppercase tracking-wide">
+              {tier}
+            </Badge>
+          )}
         </div>
         <p className="text-xs text-muted-foreground">{city.country || "City"}</p>
       </div>

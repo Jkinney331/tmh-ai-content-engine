@@ -6,15 +6,18 @@ import { getCityById, getCityElementsByType } from '@/lib/supabase'
 import { Database } from '@/types/database'
 import { GlassCard } from '@/components/shared/GlassCard'
 import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
 import {
   BarChart3,
   Check,
   ChevronDown,
   FileText,
   Image,
+  Plus,
   Sparkles,
   ThumbsDown,
   ThumbsUp,
+  X,
 } from 'lucide-react'
 
 type City = Database['public']['Tables']['cities']['Row']
@@ -38,10 +41,13 @@ type GeneratedAsset = {
 
 const FLAG_BY_COUNTRY: Record<string, string> = {
   USA: '🇺🇸',
+  'United States': '🇺🇸',
   Japan: '🇯🇵',
   Korea: '🇰🇷',
+  'South Korea': '🇰🇷',
   France: '🇫🇷',
   UK: '🇬🇧',
+  'United Kingdom': '🇬🇧',
   China: '🇨🇳',
 }
 
@@ -94,11 +100,18 @@ export default function CityDetailPage() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [approvals, setApprovals] = useState<Map<string, ElementApproval>>(new Map())
+  const [conceptApprovals, setConceptApprovals] = useState<Record<string, 'approved' | 'rejected' | 'pending'>>({})
+  const [activeConceptId, setActiveConceptId] = useState<string | null>(null)
+  const [rejectionTarget, setRejectionTarget] = useState<{ type: 'concept' | 'asset'; id: string } | null>(null)
+  const [rejectionReason, setRejectionReason] = useState('')
+  const [assetSelections, setAssetSelections] = useState<Record<string, boolean>>({})
+  const [assetQuantity, setAssetQuantity] = useState(2)
   const [saving, setSaving] = useState(false)
   const [showToast, setShowToast] = useState(false)
   const [approvingCity, setApprovingCity] = useState(false)
   const [isResearching, setIsResearching] = useState(false)
   const [notes, setNotes] = useState('')
+  const [notesUpdatedAt, setNotesUpdatedAt] = useState<Date | null>(null)
   const notesRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
@@ -232,8 +245,16 @@ export default function CityDetailPage() {
   const handleNotesSave = () => {
     if (!cityId) return
     window.localStorage.setItem(`tmh-city-notes-${cityId}`, notes)
+    setNotesUpdatedAt(new Date())
     setShowToast(true)
     setTimeout(() => setShowToast(false), 3000)
+  }
+
+  const handleConceptApproval = (conceptId: string, status: 'approved' | 'rejected') => {
+    setConceptApprovals((prev) => ({ ...prev, [conceptId]: status }))
+    if (status === 'rejected') {
+      setRejectionTarget({ type: 'concept', id: conceptId })
+    }
   }
 
   const totalElements = useMemo(() => {
@@ -259,11 +280,51 @@ export default function CityDetailPage() {
   ]
 
   const researchBlocks = [
-    { key: 'slang', title: 'Local Slang' },
-    { key: 'landmark', title: 'Key Landmarks' },
-    { key: 'sport', title: 'Sports Culture' },
-    { key: 'cultural', title: 'Cultural Signals' },
+    { key: 'snapshot', title: 'Research Snapshot' },
+    { key: 'signal', title: 'Signal Pulse' },
+    { key: 'cultural', title: 'Cultural Signals', elementsKey: 'cultural' },
+    { key: 'streetwear', title: 'Streetwear Landscape' },
+    { key: 'slang', title: 'Local Slang', elementsKey: 'slang' },
+    { key: 'palettes', title: 'Color Palettes' },
+    { key: 'typography', title: 'Typography Inspiration' },
+    { key: 'landmark', title: 'Key Landmarks', elementsKey: 'landmark' },
+    { key: 'music', title: 'Trending Sounds / Music' },
+    { key: 'creators', title: 'Notable Local Creators' },
+    { key: 'avoid', title: 'What to Avoid' },
   ]
+
+  const conceptCityName = city?.name || 'City'
+  const conceptCards = [
+    {
+      id: 'concept-1',
+      name: `${conceptCityName} Night Market Luxe`,
+      description: 'Neon-rich night market energy blended with premium embroidery and minimal typography.',
+      colorways: 'Midnight teal, jet black, soft gold',
+      placement: 'Left chest crest + back skyline',
+      tagline: 'City lights. Quiet flex.',
+    },
+    {
+      id: 'concept-2',
+      name: `${conceptCityName} Heritage Grid`,
+      description: 'Architectural gridlines and archival textures with modern streetwear cuts.',
+      colorways: 'Charcoal, bone, signal red',
+      placement: 'Center chest lockup',
+      tagline: 'Built by the city.',
+    },
+  ]
+
+  const assetTypeOptions = [
+    'Product Shots (with models)',
+    'Product Shots (without models)',
+    'Ghost Mannequin (photo)',
+    'Ghost Mannequin (video)',
+    'Lifestyle / Scene Shots',
+    'TikTok Ads',
+    'IG Ads',
+    'Community Content',
+  ]
+
+  const approvedAssets = assets.filter((asset) => asset.status === 'approved')
 
   if (loading) {
     return (
@@ -338,24 +399,30 @@ export default function CityDetailPage() {
               <Button variant="secondary" size="sm">
                 Add Research Note
               </Button>
-              <Button
-                variant="secondary"
-                size="sm"
-                onClick={handleSaveDecisions}
-                disabled={saving || approvals.size === 0}
-              >
-                Save Decisions
-              </Button>
             </>
           }
         />
         <div className="grid gap-4">
           {researchBlocks.map((block) => {
-            const blockElements = elements[block.key] || []
+            const blockElements = block.elementsKey ? elements[block.elementsKey] || [] : []
+            const avoidList = Array.isArray((city as any).avoid) ? (city as any).avoid : []
             return (
               <CollapsibleBlock key={block.key} title={block.title}>
-                {blockElements.length === 0 ? (
-                  <p>No research items yet.</p>
+                {block.key === 'avoid' ? (
+                  avoidList.length === 0 ? (
+                    <p>Awaiting avoid list from research.</p>
+                  ) : (
+                    <ul className="space-y-2 text-sm text-muted-foreground">
+                      {avoidList.map((item: any, index: number) => (
+                        <li key={`${block.key}-${index}`} className="rounded-lg bg-[color:var(--surface-strong)] p-3">
+                          <p className="text-sm font-semibold text-foreground">{item.topic || 'Avoid'}</p>
+                          <p className="mt-1 text-xs text-muted-foreground">{item.reason || 'No reason provided.'}</p>
+                        </li>
+                      ))}
+                    </ul>
+                  )
+                ) : blockElements.length === 0 ? (
+                  <p>No research items yet. Run research to populate this section.</p>
                 ) : (
                   <div className="space-y-3">
                     {blockElements.map((element) => {
@@ -406,7 +473,7 @@ export default function CityDetailPage() {
           title="Your Notes"
           actions={
             <Button variant="secondary" size="sm" onClick={handleNotesSave}>
-              Save Note
+              Pin Note
             </Button>
           }
         />
@@ -418,7 +485,10 @@ export default function CityDetailPage() {
             onChange={(event) => setNotes(event.target.value)}
           />
           <div className="mt-3 flex items-center justify-between text-xs text-muted-foreground">
-            <span>Local notes saved on this device.</span>
+            <span>
+              Last edited:{' '}
+              {notesUpdatedAt ? notesUpdatedAt.toLocaleString() : 'Not saved yet'}
+            </span>
             <span>{notes.length} / 1200</span>
           </div>
         </GlassCard>
@@ -440,9 +510,109 @@ export default function CityDetailPage() {
             </>
           }
         />
-        <GlassCard className="p-5 text-sm text-muted-foreground">
-          No concepts yet. Generate a batch to begin ideation.
-        </GlassCard>
+        <div className="grid gap-4 md:grid-cols-2">
+          {conceptCards.map((concept) => {
+            const approval = conceptApprovals[concept.id] || 'pending'
+            return (
+              <GlassCard key={concept.id} className="p-5">
+                <div className="flex items-center justify-between">
+                  <p className="text-sm font-semibold text-foreground">{concept.name}</p>
+                  <span className="text-xs text-muted-foreground capitalize">{approval}</span>
+                </div>
+                <p className="mt-2 text-xs text-muted-foreground">{concept.description}</p>
+                <div className="mt-3 space-y-1 text-xs text-muted-foreground">
+                  <p><span className="text-foreground">Colorways:</span> {concept.colorways}</p>
+                  <p><span className="text-foreground">Placement:</span> {concept.placement}</p>
+                  <p><span className="text-foreground">Tagline:</span> {concept.tagline}</p>
+                </div>
+                <div className="mt-4 flex flex-wrap gap-2">
+                  <Button
+                    variant="secondary"
+                    size="sm"
+                    onClick={() => handleConceptApproval(concept.id, 'approved')}
+                  >
+                    <ThumbsUp className="h-4 w-4" />
+                    Thumbs Up
+                  </Button>
+                  <Button
+                    variant="secondary"
+                    size="sm"
+                    onClick={() => handleConceptApproval(concept.id, 'rejected')}
+                  >
+                    <ThumbsDown className="h-4 w-4" />
+                    Thumbs Down
+                  </Button>
+                  <Button
+                    size="sm"
+                    onClick={() => setActiveConceptId(concept.id)}
+                    disabled={approval !== 'approved'}
+                  >
+                    Generate Assets
+                  </Button>
+                </div>
+              </GlassCard>
+            )
+          })}
+        </div>
+        {activeConceptId && (
+          <GlassCard className="p-5">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-semibold text-foreground">Generate Assets</p>
+                <p className="text-xs text-muted-foreground">
+                  {conceptCards.find((concept) => concept.id === activeConceptId)?.name}
+                </p>
+              </div>
+              <button onClick={() => setActiveConceptId(null)} className="text-muted-foreground">
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+            <div className="mt-4 grid gap-3 md:grid-cols-2">
+              {assetTypeOptions.slice(0, 6).map((type) => (
+                <label key={type} className="flex items-center gap-2 text-sm text-muted-foreground">
+                  <input
+                    type="checkbox"
+                    checked={Boolean(assetSelections[type])}
+                    onChange={(event) => setAssetSelections((prev) => ({ ...prev, [type]: event.target.checked }))}
+                  />
+                  {type}
+                </label>
+              ))}
+            </div>
+            <div className="mt-4 grid gap-3 md:grid-cols-3">
+              <div>
+                <p className="text-xs text-muted-foreground">Quantity per type</p>
+                <Input
+                  type="number"
+                  min={1}
+                  value={assetQuantity}
+                  onChange={(event) => setAssetQuantity(Number(event.target.value || 1))}
+                />
+              </div>
+              <div>
+                <p className="text-xs text-muted-foreground">Model / Pipeline</p>
+                <select className="mt-1 w-full rounded-lg border border-[color:var(--surface-border)] bg-[color:var(--surface-muted)] px-3 py-2 text-sm text-foreground">
+                  <option>Nano Banana (Primary)</option>
+                  <option>OpenAI GPT Image 1.5</option>
+                  <option>Dual Model (A/B)</option>
+                </select>
+              </div>
+              <div>
+                <p className="text-xs text-muted-foreground">Estimated Cost</p>
+                <p className="mt-2 text-lg font-semibold">$ {(assetQuantity * 0.12).toFixed(2)}</p>
+              </div>
+            </div>
+            <div className="mt-4 flex gap-2">
+              <Button>
+                <Plus className="h-4 w-4" />
+                Generate
+              </Button>
+              <Button variant="secondary" onClick={() => setActiveConceptId(null)}>
+                Cancel
+              </Button>
+            </div>
+          </GlassCard>
+        )}
       </section>
 
       <section className="space-y-4">
@@ -462,31 +632,37 @@ export default function CityDetailPage() {
           </GlassCard>
         )}
         <div className="grid gap-4">
-          {Object.entries(groupedAssets).map(([type, items]) => (
-            <GlassCard key={type} className="p-5">
-              <div className="flex items-center justify-between">
-                <p className="text-sm font-semibold text-foreground">{type.replace(/_/g, ' ')}</p>
-                <span className="text-xs text-muted-foreground">{items.length} assets</span>
-              </div>
-              <div className="mt-4 grid grid-cols-1 gap-3 md:grid-cols-3">
-                {items.map((asset) => (
-                  <div key={asset.id} className="rounded-lg border border-[color:var(--surface-border)] bg-[color:var(--surface-muted)] p-3">
-                    <div className="flex items-center justify-between">
-                      <p className="text-sm font-semibold text-foreground">{asset.content_type}</p>
-                      <span className="text-xs text-muted-foreground">{asset.status}</span>
-                    </div>
-                    <div className="mt-3 h-28 w-full rounded-lg bg-[color:var(--surface-strong)]" />
-                    <div className="mt-3 flex items-center justify-between text-xs text-muted-foreground">
-                      <span>{asset.model || 'model'}</span>
-                      <button className="inline-flex items-center gap-1 text-primary">
-                        Download
-                      </button>
-                    </div>
+          {assetTypeOptions.map((type) => {
+            const items = groupedAssets[type] || []
+            return (
+              <CollapsibleBlock key={type} title={`${type} (${items.length})`}>
+                {items.length === 0 ? (
+                  <p>No assets yet for this type.</p>
+                ) : (
+                  <div className="mt-4 grid grid-cols-1 gap-3 md:grid-cols-3">
+                    {items.map((asset) => (
+                      <div key={asset.id} className="rounded-lg border border-[color:var(--surface-border)] bg-[color:var(--surface-muted)] p-3">
+                        <div className="flex items-center justify-between">
+                          <span className="text-xs text-muted-foreground">{asset.content_type}</span>
+                          <span className="text-xs text-muted-foreground">{asset.status}</span>
+                        </div>
+                        <div className="mt-3 h-28 w-full rounded-lg bg-[color:var(--surface-strong)]" />
+                        <div className="mt-3 text-xs text-muted-foreground">Concept: {asset.prompt || '—'}</div>
+                        <div className="mt-3 flex flex-wrap gap-2 text-xs">
+                          <Button size="sm" variant="secondary">Approve</Button>
+                          <Button size="sm" variant="secondary" onClick={() => setRejectionTarget({ type: 'asset', id: asset.id })}>Reject</Button>
+                          <Button size="sm" variant="secondary">Regenerate</Button>
+                          <Button size="sm" variant="secondary">View Full</Button>
+                          <Button size="sm" variant="secondary">Edit</Button>
+                          <Button size="sm">Download</Button>
+                        </div>
+                      </div>
+                    ))}
                   </div>
-                ))}
-              </div>
-            </GlassCard>
-          ))}
+                )}
+              </CollapsibleBlock>
+            )
+          })}
         </div>
       </section>
 
@@ -495,22 +671,92 @@ export default function CityDetailPage() {
           icon={Check}
           title="Approved for Drop"
           actions={
-            <Button size="sm" onClick={handleApproveCityProfile} disabled={approvingCity}>
-              {approvingCity ? 'Approving...' : 'Approve City Profile'}
-            </Button>
+            <div className="flex flex-wrap gap-2">
+              <select className="rounded-lg border border-[color:var(--surface-border)] bg-[color:var(--surface-muted)] px-3 py-2 text-sm text-foreground">
+                <option>Drop 1</option>
+                <option>Drop 2</option>
+              </select>
+              <Button size="sm">Add to Drop</Button>
+              <Button size="sm" onClick={handleApproveCityProfile} disabled={approvingCity}>
+                {approvingCity ? 'Approving...' : 'Approve City Profile'}
+              </Button>
+            </div>
           }
         />
-        <GlassCard className="p-5 text-sm text-muted-foreground">
-          Approve assets and concepts to surface them in drop workflows.
-        </GlassCard>
+        {approvedAssets.length === 0 ? (
+          <GlassCard className="p-5 text-sm text-muted-foreground">
+            No approved assets yet. Approve items to stage them for a drop.
+          </GlassCard>
+        ) : (
+          <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
+            {approvedAssets.map((asset) => (
+              <GlassCard key={asset.id} className="p-4">
+                <div className="text-xs text-muted-foreground">{asset.content_type}</div>
+                <div className="mt-3 h-24 rounded-lg bg-[color:var(--surface-strong)]" />
+                <div className="mt-2 text-xs text-muted-foreground">Concept: {asset.prompt || '—'}</div>
+              </GlassCard>
+            ))}
+          </div>
+        )}
       </section>
 
       <section className="space-y-4">
-        <SectionHeader icon={Sparkles} title="Agentic Insights" />
-        <GlassCard className="p-5 text-sm text-muted-foreground">
-          AI insights will appear here once you start running city workflows.
-        </GlassCard>
+        <SectionHeader
+          icon={Sparkles}
+          title="Insights (Agentic Transparency)"
+          actions={
+            <>
+              <Button variant="secondary" size="sm">
+                Ask AI about Insights
+              </Button>
+              <Button size="sm">Create Action Plan</Button>
+            </>
+          }
+        />
+        <div className="grid gap-4 md:grid-cols-3">
+          {['Execution Plan', 'Reasoning Summary', 'Audit Trail'].map((panel) => (
+            <GlassCard key={panel} className="p-4 text-sm text-muted-foreground">
+              <p className="text-sm font-semibold text-foreground">{panel}</p>
+              <p className="mt-2 text-xs text-muted-foreground">
+                {panel} will appear here once the assistant runs a workflow.
+              </p>
+            </GlassCard>
+          ))}
+        </div>
       </section>
+
+      {rejectionTarget && (
+        <GlassCard className="p-5">
+          <div className="flex items-center justify-between">
+            <p className="text-sm font-semibold text-foreground">Why didn’t this work?</p>
+            <button onClick={() => setRejectionTarget(null)} className="text-muted-foreground">
+              <X className="h-4 w-4" />
+            </button>
+          </div>
+          <textarea
+            placeholder="Share feedback to improve future generations."
+            className="mt-3 min-h-[120px] w-full rounded-lg border border-[color:var(--surface-border)] bg-[color:var(--surface-muted)] p-3 text-sm text-foreground"
+            value={rejectionReason}
+            onChange={(event) => setRejectionReason(event.target.value)}
+          />
+          <div className="mt-3 flex flex-wrap gap-2 text-xs">
+            {['Wrong vibe', 'Off-brand', 'Low quality', 'Overdone', 'Other'].map((tag) => (
+              <Button key={tag} variant="secondary" size="sm">
+                {tag}
+              </Button>
+            ))}
+          </div>
+          <div className="mt-4 flex gap-2">
+            <Button onClick={() => setRejectionTarget(null)}>Submit</Button>
+            <Button variant="secondary" onClick={() => setRejectionTarget(null)}>
+              Skip
+            </Button>
+            <Button variant="ghost" onClick={() => setRejectionTarget(null)}>
+              Close
+            </Button>
+          </div>
+        </GlassCard>
+      )}
 
       {showToast && (
         <div className="fixed bottom-6 right-6 flex items-center gap-2 rounded-lg bg-success px-4 py-3 text-sm text-primary-foreground shadow-lg">

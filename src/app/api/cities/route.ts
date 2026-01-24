@@ -24,10 +24,37 @@ interface City {
   researchCategories: ResearchCategories
   customPrompt?: string
   createdAt: string
+  country?: string
+  state?: string
+  area_codes?: string[]
+  population?: number
+  tier?: string
+  last_activity?: string
+}
+
+const defaultResearchCategories: ResearchCategories = {
+  slang: true,
+  landmarks: true,
+  sports: true,
+  culture: true,
+  visualIdentity: true,
+  areaCodes: true
 }
 
 // Mock database for testing
-const mockCities: City[] = []
+const mockCities: City[] = [
+  { id: 'tokyo', name: 'Tokyo', country: 'Japan', status: 'active', researchCategories: defaultResearchCategories, createdAt: new Date().toISOString(), tier: 'T1', last_activity: '2m ago' },
+  { id: 'shanghai', name: 'Shanghai', country: 'China', status: 'active', researchCategories: defaultResearchCategories, createdAt: new Date().toISOString(), tier: 'T1', last_activity: '10m ago' },
+  { id: 'seoul', name: 'Seoul', country: 'South Korea', status: 'active', researchCategories: defaultResearchCategories, createdAt: new Date().toISOString(), tier: 'T1', last_activity: '25m ago' },
+  { id: 'london', name: 'London', country: 'United Kingdom', status: 'active', researchCategories: defaultResearchCategories, createdAt: new Date().toISOString(), tier: 'T1', last_activity: '1h ago' },
+  { id: 'paris', name: 'Paris', country: 'France', status: 'active', researchCategories: defaultResearchCategories, createdAt: new Date().toISOString(), tier: 'T1', last_activity: '2h ago' },
+  { id: 'new-york', name: 'New York', country: 'United States', state: 'New York', status: 'active', researchCategories: defaultResearchCategories, createdAt: new Date().toISOString(), tier: 'T1', last_activity: '3h ago' },
+  { id: 'los-angeles', name: 'Los Angeles', country: 'United States', state: 'California', status: 'active', researchCategories: defaultResearchCategories, createdAt: new Date().toISOString(), tier: 'T2', last_activity: '5h ago' },
+  { id: 'detroit', name: 'Detroit', country: 'United States', state: 'Michigan', status: 'active', researchCategories: defaultResearchCategories, createdAt: new Date().toISOString(), tier: 'T2', last_activity: '8h ago' },
+  { id: 'chicago', name: 'Chicago', country: 'United States', state: 'Illinois', status: 'active', researchCategories: defaultResearchCategories, createdAt: new Date().toISOString(), tier: 'T2', last_activity: '1d ago' },
+  { id: 'miami', name: 'Miami', country: 'United States', state: 'Florida', status: 'active', researchCategories: defaultResearchCategories, createdAt: new Date().toISOString(), tier: 'T2', last_activity: '1d ago' },
+  { id: 'compton', name: 'Compton', country: 'United States', state: 'California', status: 'active', researchCategories: defaultResearchCategories, createdAt: new Date().toISOString(), tier: 'T3', last_activity: '2d ago' },
+]
 
 /**
  * Helper to update city with error status

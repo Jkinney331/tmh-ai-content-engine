@@ -7,22 +7,26 @@ import { GlassCard } from '@/components/shared/GlassCard'
 import { Badge } from '@/components/ui/badge'
 import { Button, buttonVariants } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import { mergeCityThreads } from '@/data/cityThreads'
 import {
   Calendar,
   CheckCircle2,
   ClipboardList,
   Globe,
   Layers,
+  Plus,
   Sparkles,
   Users,
   Video,
   FileText,
+  X,
 } from 'lucide-react'
 
 interface City {
   id: string
   name: string
   country?: string | null
+  metadata?: Record<string, any>
 }
 
 interface GeneratedAsset {
@@ -66,13 +70,16 @@ export default function DropProfilePage() {
   const [assets, setAssets] = useState<GeneratedAsset[]>([])
   const [dropName, setDropName] = useState('Drop 1')
   const [launchDate, setLaunchDate] = useState('')
+  const [rejectionTarget, setRejectionTarget] = useState<string | null>(null)
+  const [rejectionReason, setRejectionReason] = useState('')
 
   useEffect(() => {
     const load = async () => {
       const response = await fetch('/api/cities')
       if (response.ok) {
         const data = await response.json()
-        setCities(Array.isArray(data) ? data : data.cities || [])
+        const resolved = Array.isArray(data) ? data : data.cities || []
+        setCities(mergeCityThreads(resolved))
       }
       const assetsResponse = await fetch('/api/generated-content')
       if (assetsResponse.ok) {
@@ -85,6 +92,35 @@ export default function DropProfilePage() {
   }, [])
 
   const dropCities = useMemo(() => cities.slice(0, 3), [cities])
+
+  const assetTypeGroups = [
+    'Product Shots (with models)',
+    'Product Shots (without models)',
+    'Ghost Mannequin (photo)',
+    'Ghost Mannequin (video)',
+    'Lifestyle / Scene Shots',
+    'TikTok Ads',
+    'IG Ads',
+    'Community Content',
+  ]
+
+  const socialSections = [
+    'Single City Posts',
+    'All Products Together',
+    'Text Ads',
+    'Video Ads',
+    'Community Content',
+  ]
+
+  const checklistItems = [
+    { label: 'All product shots approved', priority: 'High' },
+    { label: 'All lifestyle shots approved', priority: 'High' },
+    { label: 'Video ads finalized', priority: 'Medium' },
+    { label: 'Social content scheduled', priority: 'Medium' },
+    { label: 'Pricing finalized', priority: 'Low' },
+  ]
+
+  const checklistComplete = 2
 
   const assetCountByCity = useMemo(() => {
     return assets.reduce<Record<string, number>>((acc, asset) => {
@@ -182,6 +218,11 @@ export default function DropProfilePage() {
                   <p className="text-sm font-semibold">{city.name}</p>
                   <p className="text-xs text-muted-foreground">{city.country || 'City'}</p>
                 </div>
+                {city.metadata?.tier && (
+                  <Badge variant="secondary" className="text-[10px] uppercase tracking-wide">
+                    {city.metadata.tier}
+                  </Badge>
+                )}
               </div>
               <div className="mt-3 text-xs text-muted-foreground">Assets: {assetCountByCity[city.id] || 0}</div>
               <div className="mt-3 flex gap-2">
@@ -200,68 +241,199 @@ export default function DropProfilePage() {
 
       <section className="space-y-4">
         <SectionHeader icon={Globe} title="Individual City Content" />
-        <GlassCard className="p-5 text-sm text-muted-foreground">
-          Curate approved assets city by city. (Connect approvals to surface real assets here.)
-        </GlassCard>
+        <div className="space-y-4">
+          {dropCities.map((city) => (
+            <GlassCard key={city.id} className="p-5">
+              <div className="flex items-center justify-between">
+                <p className="text-sm font-semibold">{city.name}</p>
+                <span className="text-xs text-muted-foreground">Assets: {assetCountByCity[city.id] || 0}</span>
+              </div>
+              <div className="mt-4 grid gap-3 md:grid-cols-2">
+                {assetTypeGroups.map((group) => (
+                  <div key={`${city.id}-${group}`} className="rounded-lg border border-[color:var(--surface-border)] bg-[color:var(--surface-muted)] p-3">
+                    <div className="flex items-center justify-between">
+                      <p className="text-xs font-semibold text-foreground">{group}</p>
+                      <span className="text-xs text-muted-foreground">0 items</span>
+                    </div>
+                    <div className="mt-3 text-xs text-muted-foreground">Awaiting approved assets.</div>
+                  </div>
+                ))}
+              </div>
+            </GlassCard>
+          ))}
+        </div>
       </section>
 
       <section className="space-y-4">
-        <SectionHeader icon={Sparkles} title="Cross-City Collection Content" actions={<Button variant="secondary" size="sm">Generate More</Button>} />
-        <GlassCard className="p-5 text-sm text-muted-foreground">
-          Cross-city content will appear here once assets are added to the drop.
-        </GlassCard>
+        <SectionHeader
+          icon={Sparkles}
+          title="Cross-City Collection Content"
+          actions={<Button variant="secondary" size="sm">Generate More</Button>}
+        />
+        <div className="grid gap-3 md:grid-cols-2">
+          {[
+            {
+              title: 'Midnight Transit Capsule',
+              description: 'Cross-city nightlife energy with reflective details.',
+              cities: ['Tokyo', 'Seoul', 'New York'],
+            },
+            {
+              title: 'Heritage Grid Collection',
+              description: 'Architectural silhouettes and archival typography.',
+              cities: ['London', 'Paris', 'Chicago'],
+            },
+          ].map((item) => (
+            <GlassCard key={item.title} className="p-4">
+              <div className="flex items-center justify-between">
+                <p className="text-sm font-semibold">{item.title}</p>
+                <Badge variant="teal">Generating</Badge>
+              </div>
+              <p className="mt-2 text-xs text-muted-foreground">{item.description}</p>
+              <div className="mt-3 flex flex-wrap gap-2 text-xs text-muted-foreground">
+                {item.cities.map((city) => (
+                  <span key={city} className="rounded-full border border-[color:var(--surface-border)] px-2 py-1">
+                    {city}
+                  </span>
+                ))}
+              </div>
+              <div className="mt-3 flex flex-wrap gap-2">
+                <Button size="sm" variant="secondary">Approve</Button>
+                <Button size="sm" variant="secondary" onClick={() => setRejectionTarget(item.title)}>Reject</Button>
+                <Button size="sm" variant="secondary">Regenerate</Button>
+                <Button size="sm">View Full</Button>
+              </div>
+            </GlassCard>
+          ))}
+        </div>
       </section>
 
       <section className="space-y-4">
         <SectionHeader icon={Sparkles} title="Social Media Content" actions={<Button variant="secondary" size="sm">Generate</Button>} />
         <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
-          {[{ title: 'Single City Posts', icon: Globe }, { title: 'All Products Together', icon: Layers }, { title: 'Text Ads', icon: FileText }, { title: 'Video Ads', icon: Video }, { title: 'Community Content', icon: Users }].map((item) => (
-            <GlassCard key={item.title} className="p-4">
+          {socialSections.map((title) => (
+            <GlassCard key={title} className="p-4">
               <div className="flex items-center gap-2 text-sm font-semibold">
-                <item.icon className="h-4 w-4 text-primary" />
-                {item.title}
+                {title.includes('Video') ? <Video className="h-4 w-4 text-primary" /> : title.includes('Text') ? <FileText className="h-4 w-4 text-primary" /> : <Users className="h-4 w-4 text-primary" />}
+                {title}
               </div>
-              <p className="mt-2 text-xs text-muted-foreground">Generate assets for this content stream.</p>
+              <p className="mt-2 text-xs text-muted-foreground">Generate content for this stream.</p>
+              <div className="mt-3 flex flex-wrap gap-2">
+                <Button size="sm" variant="secondary">Copy</Button>
+                <Button size="sm" variant="secondary">Edit</Button>
+                <Button size="sm" variant="secondary">Schedule</Button>
+                <Button size="sm" variant="secondary" onClick={() => setRejectionTarget(title)}>Reject</Button>
+              </div>
             </GlassCard>
           ))}
         </div>
       </section>
 
       <section className="space-y-4">
-        <SectionHeader icon={ClipboardList} title="Logistics" />
-        <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
-          {['Launch Venue', 'Shipping', 'Budget'].map((field) => (
-            <GlassCard key={field} className="p-4">
-              <p className="text-xs text-muted-foreground">{field}</p>
-              <p className="mt-2 text-sm">Not set</p>
-            </GlassCard>
-          ))}
+        <SectionHeader
+          icon={ClipboardList}
+          title="Logistics"
+          actions={
+            <>
+              <Button variant="secondary" size="sm">
+                <Plus className="h-4 w-4" />
+                Add Field
+              </Button>
+              <Button variant="secondary" size="sm">Export Logistics</Button>
+            </>
+          }
+        />
+        <div className="grid gap-4 md:grid-cols-2">
+          <GlassCard className="p-4">
+            <p className="text-xs text-muted-foreground">SKUs</p>
+            <p className="mt-2 text-sm text-muted-foreground">Table placeholder</p>
+          </GlassCard>
+          <GlassCard className="p-4">
+            <p className="text-xs text-muted-foreground">Inventory</p>
+            <p className="mt-2 text-sm text-muted-foreground">Table placeholder</p>
+          </GlassCard>
+          <GlassCard className="p-4">
+            <p className="text-xs text-muted-foreground">Pricing</p>
+            <p className="mt-2 text-sm text-muted-foreground">Table placeholder</p>
+          </GlassCard>
+          <GlassCard className="p-4">
+            <p className="text-xs text-muted-foreground">Shipping Dates</p>
+            <div className="mt-2 grid gap-2">
+              <Input placeholder="Start date" />
+              <Input placeholder="Delivery ETA" />
+            </div>
+          </GlassCard>
+          <GlassCard className="p-4">
+            <p className="text-xs text-muted-foreground">Manufacturer Status</p>
+            <div className="mt-2 flex gap-2">
+              <Badge variant="teal">On Track</Badge>
+              <Badge variant="amber">Needs Review</Badge>
+            </div>
+          </GlassCard>
+          <GlassCard className="p-4">
+            <p className="text-xs text-muted-foreground">Notes</p>
+            <textarea className="mt-2 min-h-[100px] w-full rounded-lg border border-[color:var(--surface-border)] bg-[color:var(--surface-muted)] p-2 text-sm text-foreground" />
+          </GlassCard>
         </div>
       </section>
 
       <section className="space-y-4">
-        <SectionHeader icon={CheckCircle2} title="Launch Checklist" />
+        <SectionHeader
+          icon={CheckCircle2}
+          title="Launch Checklist"
+          actions={
+            <>
+              <Button variant="secondary" size="sm">
+                <Plus className="h-4 w-4" />
+                Add Item
+              </Button>
+              <Button size="sm">Confirm Launch</Button>
+            </>
+          }
+        />
         <GlassCard className="p-5">
-          <div className="space-y-3 text-sm text-muted-foreground">
-            {[
-              'All product shots approved',
-              'All lifestyle shots approved',
-              'Video ads finalized',
-              'Social content scheduled',
-              'Pricing finalized',
-            ].map((item) => (
-              <div key={item} className="flex items-center gap-2">
-                <CheckCircle2 className="h-4 w-4 text-muted-foreground" />
-                {item}
+          <div className="flex items-center justify-between text-xs text-muted-foreground">
+            <span>{checklistComplete} of {checklistItems.length} complete</span>
+            <span>{Math.round((checklistComplete / checklistItems.length) * 100)}% ready</span>
+          </div>
+          <div className="mt-2 h-2 w-full rounded-full bg-[color:var(--surface-border)]">
+            <div className="h-2 rounded-full bg-primary" style={{ width: `${(checklistComplete / checklistItems.length) * 100}%` }} />
+          </div>
+          <div className="mt-4 space-y-3 text-sm text-muted-foreground">
+            {checklistItems.map((item) => (
+              <div key={item.label} className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <CheckCircle2 className="h-4 w-4 text-muted-foreground" />
+                  {item.label}
+                </div>
+                <Badge variant="secondary">{item.priority}</Badge>
               </div>
             ))}
           </div>
-          <div className="mt-4 flex items-center gap-3">
-            <Button>Confirm Launch</Button>
-            <Button variant="secondary">Export Drop</Button>
-          </div>
         </GlassCard>
       </section>
+
+      {rejectionTarget && (
+        <GlassCard className="p-5">
+          <div className="flex items-center justify-between">
+            <p className="text-sm font-semibold text-foreground">Why didn't this work?</p>
+            <button onClick={() => setRejectionTarget(null)} className="text-muted-foreground">
+              <X className="h-4 w-4" />
+            </button>
+          </div>
+          <textarea
+            placeholder="Share feedback for this rejection."
+            className="mt-3 min-h-[120px] w-full rounded-lg border border-[color:var(--surface-border)] bg-[color:var(--surface-muted)] p-3 text-sm text-foreground"
+            value={rejectionReason}
+            onChange={(event) => setRejectionReason(event.target.value)}
+          />
+          <div className="mt-4 flex gap-2">
+            <Button onClick={() => setRejectionTarget(null)}>Submit Feedback</Button>
+            <Button variant="secondary" onClick={() => setRejectionTarget(null)}>
+              Cancel
+            </Button>
+          </div>
+        </GlassCard>
+      )}
     </div>
   )
 }
