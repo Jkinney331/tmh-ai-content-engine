@@ -11,7 +11,6 @@ import { Input } from '@/components/ui/input'
 import {
   BarChart3,
   Check,
-  ChevronDown,
   FileText,
   Image,
   Plus,
@@ -81,13 +80,12 @@ function CollapsibleBlock({
   children: React.ReactNode
 }) {
   return (
-    <details className="group rounded-lg border border-[color:var(--surface-border)] bg-[color:var(--surface-muted)] p-4">
-      <summary className="flex cursor-pointer list-none items-center justify-between text-sm font-semibold text-foreground">
+    <div className="rounded-lg border border-[color:var(--surface-border)] bg-[color:var(--surface-muted)] p-4">
+      <div className="flex items-center justify-between text-sm font-semibold text-foreground">
         {title}
-        <ChevronDown className="h-4 w-4 text-muted-foreground transition group-open:rotate-180" />
-      </summary>
+      </div>
       <div className="mt-3 text-sm text-muted-foreground">{children}</div>
-    </details>
+    </div>
   )
  }
 
