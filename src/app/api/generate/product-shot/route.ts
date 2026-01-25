@@ -16,6 +16,7 @@ interface ProductShotRequest {
   shotName?: string;
   designUrl?: string;
   cityName?: string;
+  cityId?: string;
   productType?: string;
   style?: string;
   model?: 'gpt-5-image' | 'gpt-5-image-mini' | 'gemini-flash' | 'gemini-pro';
@@ -36,6 +37,7 @@ export async function POST(request: NextRequest) {
     const productType = body.productType || 'premium streetwear hoodie';
     const style = body.style || 'urban luxury streetwear';
     const cityName = body.cityName;
+    const cityId = body.cityId;
 
     // Generate with primary model (gpt-5-image-mini by default)
     const primaryModel = body.model || 'gemini-pro';
@@ -113,6 +115,7 @@ export async function POST(request: NextRequest) {
     if (supabase && result.imageUrl) {
       try {
         await supabase.from('generated_content').insert({
+          city_id: cityId || null,
           content_type: 'image',
           title: `Product Shot - ${body.shotType}`,
           prompt: result.prompt,

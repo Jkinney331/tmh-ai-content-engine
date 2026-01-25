@@ -113,6 +113,7 @@ export default function GeneratePage() {
           productType: selectedProductType,
           style: selectedDesignStyle,
           cityName: selectedCity.name,
+          cityId: selectedCity.id,
           model: 'gemini-pro',
           generateBothModels: true
         })

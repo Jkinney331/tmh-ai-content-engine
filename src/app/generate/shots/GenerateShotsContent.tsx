@@ -196,6 +196,7 @@ function ProductShotsContent() {
             shotName: shotDetails?.name || shotType,
             designUrl: design.image_url,
             cityName: design.cities?.name,
+            cityId: design.cities?.id,
             productType: design.metadata?.product_type || 'T-Shirt',
             style: design.metadata?.style || 'Urban'
           }),

@@ -172,6 +172,7 @@ export default function ImageGeneratePage() {
                 productType,
                 style,
                 cityName: selectedCity.name,
+                cityId: selectedCity.id,
                 model: imageSettings.model,
                 generateBothModels: imageSettings.generateBothModels
               })
