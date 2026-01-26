@@ -3,6 +3,11 @@ import { supabase, hasRealCredentials } from '@/lib/supabase'
 import { supabaseAdmin, hasServiceKey } from '@/lib/supabaseAdmin'
 import { callOpenRouter } from '@/lib/openrouter'
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const dbAdmin = supabaseAdmin as any
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const dbAnon = supabase as any
+
 interface ResearchCategories {
   slang: boolean
   landmarks: boolean
@@ -73,7 +78,7 @@ const mockCities: City[] = [
  */
 async function updateCityError(cityId: string, errorMessage: string) {
   if (!hasRealCredentials) return
-  const cityDb = hasServiceKey ? supabaseAdmin : supabase
+  const cityDb = hasServiceKey ? dbAdmin : dbAnon
 
   try {
     await (cityDb as any).from('cities').update({
@@ -113,7 +118,7 @@ async function performCityResearch(cityId: string, cityName: string, categories:
       return null
     }
 
-    const cityDb = hasServiceKey ? supabaseAdmin : supabase
+    const cityDb = hasServiceKey ? dbAdmin : dbAnon
 
     // Update status to researching
     if (hasRealCredentials) {
@@ -408,7 +413,7 @@ export async function POST(request: NextRequest) {
     // If we have real Supabase credentials, use Supabase
     if (hasRealCredentials) {
       try {
-        const cityDb = hasServiceKey ? supabaseAdmin : supabase
+        const cityDb = hasServiceKey ? dbAdmin : dbAnon
 
         // Check for existing city in Supabase
         const { data: existingCity } = await cityDb
@@ -589,7 +594,7 @@ export async function GET() {
     // If we have real Supabase credentials, use Supabase
     if (hasRealCredentials) {
       try {
-        const cityDb = hasServiceKey ? supabaseAdmin : supabase
+        const cityDb = hasServiceKey ? dbAdmin : dbAnon
         const { data: cities, error } = await cityDb
           .from('cities')
           .select('*')

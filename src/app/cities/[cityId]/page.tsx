@@ -189,11 +189,7 @@ function CollapsibleBlock({
     }
   }, [cityId, city?.user_notes])
 
-  useEffect(() => {
-    if (!cityId) return
-    setConceptCards(buildConceptCards(2))
-    setConceptApprovals({})
-  }, [cityId, buildConceptCards])
+  // Concept card initialization moved after buildConceptCards definition
 
   const fetchCityData = async () => {
     try {
@@ -719,6 +715,13 @@ function CollapsibleBlock({
     }
     return cards
   }, [conceptTemplates])
+
+  // Initialize concept cards when city changes
+  useEffect(() => {
+    if (!cityId) return
+    setConceptCards(buildConceptCards(2))
+    setConceptApprovals({})
+  }, [cityId, buildConceptCards])
 
   const assetTypeOptions = [
     'Product Shots (with models)',

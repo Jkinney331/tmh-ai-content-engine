@@ -1,10 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getCityById, hasRealCredentials } from '@/lib/supabase'
 import { supabaseAdmin } from '@/lib/supabaseAdmin'
-import { Database } from '@/types/database'
+import { runCityResearch } from '@/lib/research'
+import { Database } from '@/types/database.types'
 
 type CityRow = Database['public']['Tables']['cities']['Row']
-import { runCityResearch } from '@/lib/research'
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const db = supabaseAdmin as any
 
 export async function POST(
   request: NextRequest,
@@ -39,19 +42,17 @@ export async function POST(
     const runId = `run-${Date.now()}`
     const startedAt = new Date().toISOString()
     try {
-      await supabaseAdmin
-        .from('city_elements')
-        .insert({
-          city_id: city.id,
-          element_type: 'research_run',
-          element_key: runId,
-          element_value: {
-            status: 'running',
-            categories,
-            started_at: startedAt,
-          },
-          status: 'reviewed',
-        })
+      await db.from('city_elements').insert({
+        city_id: city.id,
+        element_type: 'research_run',
+        element_key: runId,
+        element_value: {
+          status: 'running',
+          categories,
+          started_at: startedAt,
+        },
+        status: 'reviewed',
+      })
     } catch (err) {
       console.warn('[City Research] Failed to log research run start:', err)
     }
@@ -59,7 +60,7 @@ export async function POST(
     const result = await runCityResearch(city.id, city.name, categories, body?.customPrompt)
 
     try {
-      await supabaseAdmin
+      await db
         .from('city_elements')
         .update({
           element_value: {
