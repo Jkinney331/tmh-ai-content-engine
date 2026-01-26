@@ -1,9 +1,11 @@
+import { CityStatus } from './database'
+
 export interface City {
   id: string
   name: string
   state: string
   country: string
-  status: 'active' | 'paused' | 'inactive' | 'ready' | 'approved' | 'draft' | 'researching' | 'error'
+  status: CityStatus
   areaCodes: string[]
   nicknameCount: number
   population?: number

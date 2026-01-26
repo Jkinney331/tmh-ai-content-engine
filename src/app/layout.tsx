@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Inter, Plus_Jakarta_Sans, JetBrains_Mono } from "next/font/google";
+import { Toaster } from "sonner";
 import "./globals.css";
 import AppShell from "@/components/layout/AppShell";
 
@@ -21,6 +22,7 @@ export default function RootLayout({
     <html lang="en">
       <body className={`${inter.variable} ${jakarta.variable} ${jetbrains.variable}`}>
         <AppShell>{children}</AppShell>
+        <Toaster position="bottom-right" richColors />
       </body>
     </html>
   );

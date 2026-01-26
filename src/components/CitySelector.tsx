@@ -125,9 +125,9 @@ export default function CitySelector() {
     }
   };
 
-  // Show active, ready, and approved cities (not just 'active')
+  // Show active, ready, draft, and researching cities (using valid CityStatus values)
   const approvedCities = cities.filter(city =>
-    city.status === 'active' || city.status === 'ready' || city.status === 'approved' || city.status === 'draft'
+    city.status === 'active' || city.status === 'ready' || city.status === 'draft' || city.status === 'researching'
   );
 
   return (
