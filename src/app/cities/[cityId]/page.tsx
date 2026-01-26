@@ -2,12 +2,13 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useParams, useRouter } from 'next/navigation'
-import { getCityById, getCityElementsByType } from '@/lib/supabase'
+import { getCityById } from '@/lib/supabase'
 import { cityThreadSeeds } from '@/data/cityThreads'
 import { Database } from '@/types/database'
 import { GlassCard } from '@/components/shared/GlassCard'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import AssetDetailModal from '@/components/AssetDetailModal'
 import { useChatStore } from '@/stores/chatStore'
 import {
   BarChart3,
@@ -39,6 +40,10 @@ import {
   prompt?: string
   model?: string
   created_at?: string
+  output_metadata?: Record<string, any>
+  title?: string
+  duration_seconds?: number | null
+  cities?: { id: string; name: string } | null
  }
 
 type ConceptCard = {
@@ -120,6 +125,9 @@ function CollapsibleBlock({
   const [assetQuantity, setAssetQuantity] = useState(2)
   const [conceptCards, setConceptCards] = useState<ConceptCard[]>([])
   const [isGeneratingAssets, setIsGeneratingAssets] = useState(false)
+  const [editingAsset, setEditingAsset] = useState<GeneratedAsset | null>(null)
+  const [previewAsset, setPreviewAsset] = useState<GeneratedAsset | null>(null)
+  const [editPrompt, setEditPrompt] = useState('')
   const [saving, setSaving] = useState(false)
   const [showToast, setShowToast] = useState(false)
   const [approvingCity, setApprovingCity] = useState(false)
@@ -205,8 +213,19 @@ function CollapsibleBlock({
       const cityData = await getCityById(resolvedId)
       setCity(cityData)
 
-      const elementsData = await getCityElementsByType(resolvedId)
-      setElements(elementsData)
+      const elementsResponse = await fetch(`/api/cities/${resolvedId}/elements`)
+      if (elementsResponse.ok) {
+        const elementsList = await elementsResponse.json()
+        const grouped = (elementsList as any[]).reduce((acc: Record<string, CityElement[]>, element) => {
+          const type = element.element_type
+          if (!acc[type]) acc[type] = []
+          acc[type].push(element)
+          return acc
+        }, {})
+        setElements(grouped)
+      } else {
+        setElements({})
+      }
 
       const assetsResponse = await fetch(`/api/generated-content?city_id=${resolvedId}`)
       if (assetsResponse.ok) {
@@ -290,13 +309,28 @@ function CollapsibleBlock({
     setIsResearching(true)
     setResearchStatus('running')
     setResearchError(null)
+    setError(null)
     try {
       const response = await fetch(`/api/cities/${cityId}/research`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ categories: ['slang', 'landmark', 'sport', 'cultural', 'visualIdentity', 'areaCodes'] }),
+        body: JSON.stringify({
+          categories: [
+            'slang',
+            'landmark',
+            'sport',
+            'cultural',
+            'visualIdentity',
+            'areaCodes',
+            'palettes',
+            'typography',
+            'music',
+            'creators',
+            'avoid',
+          ],
+        }),
       })
 
       if (!response.ok) {
@@ -304,7 +338,37 @@ function CollapsibleBlock({
         throw new Error(data.error || 'Research failed to start')
       }
 
-      await fetchCityData()
+      const data = await response.json()
+
+      // If the API returned elements directly (fallback mode), use them
+      if (data.elements && Array.isArray(data.elements) && data.elements.length > 0) {
+        const grouped = data.elements.reduce((acc: Record<string, CityElement[]>, element: any) => {
+          const type = element.element_type
+          if (!acc[type]) acc[type] = []
+          acc[type].push({
+            id: element.element_key || `temp-${Date.now()}-${Math.random()}`,
+            city_id: cityId,
+            element_type: element.element_type,
+            element_key: element.element_key,
+            element_value: element.element_value,
+            status: element.status || 'pending',
+            notes: element.notes || null,
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString(),
+          } as CityElement)
+          return acc
+        }, {} as Record<string, CityElement[]>)
+        setElements(grouped)
+
+        // Show warning if data wasn't saved
+        if (data.warning) {
+          setError(data.warning)
+        }
+      } else {
+        // Fetch from database if elements were saved
+        await fetchCityData()
+      }
+
       setResearchStatus('completed')
       setResearchUpdatedAt(new Date())
     } catch (err) {
@@ -430,6 +494,22 @@ function CollapsibleBlock({
     setIsGeneratingAssets(true)
     setError(null)
 
+    const pollVideoStatus = async (provider: 'veo' | 'sora', jobId: string, contentId?: string | null) => {
+      const maxAttempts = 60
+      for (let attempt = 0; attempt < maxAttempts; attempt += 1) {
+        const response = await fetch(
+          `/api/generate/video/${provider}/status?jobId=${jobId}${contentId ? `&contentId=${contentId}` : ''}`
+        )
+        if (response.ok) {
+          const data = await response.json()
+          if (data.status === 'completed' || data.status === 'failed') {
+            return
+          }
+        }
+        await new Promise((resolve) => setTimeout(resolve, 5000))
+      }
+    }
+
     try {
       const concept = conceptCards.find((item) => item.id === activeConceptId)
       const basePrompt = concept
@@ -437,14 +517,16 @@ function CollapsibleBlock({
         : `Premium streetwear concept for ${city.name}.`
 
       const tasks = selectedTypes.flatMap((type) => {
-        const calls: Array<Promise<Response>> = []
+        const calls: Array<{ isVideo: boolean; request: Promise<Response> }> = []
         for (let index = 0; index < assetQuantity; index += 1) {
           if (type === 'Product Shots (with models)') {
-            calls.push(
-              fetch('/api/generate/product-shot', {
+            calls.push({
+              isVideo: false,
+              request: fetch('/api/generate/product-shot', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
+                  assetType: type,
                   cityId: city.id,
                   cityName: city.name,
                   shotType: 'hanging',
@@ -453,14 +535,16 @@ function CollapsibleBlock({
                   model: 'gemini-pro',
                   generateBothModels: true,
                 }),
-              })
-            )
+              }),
+            })
           } else if (type === 'Product Shots (without models)') {
-            calls.push(
-              fetch('/api/generate/product-shot', {
+            calls.push({
+              isVideo: false,
+              request: fetch('/api/generate/product-shot', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
+                  assetType: type,
                   cityId: city.id,
                   cityName: city.name,
                   shotType: 'flat-front',
@@ -469,14 +553,16 @@ function CollapsibleBlock({
                   model: 'gemini-pro',
                   generateBothModels: true,
                 }),
-              })
-            )
+              }),
+            })
           } else if (type === 'Ghost Mannequin (photo)') {
-            calls.push(
-              fetch('/api/generate/product-shot', {
+            calls.push({
+              isVideo: false,
+              request: fetch('/api/generate/product-shot', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
+                  assetType: type,
                   cityId: city.id,
                   cityName: city.name,
                   shotType: 'ghost',
@@ -485,28 +571,32 @@ function CollapsibleBlock({
                   model: 'gemini-pro',
                   generateBothModels: true,
                 }),
-              })
-            )
+              }),
+            })
           } else if (type === 'Lifestyle / Scene Shots' || type === 'IG Ads' || type === 'Community Content') {
-            calls.push(
-              fetch('/api/generate/lifestyle-shot', {
+            calls.push({
+              isVideo: false,
+              request: fetch('/api/generate/lifestyle-shot', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
+                  assetType: type,
                   cityId: city.id,
                   cityName: city.name,
                   description: `${basePrompt} Lifestyle scene for ${city.name}.`,
                   aspectRatio: type === 'IG Ads' ? '4:3' : '16:9',
                   generateBothModels: true,
                 }),
-              })
-            )
+              }),
+            })
           } else if (type === 'Ghost Mannequin (video)' || type === 'TikTok Ads') {
-            calls.push(
-              fetch('/api/generate/video/veo', {
+            calls.push({
+              isVideo: true,
+              request: fetch('/api/generate/video/veo', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
+                  assetType: type,
                   cityId: city.id,
                   cityName: city.name,
                   prompt: `${basePrompt} ${type === 'TikTok Ads' ? 'Short-form TikTok ad' : 'Ghost mannequin rotation'} featuring ${city.name} energy.`,
@@ -515,19 +605,34 @@ function CollapsibleBlock({
                   resolution: type === 'TikTok Ads' ? '720p' : '1080p',
                   model: 'veo-3',
                 }),
-              })
-            )
+              }),
+            })
           }
         }
         return calls
       })
 
-      const responses = await Promise.all(tasks)
+      const responses = await Promise.all(tasks.map((task) => task.request))
       const failed = responses.find((res) => !res.ok)
       if (failed) {
         const data = await failed.json().catch(() => ({}))
         throw new Error(data.error || 'Failed to generate assets')
       }
+
+      const videoResponses = await Promise.all(
+        responses.map(async (response, index) => {
+          if (!tasks[index]?.isVideo) return null
+          const data = await response.json().catch(() => null)
+          if (!data?.jobId) return null
+          return { jobId: data.jobId as string, contentId: data.contentId as string | null }
+        })
+      )
+
+      await Promise.all(
+        videoResponses
+          .filter((item): item is { jobId: string; contentId: string | null } => Boolean(item?.jobId))
+          .map((item) => pollVideoStatus('veo', item.jobId, item.contentId))
+      )
 
       await fetchCityData()
       setActiveConceptId(null)
@@ -542,10 +647,14 @@ function CollapsibleBlock({
 
   const handleAssetStatusChange = async (assetId: string, status: 'approved' | 'rejected') => {
     try {
+      const payload: Record<string, unknown> = { id: assetId, status }
+      if (status === 'approved') {
+        payload.output_metadata = { drop_id: activeDropId }
+      }
       const response = await fetch('/api/generated-content', {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ id: assetId, status }),
+        body: JSON.stringify(payload),
       })
 
       if (!response.ok) {
@@ -568,6 +677,56 @@ function CollapsibleBlock({
     document.body.appendChild(link)
     link.click()
     document.body.removeChild(link)
+  }
+
+  const handleAssetRegenerate = async (asset: GeneratedAsset, overridePrompt?: string) => {
+    if (!city) return
+    const prompt = overridePrompt || asset.prompt || `Premium streetwear concept for ${city.name}.`
+    const assetType = asset.output_metadata?.asset_type as string | undefined
+    try {
+      if (asset.content_type === 'video') {
+        const response = await fetch('/api/generate/video/veo', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            assetType,
+            cityId: city.id,
+            cityName: city.name,
+            prompt,
+            duration: 8,
+            aspectRatio: '9:16',
+            resolution: '720p',
+            model: 'veo-3',
+          }),
+        })
+        if (!response.ok) throw new Error('Failed to regenerate video')
+        const data = await response.json().catch(() => ({}))
+        if (data.jobId) {
+          const pollUrl = `/api/generate/video/veo/status?jobId=${data.jobId}${data.contentId ? `&contentId=${data.contentId}` : ''}`
+          await fetch(pollUrl)
+        }
+      } else {
+        const response = await fetch('/api/generate/product-shot', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            assetType,
+            cityId: city.id,
+            cityName: city.name,
+            shotType: 'flat-front',
+            productType: 'T-Shirt',
+            style: prompt,
+            model: 'gemini-pro',
+            generateBothModels: true,
+          }),
+        })
+        if (!response.ok) throw new Error('Failed to regenerate image')
+      }
+      await fetchCityData()
+    } catch (err) {
+      console.error('Regenerate error:', err)
+      setError(err instanceof Error ? err.message : 'Failed to regenerate asset.')
+    }
   }
 
   const handleNotesSave = () => {
@@ -610,6 +769,8 @@ function CollapsibleBlock({
   const resolveAssetGroup = (asset: GeneratedAsset) => {
     const title = (asset as any).title as string | undefined
     const lowerTitle = title?.toLowerCase() || ''
+    const metaType = asset.output_metadata?.asset_type as string | undefined
+    if (metaType) return metaType
     if (lowerTitle.includes('product shot')) return 'Product Shots (with models)'
     if (lowerTitle.includes('lifestyle shot')) return 'Lifestyle / Scene Shots'
     if (lowerTitle.includes('sora video') || lowerTitle.includes('veo video')) return 'TikTok Ads'
@@ -628,6 +789,7 @@ function CollapsibleBlock({
   }, [assets])
 
   const flag = city?.country ? (FLAG_BY_COUNTRY[city.country] || '🏙️') : '🏙️'
+  const activeDropId = 'drop-1'
 
   const statCards = [
     { label: 'Population', value: city?.population_notes || 'Not set' },
@@ -640,25 +802,33 @@ function CollapsibleBlock({
     {
       key: 'snapshot',
       title: 'Research Snapshot',
-      description: (city as any)?.research_summary || 'Run research to generate a snapshot overview for this city.',
+      description:
+        (latestResearchRun as any)?.element_value?.summary ||
+        (city as any)?.research_summary ||
+        'Run research to generate a snapshot overview for this city.',
     },
     {
       key: 'signal',
       title: 'Signal Pulse',
-      description: (city as any)?.signal_pulse || 'Signal pulse highlights will appear after research completes.',
+      description:
+        (city as any)?.signal_pulse ||
+        'Signal pulse highlights will appear after research completes.',
     },
   ]
 
   const researchBlocks = [
     { key: 'cultural', title: 'Cultural Signals', elementsKey: 'cultural' },
-    { key: 'streetwear', title: 'Streetwear Landscape' },
+    { key: 'sport', title: 'Sports Signals', elementsKey: 'sport' },
+    { key: 'streetwear', title: 'Streetwear Landscape', elementsKey: 'cultural' },
     { key: 'slang', title: 'Local Slang', elementsKey: 'slang' },
-    { key: 'palettes', title: 'Color Palettes' },
-    { key: 'typography', title: 'Typography Inspiration' },
+    { key: 'palettes', title: 'Color Palettes', elementsKey: 'palettes' },
+    { key: 'typography', title: 'Typography Inspiration', elementsKey: 'typography' },
     { key: 'landmark', title: 'Key Landmarks', elementsKey: 'landmark' },
-    { key: 'music', title: 'Trending Sounds / Music' },
-    { key: 'creators', title: 'Notable Local Creators' },
-    { key: 'avoid', title: 'What to Avoid' },
+    { key: 'music', title: 'Trending Sounds / Music', elementsKey: 'music' },
+    { key: 'creators', title: 'Notable Local Creators', elementsKey: 'creators' },
+    { key: 'visual_identity', title: 'Visual Identity', elementsKey: 'visual_identity' },
+    { key: 'area_codes', title: 'Area Codes', elementsKey: 'area_codes' },
+    { key: 'avoid', title: 'What to Avoid', elementsKey: 'avoid' },
     { key: 'reference', title: 'Reference Inputs', elementsKey: 'reference' },
   ]
 
@@ -891,63 +1061,65 @@ function CollapsibleBlock({
         <div className="grid gap-4">
           {researchBlocks.map((block) => {
             const blockElements = block.elementsKey ? elements[block.elementsKey] || [] : []
-            const avoidList = Array.isArray((city as any).avoid) ? (city as any).avoid : []
-              return (
+            return (
               <CollapsibleBlock key={block.key} title={block.title}>
                 {block.key === 'avoid' ? (
-                  avoidList.length === 0 ? (
+                  blockElements.length === 0 ? (
                     <p>Awaiting avoid list from research.</p>
                   ) : (
                     <ul className="space-y-2 text-sm text-muted-foreground">
-                      {avoidList.map((item: any, index: number) => (
-                        <li key={`${block.key}-${index}`} className="rounded-lg bg-[color:var(--surface-strong)] p-3">
-                          <p className="text-sm font-semibold text-foreground">{item.topic || 'Avoid'}</p>
-                          <p className="mt-1 text-xs text-muted-foreground">{item.reason || 'No reason provided.'}</p>
-                        </li>
-                      ))}
+                      {blockElements.map((element) => {
+                        const value = element.element_value as any
+                        return (
+                          <li key={element.id} className="rounded-lg bg-[color:var(--surface-strong)] p-3">
+                            <p className="text-sm font-semibold text-foreground">{value?.topic || element.element_key}</p>
+                            <p className="mt-1 text-xs text-muted-foreground">{value?.reason || 'No reason provided.'}</p>
+                          </li>
+                        )
+                      })}
                     </ul>
                   )
                 ) : blockElements.length === 0 ? (
                   <p>{placeholderByBlock[block.key] || 'No research items yet. Run research to populate this section.'}</p>
                 ) : (
                   <div className="space-y-3">
-                      {blockElements.map((element) => {
-                        const approval = approvals.get(element.id)
-                        const status = approval?.status || element.status
-                        return (
+                    {blockElements.map((element) => {
+                      const approval = approvals.get(element.id)
+                      const status = approval?.status || element.status
+                      return (
                         <div key={element.id} className="rounded-lg bg-[color:var(--surface-strong)] p-3">
-                            <div className="flex items-center justify-between">
-                                <p className="text-sm font-semibold text-foreground">{element.element_key}</p>
-                              <div className="flex items-center gap-2">
-                                <button
-                                  onClick={() => handleApprovalChange(element.id, 'approved')}
+                          <div className="flex items-center justify-between">
+                            <p className="text-sm font-semibold text-foreground">{element.element_key}</p>
+                            <div className="flex items-center gap-2">
+                              <button
+                                onClick={() => handleApprovalChange(element.id, 'approved')}
                                 className={status === 'approved' ? 'text-primary' : 'text-muted-foreground'}
                                 aria-label="Approve"
-                                >
+                              >
                                 <ThumbsUp className="h-4 w-4" />
-                                </button>
-                                <button
-                                  onClick={() => handleApprovalChange(element.id, 'rejected')}
+                              </button>
+                              <button
+                                onClick={() => handleApprovalChange(element.id, 'rejected')}
                                 className={status === 'rejected' ? 'text-destructive' : 'text-muted-foreground'}
                                 aria-label="Reject"
-                                >
+                              >
                                 <ThumbsDown className="h-4 w-4" />
-                                </button>
-                              </div>
-                            </div>
-                          <div className="mt-2 text-xs text-muted-foreground">
-                              {typeof element.element_value === 'string'
-                                ? element.element_value
-                                : JSON.stringify(element.element_value)}
+                              </button>
                             </div>
                           </div>
-                        )
-                      })}
-                    </div>
-                  )}
+                          <div className="mt-2 text-xs text-muted-foreground">
+                            {typeof element.element_value === 'string'
+                              ? element.element_value
+                              : JSON.stringify(element.element_value)}
+                          </div>
+                        </div>
+                      )
+                    })}
+                  </div>
+                )}
               </CollapsibleBlock>
-              )
-            })}
+            )
+          })}
           </div>
         </section>
 
@@ -1161,15 +1333,26 @@ function CollapsibleBlock({
                         >
                           Reject
                         </Button>
-                        <Button size="sm" variant="secondary">Regenerate</Button>
+                        <Button size="sm" variant="secondary" onClick={() => handleAssetRegenerate(asset)}>
+                          Regenerate
+                        </Button>
                         <Button
                           size="sm"
                           variant="secondary"
-                          onClick={() => asset.output_url && window.open(asset.output_url, '_blank')}
+                          onClick={() => setPreviewAsset(asset)}
                         >
                           View Full
                         </Button>
-                        <Button size="sm" variant="secondary">Edit</Button>
+                        <Button
+                          size="sm"
+                          variant="secondary"
+                          onClick={() => {
+                            setEditingAsset(asset)
+                            setEditPrompt(asset.prompt || '')
+                          }}
+                        >
+                          Edit
+                        </Button>
                         <Button size="sm" onClick={() => handleAssetDownload(asset)}>
                           Download
                         </Button>
@@ -1298,10 +1481,59 @@ function CollapsibleBlock({
         </GlassCard>
       )}
 
+      {editingAsset && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
+          <GlassCard className="w-full max-w-lg p-6">
+            <div className="flex items-center justify-between">
+              <p className="text-sm font-semibold text-foreground">Edit Prompt</p>
+              <button onClick={() => setEditingAsset(null)} className="text-muted-foreground">
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+            <textarea
+              className="mt-4 min-h-[140px] w-full rounded-lg border border-[color:var(--surface-border)] bg-[color:var(--surface-muted)] p-3 text-sm text-foreground"
+              value={editPrompt}
+              onChange={(event) => setEditPrompt(event.target.value)}
+              placeholder="Update the prompt for regeneration..."
+            />
+            <div className="mt-4 flex justify-end gap-2">
+              <Button variant="secondary" onClick={() => setEditingAsset(null)}>
+                Cancel
+              </Button>
+              <Button
+                onClick={async () => {
+                  await handleAssetRegenerate(editingAsset, editPrompt)
+                  setEditingAsset(null)
+                }}
+              >
+                Regenerate
+              </Button>
+            </div>
+          </GlassCard>
+        </div>
+      )}
+
       {showToast && (
         <div className="fixed bottom-6 right-6 flex items-center gap-2 rounded-lg bg-success px-4 py-3 text-sm text-primary-foreground shadow-lg">
           Saved.
         </div>
+      )}
+
+      {previewAsset && (
+        <AssetDetailModal
+          asset={{
+            id: previewAsset.id,
+            output_url: previewAsset.output_url,
+            content_type: previewAsset.content_type,
+            title: previewAsset.title || undefined,
+            model: previewAsset.model || undefined,
+            prompt: previewAsset.prompt || undefined,
+            duration_seconds: previewAsset.duration_seconds,
+            created_at: previewAsset.created_at || new Date().toISOString(),
+            cities: previewAsset.cities || (city ? { id: city.id, name: city.name } : null),
+          }}
+          onClose={() => setPreviewAsset(null)}
+        />
       )}
     </div>
   )

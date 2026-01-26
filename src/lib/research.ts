@@ -16,7 +16,7 @@ interface ResearchCategory {
 }
 
 interface CityElement {
-  element_type: 'slang' | 'landmark' | 'sport' | 'cultural';
+  element_type: string;
   element_key: string;
   element_value: Record<string, any>;
   status: 'approved' | 'rejected' | 'pending';
@@ -107,6 +107,34 @@ export async function runCityResearch(
       cultural: {
         name: 'Cultural Elements',
         keywords: ['music scene', 'art movements', 'food culture', 'festivals', 'traditions', 'local cuisine']
+      },
+      visualIdentity: {
+        name: 'Visual Identity',
+        keywords: ['color palettes', 'architecture', 'iconography', 'murals', 'typography', 'aesthetic']
+      },
+      areaCodes: {
+        name: 'Area Codes & Local Codes',
+        keywords: ['area codes', 'dialing codes', 'regional codes', 'local references']
+      },
+      music: {
+        name: 'Trending Music & Sounds',
+        keywords: ['local music scene', 'artists', 'genres', 'clubs', 'venues', 'viral sounds']
+      },
+      creators: {
+        name: 'Notable Local Creators',
+        keywords: ['local creators', 'influencers', 'artists', 'designers', 'streetwear figures']
+      },
+      palettes: {
+        name: 'Color Palettes',
+        keywords: ['palette', 'signature colors', 'brand colors', 'visual tones']
+      },
+      typography: {
+        name: 'Typography Inspiration',
+        keywords: ['typography', 'type styles', 'lettering', 'fonts', 'signage']
+      },
+      avoid: {
+        name: 'Avoid List',
+        keywords: ['sensitive topics', 'cultural missteps', 'rivalries', 'avoid themes']
       }
     };
 
@@ -197,7 +225,7 @@ Return a JSON object with the following structure:
 {
   "elements": [
     {
-      "element_type": "slang" | "landmark" | "sport" | "cultural",
+      "element_type": "slang" | "landmark" | "sport" | "cultural" | "visual_identity" | "area_codes" | "palettes" | "typography" | "music" | "creators" | "avoid",
       "element_key": "unique_key", // MUST be lowercase with underscores, e.g., "the_d", "hart_plaza", "red_wings"
       "element_value": {
         // Type-specific properties
@@ -205,6 +233,13 @@ Return a JSON object with the following structure:
         // For landmark: name, type, significance, year_built (if applicable)
         // For sport: team, sport, league, venue, achievements
         // For cultural: name, type, significance, details
+        // For visual_identity: colors, symbols, aesthetic, references
+        // For area_codes: code, area, significance
+        // For palettes: name, colors, usage
+        // For typography: style, references, usage
+        // For music: artist, genre, significance
+        // For creators: name, field, significance
+        // For avoid: topic, reason, guidance
       },
       "status": "approved" | "pending" | "rejected", // Use "pending" unless very confident
       "notes": "Brief explanation"

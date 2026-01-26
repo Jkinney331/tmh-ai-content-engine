@@ -166,9 +166,23 @@ export async function PATCH(request: NextRequest) {
       })
     }
 
+    let updatePayload = { ...updates }
+
+    if ('output_metadata' in updates) {
+      const { data: existing } = await supabase
+        .from('generated_content')
+        .select('output_metadata')
+        .eq('id', id)
+        .single()
+      updatePayload.output_metadata = {
+        ...(existing?.output_metadata || {}),
+        ...(updates.output_metadata || {}),
+      }
+    }
+
     const { data, error } = await supabase
       .from('generated_content')
-      .update(updates)
+      .update(updatePayload)
       .eq('id', id)
       .select()
       .single()

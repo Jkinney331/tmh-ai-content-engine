@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react'
 import Link from 'next/link'
+import AssetDetailModal from '@/components/AssetDetailModal'
 import {
   Sparkles,
   TrendingUp,
@@ -75,6 +76,7 @@ export default function Dashboard() {
   const [analytics, setAnalytics] = useState<AnalyticsResponse | null>(null)
   const [refreshing, setRefreshing] = useState(false)
   const [loading, setLoading] = useState(true)
+  const [activePreview, setActivePreview] = useState<RecentTest | null>(null)
 
   const loadDashboardData = async () => {
     try {
@@ -126,6 +128,35 @@ export default function Dashboard() {
           preview: entry.output_url
         }))
         setRecentTests(mapped)
+
+        const suggestionCity = mapped.find((item) => item.city && item.city !== 'Unknown')?.city
+        if (suggestionCity) {
+          try {
+            const suggestionResponse = await fetch('/api/decision/suggest', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ city: suggestionCity }),
+            })
+            if (suggestionResponse.ok) {
+              const suggestionData = await suggestionResponse.json()
+              const suggestionsList: Suggestion[] = (suggestionData.suggestions || []).map((item: any, index: number) => ({
+                id: `suggest-${index}`,
+                type: 'trend',
+                title: item.title || item.description || `Idea ${index + 1}`,
+                description: item.description || item.caption_angle || 'Suggested idea',
+                city: suggestionCity,
+                action: 'Generate',
+                actionUrl: `/cities`,
+                priority: 'medium',
+              }))
+              if (suggestionsList.length > 0) {
+                setSuggestions(suggestionsList)
+              }
+            }
+          } catch (err) {
+            console.error('Failed to load suggestions:', err)
+          }
+        }
       }
     } catch (error) {
       console.error('Failed to load dashboard data:', error)
@@ -171,8 +202,6 @@ export default function Dashboard() {
   }
 
   const budgetPercentage = budget.limit > 0 ? Math.round((budget.used / budget.limit) * 100) : 0
-  const knowledgeBase = analytics?.knowledgeBase || {}
-
   return (
     <div className="p-6 max-w-7xl mx-auto space-y-6">
       {/* Header */}
@@ -184,7 +213,31 @@ export default function Dashboard() {
         <div className="text-xs text-muted-foreground">Select a city to generate content.</div>
       </div>
 
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+      <div className="surface rounded-xl p-4">
+        <div className="flex items-center justify-between gap-4">
+          <div className="flex items-center gap-3">
+            <DollarSign className="w-4 h-4 text-emerald-400" />
+            <span className="text-sm font-medium text-foreground">Budget</span>
+            <span className="text-sm text-muted-foreground">${budget.used.toFixed(2)} / ${budget.limit.toFixed(2)}</span>
+          </div>
+          <div className="flex items-center gap-3 flex-1 max-w-xs">
+            <div className="h-2 flex-1 rounded-full overflow-hidden bg-muted">
+              <div
+                className={`h-full rounded-full transition-all ${
+                  budgetPercentage > 90 ? 'bg-destructive' : budgetPercentage > 70 ? 'bg-warning' : 'bg-success'
+                }`}
+                style={{ width: `${budgetPercentage}%` }}
+              />
+            </div>
+            <span className="text-xs text-muted-foreground">{budgetPercentage}%</span>
+          </div>
+          <Link href="/settings/budget" className="text-xs text-muted-foreground hover:text-primary">
+            Manage
+          </Link>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 gap-6">
         <div className="surface rounded-xl p-6">
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-2">
@@ -208,7 +261,12 @@ export default function Dashboard() {
             {recentTests.map((item) => {
               const isVideo = item.preview?.endsWith('.mp4')
               return (
-                <div key={item.id} className="surface-muted rounded-lg p-4">
+                <button
+                  key={item.id}
+                  type="button"
+                  onClick={() => setActivePreview(item)}
+                  className="surface-muted rounded-lg p-4 text-left transition hover:bg-[color:var(--surface-strong)]"
+                >
                   <div className="flex items-center justify-between text-xs text-muted-foreground">
                     <span>{item.city}</span>
                     <span>{item.timestamp}</span>
@@ -226,7 +284,7 @@ export default function Dashboard() {
                     <span className="capitalize">{item.type.replace(/_/g, ' ')}</span>
                     {getStatusIcon(item.status)}
                   </div>
-                </div>
+                </button>
               )
             })}
           </div>
@@ -288,83 +346,21 @@ export default function Dashboard() {
         </div>
       </div>
 
-      <div className="surface rounded-xl p-6">
-        <div className="flex items-center justify-between mb-4">
-          <div className="flex items-center gap-2">
-            <DollarSign className="w-5 h-5 text-emerald-400" />
-            <h2 className="text-lg font-semibold text-foreground">Budget</h2>
-          </div>
-          <Link href="/settings/budget" className="text-sm text-muted-foreground hover:text-primary">
-            Manage
-          </Link>
-        </div>
-
-        <div className="mb-4">
-          <div className="flex justify-between text-sm mb-2">
-            <span className="text-muted-foreground">${budget.used.toFixed(2)} used</span>
-            <span className="font-medium text-foreground">${budget.limit.toFixed(2)} limit</span>
-          </div>
-          <div className="h-3 rounded-full overflow-hidden bg-muted">
-            <div
-              className={`h-full rounded-full transition-all ${
-                budgetPercentage > 90 ? 'bg-destructive' : budgetPercentage > 70 ? 'bg-warning' : 'bg-success'
-              }`}
-              style={{ width: `${budgetPercentage}%` }}
-            />
-          </div>
-          <p className="mt-1 text-xs text-muted-foreground">{budgetPercentage}% of monthly budget used</p>
-        </div>
-
-        <div className="space-y-2">
-          {!loading && budget.breakdown.length === 0 && (
-            <p className="text-xs text-muted-foreground">No costs logged yet.</p>
-          )}
-          {budget.breakdown.map((item) => (
-            <div key={item.category} className="flex items-center justify-between text-sm">
-              <div className="flex items-center gap-2">
-                <div className={`w-2 h-2 rounded-full ${item.color}`} />
-                <span className="text-muted-foreground">{item.category}</span>
-              </div>
-              <span className="text-foreground">${item.amount.toFixed(2)}</span>
-            </div>
-          ))}
-        </div>
-      </div>
-
-      {/* Knowledge Base Stats */}
-      <div className="surface-strong rounded-xl p-6">
-        <div className="mb-4 flex items-center justify-between">
-          <h2 className="text-lg font-semibold text-foreground">Knowledge Base</h2>
-          <Link
-            href="/settings/knowledge-base"
-            className="flex items-center gap-1 text-sm text-muted-foreground hover:text-primary"
-          >
-            Configure <ExternalLink className="h-3 w-3" />
-          </Link>
-        </div>
-        <div className="grid grid-cols-2 gap-4 md:grid-cols-5">
-          <div>
-            <p className="text-3xl font-bold text-foreground">{knowledgeBase.sneakers ?? 0}</p>
-            <p className="text-sm text-muted-foreground">Sneakers</p>
-          </div>
-          <div>
-            <p className="text-3xl font-bold text-foreground">{knowledgeBase.styleSlots ?? 0}</p>
-            <p className="text-sm text-muted-foreground">Style Slots</p>
-          </div>
-          <div>
-            <p className="text-3xl font-bold text-foreground">{knowledgeBase.modelSpecs ?? 0}</p>
-            <p className="text-sm text-muted-foreground">Model Specs</p>
-          </div>
-          <div>
-            <p className="text-3xl font-bold text-foreground">{knowledgeBase.competitors ?? 0}</p>
-            <p className="text-sm text-muted-foreground">Competitors</p>
-          </div>
-          <div>
-            <p className="text-3xl font-bold text-foreground">{knowledgeBase.learnings ?? 0}</p>
-            <p className="text-sm text-muted-foreground">Learnings</p>
-          </div>
-        </div>
-      </div>
+      {activePreview && (
+        <AssetDetailModal
+          asset={{
+            id: activePreview.id,
+            output_url: activePreview.preview || null,
+            content_type: activePreview.preview?.endsWith('.mp4') ? 'video' : 'image',
+            title: activePreview.type,
+            model: null,
+            prompt: null,
+            created_at: new Date().toISOString(),
+            cities: activePreview.city ? { id: 'unknown', name: activePreview.city } : null,
+          }}
+          onClose={() => setActivePreview(null)}
+        />
+      )}
     </div>
   )
 }

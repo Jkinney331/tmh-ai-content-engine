@@ -17,6 +17,7 @@ interface ProductShotRequest {
   designUrl?: string;
   cityName?: string;
   cityId?: string;
+  assetType?: string;
   productType?: string;
   style?: string;
   model?: 'gpt-5-image' | 'gpt-5-image-mini' | 'gemini-flash' | 'gemini-pro';
@@ -121,6 +122,7 @@ export async function POST(request: NextRequest) {
           prompt: result.prompt,
           model: result.model,
           output_url: result.imageUrl,
+          output_metadata: body.assetType ? { asset_type: body.assetType } : {},
           status: 'completed'
         });
       } catch (dbError) {

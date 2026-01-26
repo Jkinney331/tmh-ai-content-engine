@@ -22,6 +22,7 @@ interface LifestyleVariation {
 interface GenerationRequest {
   cityId?: string;
   cityName: string;
+  assetType?: string;
   variation?: LifestyleVariation;
   description?: string;
   modelDescription?: string;
@@ -155,6 +156,7 @@ export async function POST(request: NextRequest) {
           prompt: result.prompt,
           model: result.model,
           output_url: result.imageUrl,
+          output_metadata: body.assetType ? { asset_type: body.assetType } : {},
           status: 'completed'
         });
       } catch (dbError) {

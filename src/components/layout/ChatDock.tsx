@@ -162,37 +162,41 @@ export function ChatDock({ collapsed }: ChatDockProps) {
             Live
           </div>
         </div>
-        <div className="flex flex-wrap items-center gap-2">
-          <div className="rounded-full border border-[color:var(--surface-border)] bg-[color:var(--surface-muted)] px-3 py-1 text-xs">
-            Model: Default
+        <div className="flex flex-col gap-2">
+          <div className="flex flex-wrap items-center gap-2">
+            <div className="rounded-full border border-[color:var(--surface-border)] bg-[color:var(--surface-muted)] px-3 py-1 text-xs">
+              Model: Default
+            </div>
+            <div className="flex items-center gap-2 rounded-full border border-[color:var(--surface-border)] bg-[color:var(--surface-muted)] px-3 py-1 text-xs">
+              <span>Auto</span>
+              <Switch checked={autoMode} onCheckedChange={setAutoMode} />
+            </div>
+            <div className="flex items-center gap-1 rounded-full border border-[color:var(--surface-border)] bg-[color:var(--surface-muted)] p-1 text-[11px]">
+              {(["Manual", "Assist", "Auto"] as const).map((mode) => (
+                <button
+                  key={mode}
+                  onClick={() => setAutonomyMode(mode)}
+                  className={cn(
+                    "rounded-full px-2 py-1 transition",
+                    autonomyMode === mode
+                      ? "bg-primary/20 text-primary"
+                      : "text-muted-foreground hover:text-foreground",
+                  )}
+                >
+                  {mode}
+                </button>
+              ))}
+            </div>
           </div>
-          <div className="flex items-center gap-2 rounded-full border border-[color:var(--surface-border)] bg-[color:var(--surface-muted)] px-3 py-1 text-xs">
-            <span>Auto</span>
-            <Switch checked={autoMode} onCheckedChange={setAutoMode} />
+          <div className="flex gap-2">
+            <Button variant="secondary" size="sm" className="flex-1">
+              Memory: On
+            </Button>
+            <Button variant="secondary" size="sm" className="flex-1" onClick={clearCurrentConversation}>
+              <Trash2 className="h-3 w-3" />
+              New Thread
+            </Button>
           </div>
-          <div className="flex items-center gap-1 rounded-full border border-[color:var(--surface-border)] bg-[color:var(--surface-muted)] p-1 text-[11px]">
-            {(["Manual", "Assist", "Auto"] as const).map((mode) => (
-              <button
-                key={mode}
-                onClick={() => setAutonomyMode(mode)}
-                className={cn(
-                  "rounded-full px-2 py-1 transition",
-                  autonomyMode === mode
-                    ? "bg-primary/20 text-primary"
-                    : "text-muted-foreground hover:text-foreground",
-                )}
-              >
-                {mode}
-              </button>
-            ))}
-          </div>
-          <Button variant="secondary" size="sm">
-            Memory: On
-          </Button>
-          <Button variant="secondary" size="sm" onClick={clearCurrentConversation}>
-            <Trash2 className="h-3 w-3" />
-            New Thread
-          </Button>
         </div>
         <div className="surface-strong rounded-lg p-3 text-xs text-muted-foreground">
           <p className="text-[11px] uppercase tracking-[0.2em] text-primary">Provenance</p>
@@ -202,12 +206,18 @@ export function ChatDock({ collapsed }: ChatDockProps) {
           <p className="text-[11px] uppercase tracking-[0.2em] text-primary">Memory Scope</p>
           <p>Scoped to {selectedCity?.name || "current workspace"}.</p>
         </div>
-        <div className="surface-strong rounded-lg p-3 text-xs text-muted-foreground">
+        <div className="surface-strong overflow-hidden rounded-lg p-3 text-xs text-muted-foreground">
           <p className="text-[11px] uppercase tracking-[0.2em] text-primary">Quick prompts</p>
-          <div className="mt-2 flex flex-wrap gap-2">
+          <div className="mt-2 flex flex-col gap-2">
             {promptSuggestions.map((prompt) => (
-              <Button key={prompt} variant="secondary" size="sm" onClick={() => handleSubmit(prompt)}>
-                {prompt}
+              <Button
+                key={prompt}
+                variant="secondary"
+                size="sm"
+                className="w-full justify-start text-left whitespace-normal break-words"
+                onClick={() => handleSubmit(prompt)}
+              >
+                <span className="whitespace-normal break-words">{prompt}</span>
               </Button>
             ))}
           </div>
@@ -233,7 +243,7 @@ export function ChatDock({ collapsed }: ChatDockProps) {
                 <p className="text-[11px] uppercase tracking-[0.2em] text-primary">
                   {message.role === "user" ? "You" : "Assistant"}
                 </p>
-                <p className="mt-2 whitespace-pre-wrap text-sm">{message.content}</p>
+                <p className="mt-2 whitespace-pre-wrap break-words text-sm">{message.content}</p>
               </div>
             ))}
             <div ref={messagesEndRef} />

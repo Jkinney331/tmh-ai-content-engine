@@ -35,6 +35,7 @@ interface GeneratedAsset {
   content_type: string
   output_url: string
   status: string
+  output_metadata?: Record<string, any>
 }
 
 function SectionHeader({
@@ -91,8 +92,6 @@ export default function DropProfilePage() {
     load()
   }, [])
 
-  const dropCities = useMemo(() => cities.slice(0, 3), [cities])
-
   const assetTypeGroups = [
     'Product Shots (with models)',
     'Product Shots (without models)',
@@ -122,13 +121,52 @@ export default function DropProfilePage() {
 
   const checklistComplete = 2
 
+  const dropAssets = useMemo(() => {
+    return assets.filter((asset) => {
+      if (asset.status !== 'approved') return false
+      const dropIdMeta = (asset as any).output_metadata?.drop_id
+      if (!dropIdMeta) {
+        return dropId === 'drop-1'
+      }
+      return dropIdMeta === dropId
+    })
+  }, [assets, dropId])
+
+  const resolveAssetGroup = (asset: GeneratedAsset) => {
+    const title = (asset as any).title as string | undefined
+    const lowerTitle = title?.toLowerCase() || ''
+    if (lowerTitle.includes('product shot')) return 'Product Shots (with models)'
+    if (lowerTitle.includes('lifestyle shot')) return 'Lifestyle / Scene Shots'
+    if (lowerTitle.includes('sora video') || lowerTitle.includes('veo video')) return 'TikTok Ads'
+    if (asset.content_type === 'video') return 'TikTok Ads'
+    if (asset.content_type === 'image') return 'Product Shots (without models)'
+    return 'Community Content'
+  }
+
   const assetCountByCity = useMemo(() => {
-    return assets.reduce<Record<string, number>>((acc, asset) => {
+    return dropAssets.reduce<Record<string, number>>((acc, asset) => {
       if (!asset.city_id) return acc
       acc[asset.city_id] = (acc[asset.city_id] || 0) + 1
       return acc
     }, {})
-  }, [assets])
+  }, [dropAssets])
+
+  const assetsByCity = useMemo(() => {
+    return dropAssets.reduce<Record<string, GeneratedAsset[]>>((acc, asset) => {
+      if (!asset.city_id) return acc
+      if (!acc[asset.city_id]) acc[asset.city_id] = []
+      acc[asset.city_id].push(asset)
+      return acc
+    }, {})
+  }, [dropAssets])
+
+  const dropCities = useMemo(() => {
+    const cityIds = new Set(
+      dropAssets.map((asset) => asset.city_id).filter(Boolean) as string[]
+    )
+    const matched = cities.filter((city) => cityIds.has(city.id))
+    return matched.length > 0 ? matched : cities.slice(0, 3)
+  }, [cities, dropAssets])
 
   const status = launchDate
     ? new Date(launchDate) > new Date() ? 'Scheduled' : 'Launched'
@@ -179,7 +217,7 @@ export default function DropProfilePage() {
           </GlassCard>
           <GlassCard className="p-4">
             <p className="text-xs text-muted-foreground">Total Approved Assets</p>
-            <p className="mt-2 text-lg font-semibold">{assets.length} Assets</p>
+            <p className="mt-2 text-lg font-semibold">{dropAssets.length} Assets</p>
           </GlassCard>
           <GlassCard className="p-4">
             <p className="text-xs text-muted-foreground">Days Until Launch</p>
@@ -249,15 +287,46 @@ export default function DropProfilePage() {
                 <span className="text-xs text-muted-foreground">Assets: {assetCountByCity[city.id] || 0}</span>
               </div>
               <div className="mt-4 grid gap-3 md:grid-cols-2">
-                {assetTypeGroups.map((group) => (
-                  <div key={`${city.id}-${group}`} className="rounded-lg border border-[color:var(--surface-border)] bg-[color:var(--surface-muted)] p-3">
-                    <div className="flex items-center justify-between">
-                      <p className="text-xs font-semibold text-foreground">{group}</p>
-                      <span className="text-xs text-muted-foreground">0 items</span>
+                {assetTypeGroups.map((group) => {
+                  const items = (assetsByCity[city.id] || []).filter(
+                    (asset) => resolveAssetGroup(asset) === group
+                  )
+                  return (
+                    <div key={`${city.id}-${group}`} className="rounded-lg border border-[color:var(--surface-border)] bg-[color:var(--surface-muted)] p-3">
+                      <div className="flex items-center justify-between">
+                        <p className="text-xs font-semibold text-foreground">{group}</p>
+                        <span className="text-xs text-muted-foreground">{items.length} items</span>
+                      </div>
+                      {items.length === 0 ? (
+                        <div className="mt-3 text-xs text-muted-foreground">Awaiting approved assets.</div>
+                      ) : (
+                        <div className="mt-3 grid grid-cols-1 gap-2">
+                          {items.map((asset) => (
+                            <div key={asset.id} className="rounded-lg bg-[color:var(--surface-strong)] p-2 text-xs text-muted-foreground">
+                              <div className="flex items-center justify-between">
+                                <span>{asset.content_type}</span>
+                                <span className="text-[10px] uppercase">{asset.status}</span>
+                              </div>
+                              <div className="mt-2 h-20 w-full overflow-hidden rounded bg-[color:var(--surface)]">
+                                {asset.output_url ? (
+                                  asset.content_type === 'video' ? (
+                                    <video src={asset.output_url} className="h-full w-full object-cover" muted playsInline />
+                                  ) : (
+                                    <img src={asset.output_url} alt="Approved asset" className="h-full w-full object-cover" />
+                                  )
+                                ) : null}
+                              </div>
+                              <div className="mt-2 flex gap-2">
+                                <Button size="sm" variant="secondary">View Full</Button>
+                                <Button size="sm" variant="secondary">Remove</Button>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      )}
                     </div>
-                    <div className="mt-3 text-xs text-muted-foreground">Awaiting approved assets.</div>
-                  </div>
-                ))}
+                  )
+                })}
               </div>
             </GlassCard>
           ))}

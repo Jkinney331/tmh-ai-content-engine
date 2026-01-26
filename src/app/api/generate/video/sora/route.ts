@@ -19,6 +19,7 @@ export async function POST(request: NextRequest) {
       duration = 8,
       resolution = '720p',
       aspectRatio = '16:9',
+      assetType,
       cityId,
       cityName,
     } = body;
@@ -64,7 +65,7 @@ export async function POST(request: NextRequest) {
       aspectRatio,
     });
 
-    // Save to database
+    // Save to database with jobId for later polling
     const supabase = getSupabaseClient();
     let contentId: string | null = null;
 
@@ -81,6 +82,12 @@ export async function POST(request: NextRequest) {
             status: 'processing',
             generation_cost_cents: Math.round(result.estimatedCost * 100),
             duration_seconds: actualDuration,
+            output_metadata: {
+              job_id: result.jobId,
+              provider: result.provider,
+              asset_type: assetType,
+              started_at: new Date().toISOString(),
+            },
           })
           .select()
           .single();
