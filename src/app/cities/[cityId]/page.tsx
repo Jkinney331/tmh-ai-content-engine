@@ -89,6 +89,71 @@ function SectionHeader({
   )
 }
 
+const HIDDEN_ELEMENT_FIELDS = new Set(['query', 'search_query'])
+
+const pickFirstText = (...values: Array<unknown>) =>
+  values.find((value) => typeof value === 'string' && value.trim().length > 0) as string | undefined
+
+const formatElementTitle = (element: CityElement) => {
+  const value = element.element_value as any
+  return (
+    pickFirstText(
+      value?.name,
+      value?.term,
+      value?.team,
+      value?.artist,
+      value?.creator,
+      value?.topic,
+      value?.style,
+      value?.code,
+      value?.genre,
+      value?.venue,
+      value?.area,
+      value?.palette,
+      value?.symbol
+    ) || element.element_key.replace(/_/g, ' ')
+  )
+}
+
+const formatElementBody = (element: CityElement) => {
+  const value = element.element_value as any
+  const primary =
+    pickFirstText(
+      value?.description,
+      value?.meaning,
+      value?.significance,
+      value?.details,
+      value?.usage,
+      value?.guidance,
+      value?.notes,
+      value?.response,
+      value?.summary
+    ) || ''
+
+  const metaParts: string[] = []
+  if (value?.sport && value?.team) metaParts.push(`${value.team} (${value.sport})`)
+  if (value?.venue) metaParts.push(`Venue: ${value.venue}`)
+  if (value?.league) metaParts.push(`League: ${value.league}`)
+  if (value?.area && value?.code) metaParts.push(`Area: ${value.area} (${value.code})`)
+  if (Array.isArray(value?.colors) && value.colors.length > 0) {
+    metaParts.push(`Colors: ${value.colors.join(', ')}`)
+  }
+
+  const fallback =
+    typeof element.element_value === 'string'
+      ? element.element_value
+      : JSON.stringify(
+          Object.fromEntries(
+            Object.entries(value || {}).filter(([key]) => !HIDDEN_ELEMENT_FIELDS.has(key))
+          )
+        )
+
+  return {
+    primary: primary || fallback,
+    meta: metaParts.length > 0 ? metaParts.join(' • ') : ''
+  }
+}
+
 function CollapsibleBlock({
   title,
   children,
@@ -1090,38 +1155,40 @@ function CollapsibleBlock({
                   <p>{placeholderByBlock[block.key] || 'No research items yet. Run research to populate this section.'}</p>
                 ) : (
                   <div className="space-y-3">
-                    {blockElements.map((element) => {
-                      const approval = approvals.get(element.id)
-                      const status = approval?.status || element.status
-                      return (
-                        <div key={element.id} className="rounded-lg bg-[color:var(--surface-strong)] p-3">
-                          <div className="flex items-center justify-between">
-                            <p className="text-sm font-semibold text-foreground">{element.element_key}</p>
-                            <div className="flex items-center gap-2">
-                              <button
-                                onClick={() => handleApprovalChange(element.id, 'approved')}
-                                className={status === 'approved' ? 'text-primary' : 'text-muted-foreground'}
-                                aria-label="Approve"
-                              >
-                                <ThumbsUp className="h-4 w-4" />
-                              </button>
-                              <button
-                                onClick={() => handleApprovalChange(element.id, 'rejected')}
-                                className={status === 'rejected' ? 'text-destructive' : 'text-muted-foreground'}
-                                aria-label="Reject"
-                              >
-                                <ThumbsDown className="h-4 w-4" />
-                              </button>
+                      {blockElements.map((element) => {
+                        const approval = approvals.get(element.id)
+                        const status = approval?.status || element.status
+                        const formatted = formatElementBody(element)
+                        return (
+                          <div key={element.id} className="rounded-lg bg-[color:var(--surface-strong)] p-3">
+                            <div className="flex items-center justify-between">
+                              <p className="text-sm font-semibold text-foreground">{formatElementTitle(element)}</p>
+                              <div className="flex items-center gap-2">
+                                <button
+                                  onClick={() => handleApprovalChange(element.id, 'approved')}
+                                  className={status === 'approved' ? 'text-primary' : 'text-muted-foreground'}
+                                  aria-label="Approve"
+                                >
+                                  <ThumbsUp className="h-4 w-4" />
+                                </button>
+                                <button
+                                  onClick={() => handleApprovalChange(element.id, 'rejected')}
+                                  className={status === 'rejected' ? 'text-destructive' : 'text-muted-foreground'}
+                                  aria-label="Reject"
+                                >
+                                  <ThumbsDown className="h-4 w-4" />
+                                </button>
+                              </div>
                             </div>
+                            {formatted.meta && (
+                              <div className="mt-2 text-[11px] uppercase tracking-[0.18em] text-muted-foreground">
+                                {formatted.meta}
+                              </div>
+                            )}
+                            <div className="mt-2 text-xs text-muted-foreground">{formatted.primary}</div>
                           </div>
-                          <div className="mt-2 text-xs text-muted-foreground">
-                            {typeof element.element_value === 'string'
-                              ? element.element_value
-                              : JSON.stringify(element.element_value)}
-                          </div>
-                        </div>
-                      )
-                    })}
+                        )
+                      })}
                   </div>
                 )}
               </CollapsibleBlock>
