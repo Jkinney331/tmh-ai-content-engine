@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { useParams } from 'next/navigation'
 import Link from 'next/link'
 import { GlassCard } from '@/components/shared/GlassCard'
+import AssetDetailModal from '@/components/AssetDetailModal'
 import { Badge } from '@/components/ui/badge'
 import { Button, buttonVariants } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -36,6 +37,10 @@ interface GeneratedAsset {
   output_url: string
   status: string
   output_metadata?: Record<string, any>
+  created_at?: string
+  title?: string
+  model?: string
+  prompt?: string
 }
 
 function SectionHeader({
@@ -73,6 +78,7 @@ export default function DropProfilePage() {
   const [launchDate, setLaunchDate] = useState('')
   const [rejectionTarget, setRejectionTarget] = useState<string | null>(null)
   const [rejectionReason, setRejectionReason] = useState('')
+  const [previewAsset, setPreviewAsset] = useState<GeneratedAsset | null>(null)
 
   useEffect(() => {
     const load = async () => {
@@ -143,6 +149,13 @@ export default function DropProfilePage() {
     return 'Community Content'
   }
 
+  const resolveAssetUrl = (url?: string) => {
+    if (!url) return ''
+    if (url.startsWith('http') || url.startsWith('data:')) return url
+    const baseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
+    return baseUrl ? `${baseUrl}/storage/v1/object/public/images/${url}` : url
+  }
+
   const assetCountByCity = useMemo(() => {
     return dropAssets.reduce<Record<string, number>>((acc, asset) => {
       if (!asset.city_id) return acc
@@ -150,6 +163,21 @@ export default function DropProfilePage() {
       return acc
     }, {})
   }, [dropAssets])
+
+  const cityById = useMemo(() => {
+    return cities.reduce<Record<string, City>>((acc, city) => {
+      acc[city.id] = city
+      return acc
+    }, {})
+  }, [cities])
+
+  const handleViewFull = (asset: GeneratedAsset) => {
+    const assetUrl = resolveAssetUrl(asset.output_url)
+    if (assetUrl) {
+      window.open(assetUrl, '_blank', 'noopener,noreferrer')
+    }
+    setPreviewAsset(asset)
+  }
 
   const assetsByCity = useMemo(() => {
     return dropAssets.reduce<Record<string, GeneratedAsset[]>>((acc, asset) => {
@@ -301,27 +329,31 @@ export default function DropProfilePage() {
                         <div className="mt-3 text-xs text-muted-foreground">Awaiting approved assets.</div>
                       ) : (
                         <div className="mt-3 grid grid-cols-1 gap-2">
-                          {items.map((asset) => (
+                          {items.map((asset) => {
+                            const assetUrl = resolveAssetUrl(asset.output_url)
+                            return (
                             <div key={asset.id} className="rounded-lg bg-[color:var(--surface-strong)] p-2 text-xs text-muted-foreground">
                               <div className="flex items-center justify-between">
                                 <span>{asset.content_type}</span>
                                 <span className="text-[10px] uppercase">{asset.status}</span>
                               </div>
                               <div className="mt-2 h-20 w-full overflow-hidden rounded bg-[color:var(--surface)]">
-                                {asset.output_url ? (
+                                {assetUrl ? (
                                   asset.content_type === 'video' ? (
-                                    <video src={asset.output_url} className="h-full w-full object-cover" muted playsInline />
+                                    <video src={assetUrl} className="h-full w-full object-cover" muted playsInline />
                                   ) : (
-                                    <img src={asset.output_url} alt="Approved asset" className="h-full w-full object-cover" />
+                                    <img src={assetUrl} alt="Approved asset" className="h-full w-full object-cover" />
                                   )
                                 ) : null}
                               </div>
                               <div className="mt-2 flex gap-2">
-                                <Button size="sm" variant="secondary">View Full</Button>
+                                <Button size="sm" variant="secondary" onClick={() => handleViewFull(asset)}>
+                                  View Full
+                                </Button>
                                 <Button size="sm" variant="secondary">Remove</Button>
                               </div>
                             </div>
-                          ))}
+                          )})}
                         </div>
                       )}
                     </div>
@@ -502,6 +534,28 @@ export default function DropProfilePage() {
             </Button>
           </div>
         </GlassCard>
+      )}
+
+      {previewAsset && (
+        <AssetDetailModal
+          asset={{
+            id: previewAsset.id,
+            output_url: previewAsset.output_url,
+            content_type: previewAsset.content_type,
+            title: previewAsset.title || undefined,
+            model: previewAsset.model || undefined,
+            prompt: previewAsset.prompt || undefined,
+            created_at: previewAsset.created_at || new Date().toISOString(),
+            cities: previewAsset.city_id && cityById[previewAsset.city_id]
+              ? {
+                  id: previewAsset.city_id,
+                  name: cityById[previewAsset.city_id].name,
+                  state: cityById[previewAsset.city_id].country || null,
+                }
+              : null,
+          }}
+          onClose={() => setPreviewAsset(null)}
+        />
       )}
     </div>
   )

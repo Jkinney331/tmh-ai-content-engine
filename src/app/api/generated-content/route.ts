@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
+import { supabaseAdmin, hasServiceKey } from '@/lib/supabaseAdmin'
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || ''
 const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || ''
@@ -17,6 +18,7 @@ interface GeneratedContentRequest {
   model?: string
   output_url: string
   status?: string
+  output_metadata?: Record<string, any>
   feedback?: {
     thumbsUp?: boolean
     thumbsDown?: boolean
@@ -36,7 +38,7 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    const supabase = getSupabaseClient()
+    const supabase = hasServiceKey ? supabaseAdmin : getSupabaseClient()
 
     if (!supabase) {
       console.warn('[Generated Content] Supabase not configured')
@@ -57,7 +59,10 @@ export async function POST(request: NextRequest) {
         model: body.model,
         output_url: body.output_url,
         status: body.status || 'approved',
-        output_metadata: body.feedback ? { feedback: body.feedback } : {}
+        output_metadata: {
+          ...(body.output_metadata || {}),
+          ...(body.feedback ? { feedback: body.feedback } : {})
+        }
       })
       .select()
       .single()
@@ -92,7 +97,7 @@ export async function GET(request: NextRequest) {
     const cityId = searchParams.get('city_id')
     const limit = parseInt(searchParams.get('limit') || '50')
 
-    const supabase = getSupabaseClient()
+    const supabase = hasServiceKey ? supabaseAdmin : getSupabaseClient()
 
     if (!supabase) {
       return NextResponse.json({
@@ -156,7 +161,7 @@ export async function PATCH(request: NextRequest) {
       )
     }
 
-    const supabase = getSupabaseClient()
+    const supabase = hasServiceKey ? supabaseAdmin : getSupabaseClient()
 
     if (!supabase) {
       return NextResponse.json({

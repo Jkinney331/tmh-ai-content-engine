@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
+import { supabaseAdmin, hasServiceKey } from '@/lib/supabaseAdmin'
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || ''
 const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || ''
@@ -68,7 +69,7 @@ export async function GET(req: NextRequest) {
   const period = searchParams.get('period') || '7d' // 7d, 30d, all
   const type = searchParams.get('type') // costs, generation, knowledge, all
 
-  const supabase = getSupabaseClient()
+  const supabase = hasServiceKey ? supabaseAdmin : getSupabaseClient()
 
   if (!supabase) {
     return NextResponse.json({
@@ -199,7 +200,7 @@ export async function GET(req: NextRequest) {
 
 // Log a cost entry
 export async function POST(req: NextRequest) {
-  const supabase = getSupabaseClient()
+  const supabase = hasServiceKey ? supabaseAdmin : getSupabaseClient()
   if (!supabase) {
     return NextResponse.json({ error: 'Supabase not configured' }, { status: 503 })
   }

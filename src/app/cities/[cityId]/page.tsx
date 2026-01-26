@@ -669,10 +669,17 @@ function CollapsibleBlock({
     }
   }
 
+  const resolveAssetUrl = (url?: string) => {
+    if (!url) return ''
+    if (url.startsWith('http') || url.startsWith('data:')) return url
+    const baseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
+    return baseUrl ? `${baseUrl}/storage/v1/object/public/images/${url}` : url
+  }
+
   const handleAssetDownload = (asset: GeneratedAsset) => {
     if (!asset.output_url) return
     const link = document.createElement('a')
-    link.href = asset.output_url
+    link.href = resolveAssetUrl(asset.output_url)
     link.download = `${city?.name || 'city'}-${asset.id}`
     document.body.appendChild(link)
     link.click()
@@ -1305,6 +1312,7 @@ function CollapsibleBlock({
                 ) : (
                   <div className="mt-4 grid grid-cols-1 gap-3 md:grid-cols-3">
                 {items.map((asset) => {
+                  const assetUrl = resolveAssetUrl(asset.output_url)
                   const isVideo = asset.content_type === 'video' || asset.output_url?.endsWith('.mp4')
                   return (
                   <div key={asset.id} className="rounded-lg border border-[color:var(--surface-border)] bg-[color:var(--surface-muted)] p-3">
@@ -1313,11 +1321,11 @@ function CollapsibleBlock({
                         <span className="text-xs text-muted-foreground">{asset.status}</span>
                     </div>
                       <div className="mt-3 h-28 w-full overflow-hidden rounded-lg bg-[color:var(--surface-strong)]">
-                        {asset.output_url ? (
+                        {assetUrl ? (
                           isVideo ? (
-                            <video src={asset.output_url} className="h-full w-full object-cover" muted playsInline />
+                            <video src={assetUrl} className="h-full w-full object-cover" muted playsInline />
                           ) : (
-                            <img src={asset.output_url} alt={asset.prompt || 'Generated asset'} className="h-full w-full object-cover" />
+                            <img src={assetUrl} alt={asset.prompt || 'Generated asset'} className="h-full w-full object-cover" />
                           )
                         ) : null}
                     </div>
@@ -1391,7 +1399,10 @@ function CollapsibleBlock({
           </GlassCard>
         ) : (
           <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
-            {approvedAssets.map((asset) => (
+            {approvedAssets.map((asset) => {
+              const assetUrl = resolveAssetUrl(asset.output_url)
+              const isVideo = asset.content_type === 'video' || asset.output_url?.endsWith('.mp4')
+              return (
               <GlassCard key={asset.id} className="p-4">
                 <div className="flex items-center justify-between text-xs text-muted-foreground">
                   <label className="flex items-center gap-2">
@@ -1400,10 +1411,18 @@ function CollapsibleBlock({
                   </label>
                   <span>{asset.created_at ? new Date(asset.created_at).toLocaleDateString() : '—'}</span>
         </div>
-                <div className="mt-3 h-24 rounded-lg bg-[color:var(--surface-strong)]" />
+                <div className="mt-3 h-24 overflow-hidden rounded-lg bg-[color:var(--surface-strong)]">
+                  {assetUrl ? (
+                    isVideo ? (
+                      <video src={assetUrl} className="h-full w-full object-cover" muted playsInline />
+                    ) : (
+                      <img src={assetUrl} alt={asset.prompt || 'Approved asset'} className="h-full w-full object-cover" />
+                    )
+                  ) : null}
+                </div>
                 <div className="mt-2 text-xs text-muted-foreground">Concept: {asset.prompt || '—'}</div>
               </GlassCard>
-            ))}
+            )})}
           </div>
         )}
       </section>

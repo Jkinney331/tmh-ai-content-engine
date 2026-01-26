@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { generateLifestyleShot, isImageGenerationConfigured } from '@/lib/image-generation';
 import { createClient } from '@supabase/supabase-js';
+import { supabaseAdmin, hasServiceKey } from '@/lib/supabaseAdmin';
+import { isImageDataUrl, uploadImageDataUrl } from '@/lib/storageAdmin';
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
 const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
@@ -96,9 +98,26 @@ export async function POST(request: NextRequest) {
       throw error;
     }
 
+    const normalizeImageUrl = async (url: string) => {
+      if (!url) return { url };
+      if (isImageDataUrl(url)) {
+        const stored = await uploadImageDataUrl({
+          dataUrl: url,
+          cityId: cityId || null,
+          prefix: 'lifestyle-shot',
+        });
+        if (stored) {
+          return { url: stored.publicUrl, storagePath: stored.path };
+        }
+      }
+      return { url };
+    };
+
+    const normalizedPrimary = await normalizeImageUrl(result.imageUrl);
+
     const responseData: Record<string, unknown> = {
       modelA: {
-        imageUrl: result.imageUrl,
+        imageUrl: normalizedPrimary.url,
         prompt: result.prompt,
         model: result.model,
         provider: result.provider,
@@ -107,6 +126,7 @@ export async function POST(request: NextRequest) {
     };
 
     // Generate with secondary model if requested
+    let normalizedSecondary: { url: string; storagePath?: string } | null = null;
     if (generateBothModels) {
       try {
         const secondaryModel = primaryModel === 'gpt-5-image-mini' ? 'gemini-flash' : 'gpt-5-image-mini';
@@ -120,8 +140,9 @@ export async function POST(request: NextRequest) {
           aspectRatio
         });
 
+        normalizedSecondary = await normalizeImageUrl(resultB.imageUrl);
         responseData.modelB = {
-          imageUrl: resultB.imageUrl,
+          imageUrl: normalizedSecondary.url,
           prompt: resultB.prompt,
           model: resultB.model,
           provider: resultB.provider,
@@ -146,8 +167,8 @@ export async function POST(request: NextRequest) {
     };
 
     // Save to database if available
-    const supabase = getSupabaseClient();
-    if (supabase && result.imageUrl) {
+    const supabase = hasServiceKey ? supabaseAdmin : getSupabaseClient();
+    if (supabase && normalizedPrimary.url) {
       try {
         await supabase.from('generated_content').insert({
           city_id: cityId || null,
@@ -155,10 +176,29 @@ export async function POST(request: NextRequest) {
           title: `Lifestyle Shot - ${cityName}${variation?.name ? ` - ${variation.name}` : ''}`,
           prompt: result.prompt,
           model: result.model,
-          output_url: result.imageUrl,
-          output_metadata: body.assetType ? { asset_type: body.assetType } : {},
+          output_url: normalizedPrimary.url,
+          output_metadata: {
+            ...(body.assetType ? { asset_type: body.assetType } : {}),
+            ...(normalizedPrimary.storagePath ? { storage_path: normalizedPrimary.storagePath } : {}),
+          },
           status: 'completed'
         });
+        if (normalizedSecondary && generateBothModels) {
+          await supabase.from('generated_content').insert({
+            city_id: cityId || null,
+            content_type: 'image',
+            title: `Lifestyle Shot - ${cityName}${variation?.name ? ` - ${variation.name}` : ''} (Alt)`,
+            prompt: responseData.modelB && typeof responseData.modelB === 'object' ? (responseData.modelB as any).prompt : result.prompt,
+            model: responseData.modelB && typeof responseData.modelB === 'object' ? (responseData.modelB as any).model : result.model,
+            output_url: normalizedSecondary.url,
+            output_metadata: {
+              ...(body.assetType ? { asset_type: body.assetType } : {}),
+              ...(normalizedSecondary.storagePath ? { storage_path: normalizedSecondary.storagePath } : {}),
+              model_variant: 'B',
+            },
+            status: 'completed'
+          });
+        }
       } catch (dbError) {
         console.warn('[Lifestyle Shot] Failed to save to database:', dbError);
       }

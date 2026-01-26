@@ -78,6 +78,13 @@ export default function Dashboard() {
   const [loading, setLoading] = useState(true)
   const [activePreview, setActivePreview] = useState<RecentTest | null>(null)
 
+  const resolveAssetUrl = (url?: string) => {
+    if (!url) return ''
+    if (url.startsWith('http') || url.startsWith('data:')) return url
+    const baseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
+    return baseUrl ? `${baseUrl}/storage/v1/object/public/images/${url}` : url
+  }
+
   const loadDashboardData = async () => {
     try {
       setLoading(true)
@@ -271,12 +278,12 @@ export default function Dashboard() {
                     <span>{item.city}</span>
                     <span>{item.timestamp}</span>
                   </div>
-                  <div className="mt-3 h-36 w-full overflow-hidden rounded-lg bg-[color:var(--surface-strong)]">
-                    {item.preview ? (
+              <div className="mt-3 h-36 w-full overflow-hidden rounded-lg bg-[color:var(--surface-strong)]">
+                {item.preview ? (
                       isVideo ? (
-                        <video src={item.preview} className="h-full w-full object-cover" muted playsInline />
+                    <video src={resolveAssetUrl(item.preview)} className="h-full w-full object-cover" muted playsInline />
                       ) : (
-                        <img src={item.preview} alt={item.type} className="h-full w-full object-cover" />
+                    <img src={resolveAssetUrl(item.preview)} alt={item.type} className="h-full w-full object-cover" />
                       )
                     ) : null}
                   </div>

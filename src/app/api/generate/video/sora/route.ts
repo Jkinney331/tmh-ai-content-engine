@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { generateSoraVideo, isVideoGenerationConfigured } from '@/lib/video-generation';
 import { createClient } from '@supabase/supabase-js';
+import { supabaseAdmin, hasServiceKey } from '@/lib/supabaseAdmin';
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
 const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
@@ -66,7 +67,7 @@ export async function POST(request: NextRequest) {
     });
 
     // Save to database with jobId for later polling
-    const supabase = getSupabaseClient();
+    const supabase = hasServiceKey ? supabaseAdmin : getSupabaseClient();
     let contentId: string | null = null;
 
     if (supabase) {

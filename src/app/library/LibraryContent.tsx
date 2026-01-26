@@ -148,8 +148,8 @@ export default function LibraryContent() {
 
   const getImageUrl = (url: string | null) => {
     if (!url) return '/placeholder-image.png'
-    // If it's already a full URL, return it
-    if (url.startsWith('http')) return url
+    // If it's already a full URL or data URL, return it
+    if (url.startsWith('http') || url.startsWith('data:') || url.startsWith('blob:')) return url
     // Otherwise, construct the Supabase storage URL
     const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
     return `${supabaseUrl}/storage/v1/object/public/images/${url}`

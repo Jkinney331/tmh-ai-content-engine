@@ -70,6 +70,20 @@ function validateElementCounts(elements: CityElement[]) {
   };
 }
 
+function normalizeElementType(type: string) {
+  const normalized = type.trim();
+  const mapping: Record<string, string> = {
+    visualIdentity: 'visual_identity',
+    visual_identity: 'visual_identity',
+    areaCodes: 'area_codes',
+    area_codes: 'area_codes',
+    landmarks: 'landmark',
+    sports: 'sport',
+    culture: 'cultural',
+  };
+  return mapping[normalized] || normalized;
+}
+
 /**
  * Run comprehensive city research using Perplexity and Claude
  * @param cityId - The UUID of the city
@@ -299,8 +313,15 @@ Focus on accuracy and local authenticity. Only mark as "approved" if you have hi
       throw new Error('Research requires PERPLEXITY_API_KEY or OPENROUTER_API_KEY for research, and ANTHROPIC_API_KEY or OPENROUTER_API_KEY for synthesis.');
     }
 
+    const normalizedElements = synthesisResult.elements.map((element) => ({
+      ...element,
+      element_type: normalizeElementType(element.element_type),
+    }));
+
+    synthesisResult.elements = normalizedElements;
+
     // Validate minimum requirements
-    const elementCounts = validateElementCounts(synthesisResult.elements);
+    const elementCounts = validateElementCounts(normalizedElements);
     if (!elementCounts.isValid) {
       console.warn(`Insufficient elements found for ${name}:`, elementCounts);
       // Enhance the synthesis with additional prompting if needed

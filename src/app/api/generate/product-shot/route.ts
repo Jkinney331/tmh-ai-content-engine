@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { generateProductShot, isImageGenerationConfigured } from '@/lib/image-generation';
 import { createClient } from '@supabase/supabase-js';
+import { supabaseAdmin, hasServiceKey } from '@/lib/supabaseAdmin';
+import { isImageDataUrl, uploadImageDataUrl } from '@/lib/storageAdmin';
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
 const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
@@ -72,9 +74,26 @@ export async function POST(request: NextRequest) {
       throw error;
     }
 
+    const normalizeImageUrl = async (url: string) => {
+      if (!url) return { url };
+      if (isImageDataUrl(url)) {
+        const stored = await uploadImageDataUrl({
+          dataUrl: url,
+          cityId: cityId || null,
+          prefix: 'product-shot',
+        });
+        if (stored) {
+          return { url: stored.publicUrl, storagePath: stored.path };
+        }
+      }
+      return { url };
+    };
+
+    const normalizedPrimary = await normalizeImageUrl(result.imageUrl);
+
     const response: Record<string, unknown> = {
       modelA: {
-        url: result.imageUrl,
+        url: normalizedPrimary.url,
         model: result.model,
         provider: result.provider,
         prompt: result.prompt,
@@ -84,6 +103,7 @@ export async function POST(request: NextRequest) {
     };
 
     // Generate with secondary model if requested
+    let normalizedSecondary: { url: string; storagePath?: string } | null = null;
     if (body.generateBothModels) {
       try {
         const secondaryModel = primaryModel === 'gpt-5-image-mini' ? 'gemini-flash' : 'gpt-5-image-mini';
@@ -95,8 +115,9 @@ export async function POST(request: NextRequest) {
           model: secondaryModel
         });
 
+        normalizedSecondary = await normalizeImageUrl(resultB.imageUrl);
         response.modelB = {
-          url: resultB.imageUrl,
+          url: normalizedSecondary.url,
           model: resultB.model,
           provider: resultB.provider,
           prompt: resultB.prompt,
@@ -112,8 +133,8 @@ export async function POST(request: NextRequest) {
     }
 
     // Save to database if available
-    const supabase = getSupabaseClient();
-    if (supabase && result.imageUrl) {
+    const supabase = hasServiceKey ? supabaseAdmin : getSupabaseClient();
+    if (supabase && normalizedPrimary.url) {
       try {
         await supabase.from('generated_content').insert({
           city_id: cityId || null,
@@ -121,10 +142,29 @@ export async function POST(request: NextRequest) {
           title: `Product Shot - ${body.shotType}`,
           prompt: result.prompt,
           model: result.model,
-          output_url: result.imageUrl,
-          output_metadata: body.assetType ? { asset_type: body.assetType } : {},
+          output_url: normalizedPrimary.url,
+          output_metadata: {
+            ...(body.assetType ? { asset_type: body.assetType } : {}),
+            ...(normalizedPrimary.storagePath ? { storage_path: normalizedPrimary.storagePath } : {}),
+          },
           status: 'completed'
         });
+        if (normalizedSecondary && body.generateBothModels) {
+          await supabase.from('generated_content').insert({
+            city_id: cityId || null,
+            content_type: 'image',
+            title: `Product Shot - ${body.shotType} (Alt)`,
+            prompt: response.modelB && typeof response.modelB === 'object' ? (response.modelB as any).prompt : result.prompt,
+            model: response.modelB && typeof response.modelB === 'object' ? (response.modelB as any).model : result.model,
+            output_url: normalizedSecondary.url,
+            output_metadata: {
+              ...(body.assetType ? { asset_type: body.assetType } : {}),
+              ...(normalizedSecondary.storagePath ? { storage_path: normalizedSecondary.storagePath } : {}),
+              model_variant: 'B',
+            },
+            status: 'completed'
+          });
+        }
       } catch (dbError) {
         console.warn('[Product Shot] Failed to save to database:', dbError);
       }
