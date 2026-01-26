@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { checkSoraStatus } from '@/lib/video-generation';
 import { createClient } from '@supabase/supabase-js';
+import { supabaseAdmin, hasServiceKey } from '@/lib/supabaseAdmin';
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
 const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
@@ -24,7 +25,7 @@ export async function GET(request: NextRequest) {
     const result = await checkSoraStatus(jobId);
 
     // Update database if status changed
-    const supabase = getSupabaseClient();
+    const supabase = hasServiceKey ? supabaseAdmin : getSupabaseClient();
     if (supabase && contentId) {
       if (result.status === 'completed' && result.videoUrl) {
         await supabase

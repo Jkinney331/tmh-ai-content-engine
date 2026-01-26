@@ -8,10 +8,10 @@ const supabase = createClient(
 
 export async function PATCH(
   request: NextRequest,
-  { params }: { params: Promise<{ cityId: string }> }
+  { params }: { params: { cityId: string } }
 ) {
   try {
-    const { cityId } = await params
+    const { cityId } = params
     const approvals = await request.json()
 
     // Validate input
@@ -88,10 +88,10 @@ export async function PATCH(
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: Promise<{ cityId: string }> }
+  { params }: { params: { cityId: string } }
 ) {
   try {
-    const { cityId } = await params
+    const { cityId } = params
 
     const { data: elements, error } = await supabase
       .from('city_elements')

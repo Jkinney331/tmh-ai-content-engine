@@ -9,7 +9,6 @@ import { ChatDock } from "@/components/layout/ChatDock";
 import { ThemeToggle } from "@/components/shared/ThemeToggle";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import ChatPanel from "@/components/ChatPanel";
 import { cn } from "@/lib/utils";
 
 export default function AppShell({ children }: { children: React.ReactNode }) {
@@ -71,7 +70,6 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
         <ChatDock collapsed={chatCollapsed} />
       </div>
 
-      <ChatPanel />
     </div>
   );
 }

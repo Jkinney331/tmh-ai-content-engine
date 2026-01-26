@@ -57,7 +57,7 @@ export async function POST(request: NextRequest) {
         model: body.model,
         output_url: body.output_url,
         status: body.status || 'approved',
-        metadata: body.feedback ? { feedback: body.feedback } : null
+        output_metadata: body.feedback ? { feedback: body.feedback } : {}
       })
       .select()
       .single()

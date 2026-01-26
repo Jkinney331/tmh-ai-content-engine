@@ -307,8 +307,11 @@ export default function VideoGeneratePage() {
 
       setGenerationStatus('Video generation in progress...');
 
-      startPolling('sora', soraData.jobId, `/api/generate/video/sora/status?jobId=${soraData.jobId}`, 'modelA');
-      startPolling('veo', veoData.jobId, `/api/generate/video/veo/status?jobId=${veoData.jobId}`, 'modelB');
+      const soraStatusUrl = `/api/generate/video/sora/status?jobId=${soraData.jobId}${soraData.contentId ? `&contentId=${soraData.contentId}` : ''}`;
+      const veoStatusUrl = `/api/generate/video/veo/status?jobId=${veoData.jobId}${veoData.contentId ? `&contentId=${veoData.contentId}` : ''}`;
+
+      startPolling('sora', soraData.jobId, soraStatusUrl, 'modelA');
+      startPolling('veo', veoData.jobId, veoStatusUrl, 'modelB');
     } catch (error) {
       console.error('Video generation error:', error);
       setGenerationResults(prev => {

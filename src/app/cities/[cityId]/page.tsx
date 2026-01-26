@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import { getCityById, getCityElementsByType } from '@/lib/supabase'
 import { cityThreadSeeds } from '@/data/cityThreads'
@@ -8,6 +8,7 @@ import { Database } from '@/types/database'
 import { GlassCard } from '@/components/shared/GlassCard'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import { useChatStore } from '@/stores/chatStore'
 import {
   BarChart3,
   Check,
@@ -39,6 +40,17 @@ import {
   model?: string
   created_at?: string
  }
+
+type ConceptCard = {
+  id: string
+  name: string
+  description: string
+  colorways: string
+  placement: string
+  tagline: string
+}
+
+type ResearchStatus = 'idle' | 'running' | 'completed' | 'failed'
 
  const FLAG_BY_COUNTRY: Record<string, string> = {
   USA: '🇺🇸',
@@ -106,13 +118,25 @@ function CollapsibleBlock({
   const [rejectionReason, setRejectionReason] = useState('')
   const [assetSelections, setAssetSelections] = useState<Record<string, boolean>>({})
   const [assetQuantity, setAssetQuantity] = useState(2)
+  const [conceptCards, setConceptCards] = useState<ConceptCard[]>([])
+  const [isGeneratingAssets, setIsGeneratingAssets] = useState(false)
   const [saving, setSaving] = useState(false)
   const [showToast, setShowToast] = useState(false)
   const [approvingCity, setApprovingCity] = useState(false)
   const [isResearching, setIsResearching] = useState(false)
+  const [researchStatus, setResearchStatus] = useState<ResearchStatus>('idle')
+  const [researchUpdatedAt, setResearchUpdatedAt] = useState<Date | null>(null)
+  const [researchError, setResearchError] = useState<string | null>(null)
   const [notes, setNotes] = useState('')
   const [notesUpdatedAt, setNotesUpdatedAt] = useState<Date | null>(null)
   const notesRef = useRef<HTMLDivElement>(null)
+  const {
+    currentConversation,
+    addMessage,
+    setLoading: setChatLoading,
+    setError: setChatError,
+    startNewConversation,
+  } = useChatStore()
 
   const isUuid = (value: string) =>
     /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(value)
@@ -164,6 +188,12 @@ function CollapsibleBlock({
       setNotes(city.user_notes)
     }
   }, [cityId, city?.user_notes])
+
+  useEffect(() => {
+    if (!cityId) return
+    setConceptCards(buildConceptCards(2))
+    setConceptApprovals({})
+  }, [cityId, buildConceptCards])
 
   const fetchCityData = async () => {
     try {
@@ -262,13 +292,15 @@ function CollapsibleBlock({
 
   const handleRunResearch = async () => {
     setIsResearching(true)
+    setResearchStatus('running')
+    setResearchError(null)
     try {
       const response = await fetch(`/api/cities/${cityId}/research`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ categories: ['slang', 'landmark', 'sport', 'cultural'] }),
+        body: JSON.stringify({ categories: ['slang', 'landmark', 'sport', 'cultural', 'visualIdentity', 'areaCodes'] }),
       })
 
       if (!response.ok) {
@@ -277,12 +309,269 @@ function CollapsibleBlock({
       }
 
       await fetchCityData()
+      setResearchStatus('completed')
+      setResearchUpdatedAt(new Date())
     } catch (err) {
       console.error('Error running research:', err)
       setError(err instanceof Error ? err.message : 'Failed to run research. Please try again.')
+      setResearchStatus('failed')
+      setResearchError(err instanceof Error ? err.message : 'Research failed')
     } finally {
       setIsResearching(false)
     }
+  }
+
+  const handleGenerateConcepts = (count = 5) => {
+    setConceptCards(buildConceptCards(count))
+  }
+
+  const handleGenerateMoreConcepts = () => {
+    setConceptCards((prev) => [...prev, ...buildConceptCards(2, prev.length)])
+  }
+
+  const handleAddResearchNote = () => {
+    notesRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+    if (!notes) {
+      setNotes('Research notes:\n- ')
+    }
+  }
+
+  const handleAskResearch = async () => {
+    if (!city) return
+    const prompt = `Summarize the latest ${city.name} research insights and highlight any gaps.`
+
+    if (!currentConversation) {
+      startNewConversation({ page: `/cities/${city.id}`, cityId: city.id })
+    }
+
+    addMessage({ role: 'user', content: prompt })
+    setChatLoading(true)
+    setChatError(null)
+
+    try {
+      const messages = [
+        ...(currentConversation?.messages || []).map((m) => ({
+          role: m.role,
+          content: m.content,
+        })),
+        { role: 'user' as const, content: prompt },
+      ]
+
+      const response = await fetch('/api/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          messages,
+          context: {
+            page: `/cities/${city.id}`,
+            cityId: city.id,
+            cityName: city.name,
+          },
+        }),
+      })
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}))
+        throw new Error(errorData.error || 'Failed to get response')
+      }
+
+      const data = await response.json()
+      addMessage({ role: 'assistant', content: data.message })
+    } catch (err) {
+      console.error('Chat error:', err)
+      setChatError(err instanceof Error ? err.message : 'Something went wrong')
+    } finally {
+      setChatLoading(false)
+    }
+  }
+
+  const handleExportAssets = async () => {
+    if (assets.length === 0) return
+    try {
+      const response = await fetch('/api/export', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          content: assets.map((asset) => ({
+            ...asset,
+            city: city?.name,
+          })),
+        }),
+      })
+
+      if (!response.ok) {
+        const data = await response.json().catch(() => ({}))
+        throw new Error(data.error || 'Failed to export assets')
+      }
+
+      const data = await response.json()
+      if (data.downloadUrl) {
+        const link = document.createElement('a')
+        link.href = data.downloadUrl
+        link.download = `${city?.name || 'city'}-assets.zip`
+        document.body.appendChild(link)
+        link.click()
+        document.body.removeChild(link)
+      }
+    } catch (err) {
+      console.error('Export error:', err)
+      setError(err instanceof Error ? err.message : 'Failed to export assets')
+    }
+  }
+
+  const handleGenerateAssets = async () => {
+    if (!city || !activeConceptId) return
+
+    const selectedTypes = Object.entries(assetSelections)
+      .filter(([, enabled]) => enabled)
+      .map(([type]) => type)
+
+    if (selectedTypes.length === 0) {
+      setError('Select at least one asset type to generate.')
+      return
+    }
+
+    setIsGeneratingAssets(true)
+    setError(null)
+
+    try {
+      const concept = conceptCards.find((item) => item.id === activeConceptId)
+      const basePrompt = concept
+        ? `${concept.name}. ${concept.description} Colorways: ${concept.colorways}. Placement: ${concept.placement}. Tagline: ${concept.tagline}.`
+        : `Premium streetwear concept for ${city.name}.`
+
+      const tasks = selectedTypes.flatMap((type) => {
+        const calls: Array<Promise<Response>> = []
+        for (let index = 0; index < assetQuantity; index += 1) {
+          if (type === 'Product Shots (with models)') {
+            calls.push(
+              fetch('/api/generate/product-shot', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                  cityId: city.id,
+                  cityName: city.name,
+                  shotType: 'hanging',
+                  productType: 'Hoodie',
+                  style: basePrompt,
+                  model: 'gemini-pro',
+                  generateBothModels: true,
+                }),
+              })
+            )
+          } else if (type === 'Product Shots (without models)') {
+            calls.push(
+              fetch('/api/generate/product-shot', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                  cityId: city.id,
+                  cityName: city.name,
+                  shotType: 'flat-front',
+                  productType: 'T-Shirt',
+                  style: basePrompt,
+                  model: 'gemini-pro',
+                  generateBothModels: true,
+                }),
+              })
+            )
+          } else if (type === 'Ghost Mannequin (photo)') {
+            calls.push(
+              fetch('/api/generate/product-shot', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                  cityId: city.id,
+                  cityName: city.name,
+                  shotType: 'ghost',
+                  productType: 'Hoodie',
+                  style: basePrompt,
+                  model: 'gemini-pro',
+                  generateBothModels: true,
+                }),
+              })
+            )
+          } else if (type === 'Lifestyle / Scene Shots' || type === 'IG Ads' || type === 'Community Content') {
+            calls.push(
+              fetch('/api/generate/lifestyle-shot', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                  cityId: city.id,
+                  cityName: city.name,
+                  description: `${basePrompt} Lifestyle scene for ${city.name}.`,
+                  aspectRatio: type === 'IG Ads' ? '4:3' : '16:9',
+                  generateBothModels: true,
+                }),
+              })
+            )
+          } else if (type === 'Ghost Mannequin (video)' || type === 'TikTok Ads') {
+            calls.push(
+              fetch('/api/generate/video/veo', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                  cityId: city.id,
+                  cityName: city.name,
+                  prompt: `${basePrompt} ${type === 'TikTok Ads' ? 'Short-form TikTok ad' : 'Ghost mannequin rotation'} featuring ${city.name} energy.`,
+                  duration: 8,
+                  aspectRatio: type === 'TikTok Ads' ? '9:16' : '16:9',
+                  resolution: type === 'TikTok Ads' ? '720p' : '1080p',
+                  model: 'veo-3',
+                }),
+              })
+            )
+          }
+        }
+        return calls
+      })
+
+      const responses = await Promise.all(tasks)
+      const failed = responses.find((res) => !res.ok)
+      if (failed) {
+        const data = await failed.json().catch(() => ({}))
+        throw new Error(data.error || 'Failed to generate assets')
+      }
+
+      await fetchCityData()
+      setActiveConceptId(null)
+      setAssetSelections({})
+    } catch (err) {
+      console.error('Asset generation error:', err)
+      setError(err instanceof Error ? err.message : 'Failed to generate assets.')
+    } finally {
+      setIsGeneratingAssets(false)
+    }
+  }
+
+  const handleAssetStatusChange = async (assetId: string, status: 'approved' | 'rejected') => {
+    try {
+      const response = await fetch('/api/generated-content', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id: assetId, status }),
+      })
+
+      if (!response.ok) {
+        const data = await response.json().catch(() => ({}))
+        throw new Error(data.error || 'Failed to update asset')
+      }
+
+      await fetchCityData()
+    } catch (err) {
+      console.error('Asset status update error:', err)
+      setError(err instanceof Error ? err.message : 'Failed to update asset.')
+    }
+  }
+
+  const handleAssetDownload = (asset: GeneratedAsset) => {
+    if (!asset.output_url) return
+    const link = document.createElement('a')
+    link.href = asset.output_url
+    link.download = `${city?.name || 'city'}-${asset.id}`
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
   }
 
   const handleNotesSave = () => {
@@ -304,9 +593,38 @@ function CollapsibleBlock({
     return Object.values(elements).reduce((acc, group) => acc + group.length, 0)
   }, [elements])
 
+  const latestResearchRun = useMemo(() => {
+    const runs = elements['research_run'] || []
+    if (runs.length === 0) return null
+    return runs.reduce((latest, current) => {
+      const latestTime = new Date((latest.element_value as any)?.completed_at || latest.created_at).getTime()
+      const currentTime = new Date((current.element_value as any)?.completed_at || current.created_at).getTime()
+      return currentTime > latestTime ? current : latest
+    }, runs[0])
+  }, [elements])
+
+  useEffect(() => {
+    if (totalElements > 0) {
+      setResearchStatus('completed')
+    } else if (!isResearching && researchStatus === 'completed') {
+      setResearchStatus('idle')
+    }
+  }, [totalElements, isResearching, researchStatus])
+
+  const resolveAssetGroup = (asset: GeneratedAsset) => {
+    const title = (asset as any).title as string | undefined
+    const lowerTitle = title?.toLowerCase() || ''
+    if (lowerTitle.includes('product shot')) return 'Product Shots (with models)'
+    if (lowerTitle.includes('lifestyle shot')) return 'Lifestyle / Scene Shots'
+    if (lowerTitle.includes('sora video') || lowerTitle.includes('veo video')) return 'TikTok Ads'
+    if (asset.content_type === 'video') return 'TikTok Ads'
+    if (asset.content_type === 'image') return 'Product Shots (without models)'
+    return 'Other'
+  }
+
   const groupedAssets = useMemo(() => {
     return assets.reduce<Record<string, GeneratedAsset[]>>((acc, asset) => {
-      const type = asset.content_type || 'other'
+      const type = resolveAssetGroup(asset)
       if (!acc[type]) acc[type] = []
       acc[type].push(asset)
       return acc
@@ -345,27 +663,62 @@ function CollapsibleBlock({
     { key: 'music', title: 'Trending Sounds / Music' },
     { key: 'creators', title: 'Notable Local Creators' },
     { key: 'avoid', title: 'What to Avoid' },
+    { key: 'reference', title: 'Reference Inputs', elementsKey: 'reference' },
   ]
 
   const conceptCityName = city?.name || 'City'
-  const conceptCards = [
-    {
-      id: 'concept-1',
-      name: `${conceptCityName} Night Market Luxe`,
-      description: 'Neon-rich night market energy blended with premium embroidery and minimal typography.',
-      colorways: 'Midnight teal, jet black, soft gold',
-      placement: 'Left chest crest + back skyline',
-      tagline: 'City lights. Quiet flex.',
-    },
-    {
-      id: 'concept-2',
-      name: `${conceptCityName} Heritage Grid`,
-      description: 'Architectural gridlines and archival textures with modern streetwear cuts.',
-      colorways: 'Charcoal, bone, signal red',
-      placement: 'Center chest lockup',
-      tagline: 'Built by the city.',
-    },
-  ]
+  const conceptTemplates = useMemo(
+    () => [
+      {
+        name: `${conceptCityName} Night Market Luxe`,
+        description: 'Neon-rich night market energy blended with premium embroidery and minimal typography.',
+        colorways: 'Midnight teal, jet black, soft gold',
+        placement: 'Left chest crest + back skyline',
+        tagline: 'City lights. Quiet flex.',
+      },
+      {
+        name: `${conceptCityName} Heritage Grid`,
+        description: 'Architectural gridlines and archival textures with modern streetwear cuts.',
+        colorways: 'Charcoal, bone, signal red',
+        placement: 'Center chest lockup',
+        tagline: 'Built by the city.',
+      },
+      {
+        name: `${conceptCityName} Transit Pulse`,
+        description: 'Transit-line graphics with bold numerics and refined textures for everyday layering.',
+        colorways: 'Graphite, chalk, signal teal',
+        placement: 'Sleeve wrap + chest lockup',
+        tagline: 'Move with the city.',
+      },
+      {
+        name: `${conceptCityName} Skyline Quiet`,
+        description: 'Minimal skyline silhouette with subtle tonal embroidery and soft matte inks.',
+        colorways: 'Ink black, smoke gray, frost white',
+        placement: 'Back panel + cuff hit',
+        tagline: 'Soft power.',
+      },
+      {
+        name: `${conceptCityName} Culture Codes`,
+        description: 'Local slang and iconography reworked as premium monograms and woven labels.',
+        colorways: 'Bone, asphalt, neon lime',
+        placement: 'Chest badge + inner label',
+        tagline: 'Speak the city.',
+      },
+    ],
+    [conceptCityName]
+  )
+
+  const buildConceptCards = useCallback((count: number, offset = 0): ConceptCard[] => {
+    const cards: ConceptCard[] = []
+    for (let index = 0; index < count; index += 1) {
+      const template = conceptTemplates[(index + offset) % conceptTemplates.length]
+      cards.push({
+        id: `concept-${Date.now()}-${index + offset}`,
+        ...template,
+      })
+    }
+    return cards
+  }, [conceptTemplates])
 
   const assetTypeOptions = [
     'Product Shots (with models)',
@@ -376,6 +729,7 @@ function CollapsibleBlock({
     'TikTok Ads',
     'IG Ads',
     'Community Content',
+    'Other',
   ]
 
   const approvedAssets = assets.filter((asset) => asset.status === 'approved')
@@ -429,26 +783,42 @@ function CollapsibleBlock({
                 <span className="h-2 w-2 rounded-full bg-primary" />
                 {totalElements > 0 ? 'Research Complete' : 'Research Pending'}
               </span>
+              <span className="inline-flex items-center gap-2 rounded-full border border-[color:var(--surface-border)] bg-[color:var(--surface-muted)] px-3 py-1">
+                <span
+                  className={`h-2 w-2 rounded-full ${
+                    researchStatus === 'running'
+                      ? 'bg-amber-400'
+                      : researchStatus === 'failed'
+                        ? 'bg-destructive'
+                        : researchStatus === 'completed'
+                          ? 'bg-emerald-400'
+                          : 'bg-muted-foreground'
+                  }`}
+                />
+                Research {researchStatus}
+              </span>
               {city.updated_at && (
                 <span className="rounded-full border border-[color:var(--surface-border)] bg-[color:var(--surface-muted)] px-3 py-1">
                   Updated {new Date(city.updated_at).toLocaleDateString()}
                 </span>
               )}
-            </div>
           </div>
+        </div>
           <div className="flex flex-col items-end gap-2">
             <span className="text-xs uppercase tracking-[0.25em] text-muted-foreground">Actions</span>
             <div className="flex flex-wrap gap-2">
               <Button onClick={handleRunResearch} disabled={isResearching}>
                 <Sparkles className="h-4 w-4" />
-                {isResearching ? 'Researching...' : 'Start Research'}
+            {isResearching ? 'Researching...' : 'Start Research'}
               </Button>
-              <Button variant="secondary" onClick={() => notesRef.current?.scrollIntoView({ behavior: 'smooth' })}>
+              <Button variant="secondary" onClick={handleAddResearchNote}>
                 Add Note
               </Button>
-              <Button variant="secondary">Export</Button>
-            </div>
-          </div>
+              <Button variant="secondary" onClick={handleExportAssets} disabled={assets.length === 0}>
+            Export
+              </Button>
+        </div>
+      </div>
         </div>
         <div className="mt-5 grid grid-cols-2 gap-3 lg:grid-cols-4">
           {statCards.map((stat) => (
@@ -456,8 +826,8 @@ function CollapsibleBlock({
               <p className="text-xs text-muted-foreground">{stat.label}</p>
               <p className="mt-2 text-lg font-semibold">{stat.value}</p>
             </GlassCard>
-          ))}
-        </div>
+        ))}
+      </div>
       </GlassCard>
 
       <section className="space-y-4">
@@ -466,10 +836,10 @@ function CollapsibleBlock({
           title="Research Insights"
           actions={
             <>
-              <Button variant="secondary" size="sm">
+              <Button variant="secondary" size="sm" onClick={handleAskResearch}>
                 Ask AI about Research
               </Button>
-              <Button variant="secondary" size="sm">
+              <Button variant="secondary" size="sm" onClick={handleAddResearchNote}>
                 Add Research Note
               </Button>
               <Button
@@ -483,7 +853,31 @@ function CollapsibleBlock({
             </>
           }
         />
-        <div className="grid gap-4 md:grid-cols-2">
+        <div className="grid gap-4 md:grid-cols-3">
+          <GlassCard className="p-4 text-sm text-muted-foreground">
+            <p className="text-sm font-semibold text-foreground">Research Status</p>
+            <p className="mt-2 text-xs text-muted-foreground capitalize">
+              {researchStatus === 'running' ? 'Research in progress...' : `Status: ${researchStatus}`}
+            </p>
+            {latestResearchRun && (
+              <p className="mt-2 text-xs text-muted-foreground">
+                Last run: {new Date(latestResearchRun.created_at).toLocaleString()}
+              </p>
+            )}
+            {researchUpdatedAt && !latestResearchRun && (
+              <p className="mt-2 text-xs text-muted-foreground">
+                Last run: {researchUpdatedAt.toLocaleString()}
+              </p>
+            )}
+            {(latestResearchRun as any)?.element_value?.summary && (
+              <p className="mt-2 text-xs text-muted-foreground">
+                Summary: {(latestResearchRun as any).element_value.summary}
+              </p>
+            )}
+            {researchError && (
+              <p className="mt-2 text-xs text-destructive">{researchError}</p>
+            )}
+          </GlassCard>
           {topInsightCards.map((card) => (
             <GlassCard key={card.key} className="p-4 text-sm text-muted-foreground">
               <p className="text-sm font-semibold text-foreground">{card.title}</p>
@@ -589,11 +983,11 @@ function CollapsibleBlock({
           title="Design Concepts"
           actions={
             <>
-              <Button size="sm">
+              <Button size="sm" onClick={() => handleGenerateConcepts(5)}>
                 <Sparkles className="h-4 w-4" />
                 Generate 5 Concepts
               </Button>
-              <Button variant="secondary" size="sm">
+              <Button variant="secondary" size="sm" onClick={handleGenerateMoreConcepts}>
                 Generate More
               </Button>
             </>
@@ -607,7 +1001,7 @@ function CollapsibleBlock({
                 <div className="flex items-center justify-between">
                   <p className="text-sm font-semibold text-foreground">{concept.name}</p>
                   <span className="text-xs text-muted-foreground capitalize">{approval}</span>
-                </div>
+          </div>
                 <p className="mt-2 text-xs text-muted-foreground">{concept.description}</p>
                 <div className="mt-3 space-y-1 text-xs text-muted-foreground">
                   <p><span className="text-foreground">Colorways:</span> {concept.colorways}</p>
@@ -638,7 +1032,7 @@ function CollapsibleBlock({
                   >
                     Generate Assets
                   </Button>
-          </div>
+        </div>
               </GlassCard>
             )
           })}
@@ -651,11 +1045,11 @@ function CollapsibleBlock({
                 <p className="text-xs text-muted-foreground">
                   {conceptCards.find((concept) => concept.id === activeConceptId)?.name}
                 </p>
-              </div>
+          </div>
               <button onClick={() => setActiveConceptId(null)} className="text-muted-foreground">
                 <X className="h-4 w-4" />
               </button>
-            </div>
+          </div>
             <div className="mt-4 grid gap-3 md:grid-cols-2">
               {assetTypeOptions.slice(0, 6).map((type) => (
                 <label key={type} className="flex items-center gap-2 text-sm text-muted-foreground">
@@ -667,7 +1061,7 @@ function CollapsibleBlock({
                   {type}
                 </label>
               ))}
-            </div>
+        </div>
             <div className="mt-4 grid gap-3 md:grid-cols-3">
               <div>
                 <p className="text-xs text-muted-foreground">Quantity per type</p>
@@ -692,14 +1086,14 @@ function CollapsibleBlock({
               </div>
             </div>
             <div className="mt-4 flex gap-2">
-              <Button>
+              <Button onClick={handleGenerateAssets} disabled={isGeneratingAssets}>
                 <Plus className="h-4 w-4" />
-                Generate
+                {isGeneratingAssets ? 'Generating...' : 'Generate'}
               </Button>
-              <Button variant="secondary" onClick={() => setActiveConceptId(null)}>
+              <Button variant="secondary" onClick={() => setActiveConceptId(null)} disabled={isGeneratingAssets}>
                 Cancel
               </Button>
-        </div>
+            </div>
           </GlassCard>
         )}
       </section>
@@ -710,7 +1104,13 @@ function CollapsibleBlock({
           title="Generated Assets"
           actions={
             <>
-              <Button size="sm">Generate New Assets</Button>
+              <Button
+                size="sm"
+                onClick={() => setActiveConceptId(conceptCards[0]?.id || null)}
+                disabled={conceptCards.length === 0}
+              >
+                Generate New Assets
+              </Button>
               <Button variant="secondary" size="sm">Upload</Button>
             </>
           }
@@ -729,25 +1129,52 @@ function CollapsibleBlock({
                   <p>No assets yet for this type.</p>
                 ) : (
                   <div className="mt-4 grid grid-cols-1 gap-3 md:grid-cols-3">
-                {items.map((asset) => (
+                {items.map((asset) => {
+                  const isVideo = asset.content_type === 'video' || asset.output_url?.endsWith('.mp4')
+                  return (
                   <div key={asset.id} className="rounded-lg border border-[color:var(--surface-border)] bg-[color:var(--surface-muted)] p-3">
                     <div className="flex items-center justify-between">
-                          <span className="text-xs text-muted-foreground">{asset.content_type}</span>
-                          <span className="text-xs text-muted-foreground">{asset.status}</span>
+                        <span className="text-xs text-muted-foreground">{asset.content_type}</span>
+                        <span className="text-xs text-muted-foreground">{asset.status}</span>
                     </div>
-                        <div className="mt-3 h-28 w-full rounded-lg bg-[color:var(--surface-strong)]" />
-                        <div className="mt-3 text-xs text-muted-foreground">Concept: {asset.prompt || '—'}</div>
-                        <div className="mt-3 flex flex-wrap gap-2 text-xs">
-                          <Button size="sm" variant="secondary">Approve</Button>
-                          <Button size="sm" variant="secondary" onClick={() => setRejectionTarget({ type: 'asset', id: asset.id })}>Reject</Button>
-                          <Button size="sm" variant="secondary">Regenerate</Button>
-                          <Button size="sm" variant="secondary">View Full</Button>
-                          <Button size="sm" variant="secondary">Edit</Button>
-                          <Button size="sm">Download</Button>
+                      <div className="mt-3 h-28 w-full overflow-hidden rounded-lg bg-[color:var(--surface-strong)]">
+                        {asset.output_url ? (
+                          isVideo ? (
+                            <video src={asset.output_url} className="h-full w-full object-cover" muted playsInline />
+                          ) : (
+                            <img src={asset.output_url} alt={asset.prompt || 'Generated asset'} className="h-full w-full object-cover" />
+                          )
+                        ) : null}
                     </div>
-                  </div>
-                ))}
+                      <div className="mt-3 text-xs text-muted-foreground">Concept: {asset.prompt || '—'}</div>
+                      <div className="mt-3 flex flex-wrap gap-2 text-xs">
+                        <Button size="sm" variant="secondary" onClick={() => handleAssetStatusChange(asset.id, 'approved')}>
+                          Approve
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="secondary"
+                          onClick={() => setRejectionTarget({ type: 'asset', id: asset.id })}
+                        >
+                          Reject
+                        </Button>
+                        <Button size="sm" variant="secondary">Regenerate</Button>
+                        <Button
+                          size="sm"
+                          variant="secondary"
+                          onClick={() => asset.output_url && window.open(asset.output_url, '_blank')}
+                        >
+                          View Full
+                        </Button>
+                        <Button size="sm" variant="secondary">Edit</Button>
+                        <Button size="sm" onClick={() => handleAssetDownload(asset)}>
+                          Download
+                        </Button>
+                      </div>
               </div>
+                  )
+                })}
+            </div>
                 )}
               </CollapsibleBlock>
             )
@@ -767,9 +1194,9 @@ function CollapsibleBlock({
               </select>
               <Button size="sm">Add to Drop</Button>
               <Button size="sm" onClick={handleApproveCityProfile} disabled={approvingCity}>
-                {approvingCity ? 'Approving...' : 'Approve City Profile'}
+            {approvingCity ? 'Approving...' : 'Approve City Profile'}
               </Button>
-            </div>
+        </div>
           }
         />
         {approvedAssets.length === 0 ? (
@@ -786,7 +1213,7 @@ function CollapsibleBlock({
                     {asset.content_type}
                   </label>
                   <span>{asset.created_at ? new Date(asset.created_at).toLocaleDateString() : '—'}</span>
-                </div>
+        </div>
                 <div className="mt-3 h-24 rounded-lg bg-[color:var(--surface-strong)]" />
                 <div className="mt-2 text-xs text-muted-foreground">Concept: {asset.prompt || '—'}</div>
               </GlassCard>
@@ -836,13 +1263,28 @@ function CollapsibleBlock({
           />
           <div className="mt-3 flex flex-wrap gap-2 text-xs">
             {['Wrong vibe', 'Off-brand', 'Low quality', 'Overdone', 'Other'].map((tag) => (
-              <Button key={tag} variant="secondary" size="sm">
+              <Button
+                key={tag}
+                variant="secondary"
+                size="sm"
+                onClick={() => setRejectionReason((prev) => (prev ? `${prev}, ${tag}` : tag))}
+              >
                 {tag}
               </Button>
             ))}
           </div>
           <div className="mt-4 flex gap-2">
-            <Button onClick={() => setRejectionTarget(null)}>Submit</Button>
+            <Button
+              onClick={() => {
+                if (rejectionTarget?.type === 'asset') {
+                  handleAssetStatusChange(rejectionTarget.id, 'rejected')
+                }
+                setRejectionTarget(null)
+                setRejectionReason('')
+              }}
+            >
+              Submit
+            </Button>
             <Button variant="secondary" onClick={() => setRejectionTarget(null)}>
               Skip
             </Button>

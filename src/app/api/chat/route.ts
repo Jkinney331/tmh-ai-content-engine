@@ -104,7 +104,11 @@ const CHAT_FUNCTIONS = [
 ]
 
 // Execute function calls
-async function executeFunction(name: string, args: Record<string, unknown>): Promise<unknown> {
+async function executeFunction(
+  name: string,
+  args: Record<string, unknown>,
+  baseUrl: string
+): Promise<unknown> {
   const supabase = getSupabaseClient()
 
   switch (name) {
@@ -152,8 +156,6 @@ async function executeFunction(name: string, args: Record<string, unknown>): Pro
     }
 
     case 'trigger_research': {
-      // Call the research API
-      const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'
       const response = await fetch(`${baseUrl}/api/decision/research`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -166,8 +168,7 @@ async function executeFunction(name: string, args: Record<string, unknown>): Pro
     }
 
     case 'suggest_content': {
-      const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'
-      const response = await fetch(`${baseUrl}/api/decision/suggest`, {
+    const response = await fetch(`${baseUrl}/api/decision/suggest`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -354,13 +355,14 @@ export async function POST(request: NextRequest) {
 
     // Handle function calls
     if (choice?.message?.tool_calls?.length > 0) {
+      const baseUrl = process.env.NEXT_PUBLIC_APP_URL || request.nextUrl.origin
       const functionResults: { name: string; result: unknown }[] = []
 
       for (const toolCall of choice.message.tool_calls) {
         const functionName = toolCall.function.name
         const functionArgs = JSON.parse(toolCall.function.arguments || '{}')
 
-        const result = await executeFunction(functionName, functionArgs)
+        const result = await executeFunction(functionName, functionArgs, baseUrl)
         functionResults.push({ name: functionName, result })
       }
 

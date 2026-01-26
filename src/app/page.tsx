@@ -64,13 +64,6 @@ interface AnalyticsResponse {
   mock?: boolean
 }
 
-const quickActions = [
-  { name: 'Product Shot', icon: Image, href: '/generate?type=product', color: 'bg-blue-500/15 text-blue-200' },
-  { name: 'Lifestyle Shot', icon: Target, href: '/generate?type=lifestyle', color: 'bg-purple-500/15 text-purple-200' },
-  { name: '24s Video Ad', icon: Video, href: '/generate?type=video', color: 'bg-rose-500/15 text-rose-200' },
-  { name: 'City Research', icon: MapPin, href: '/cities', color: 'bg-emerald-500/15 text-emerald-200' },
-]
-
 export default function Dashboard() {
   const [suggestions, setSuggestions] = useState<Suggestion[]>([])
   const [recentTests, setRecentTests] = useState<RecentTest[]>([])
@@ -188,41 +181,15 @@ export default function Dashboard() {
           <h1 className="text-3xl font-bold text-foreground">Dashboard</h1>
           <p className="text-muted-foreground">TMH AI Content Engine</p>
         </div>
-        <Link
-          href="/chat"
-          className="flex items-center gap-2 rounded-lg bg-primary px-4 py-2 text-primary-foreground hover:bg-primary/90"
-        >
-          <MessageSquare className="w-4 h-4" />
-          Open Chat
-        </Link>
+        <div className="text-xs text-muted-foreground">Select a city to generate content.</div>
       </div>
 
-      {/* Quick Actions */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        {quickActions.map((action) => {
-          const Icon = action.icon
-          return (
-            <Link
-              key={action.name}
-              href={action.href}
-              className="surface group flex flex-col items-center justify-center rounded-xl p-6 transition-all hover:border-primary/40 hover:shadow-[0_10px_30px_rgba(0,0,0,0.35)]"
-            >
-              <div className={`p-3 rounded-full ${action.color} mb-3 group-hover:scale-110 transition-transform`}>
-                <Icon className="w-6 h-6" />
-              </div>
-              <span className="font-medium text-foreground">{action.name}</span>
-            </Link>
-          )
-        })}
-      </div>
-
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* AI Suggestions - Takes 2 columns */}
-        <div className="lg:col-span-2 surface rounded-xl p-6">
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+        <div className="surface rounded-xl p-6">
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-2">
-              <Sparkles className="w-5 h-5 text-primary" />
-              <h2 className="text-lg font-semibold text-foreground">AI Suggestions</h2>
+              <Image className="w-5 h-5 text-primary" />
+              <h2 className="text-lg font-semibold text-foreground">Recent Created</h2>
             </div>
             <button
               onClick={refreshSuggestions}
@@ -232,21 +199,64 @@ export default function Dashboard() {
               <RefreshCw className={`w-4 h-4 ${refreshing ? 'animate-spin' : ''}`} />
             </button>
           </div>
+          {recentTests.length === 0 && !loading && (
+            <div className="surface-muted rounded-lg p-4 text-sm text-muted-foreground">
+              No recent assets yet. Generate content inside a city to populate this gallery.
+            </div>
+          )}
+          <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+            {recentTests.map((item) => {
+              const isVideo = item.preview?.endsWith('.mp4')
+              return (
+                <div key={item.id} className="surface-muted rounded-lg p-4">
+                  <div className="flex items-center justify-between text-xs text-muted-foreground">
+                    <span>{item.city}</span>
+                    <span>{item.timestamp}</span>
+                  </div>
+                  <div className="mt-3 h-36 w-full overflow-hidden rounded-lg bg-[color:var(--surface-strong)]">
+                    {item.preview ? (
+                      isVideo ? (
+                        <video src={item.preview} className="h-full w-full object-cover" muted playsInline />
+                      ) : (
+                        <img src={item.preview} alt={item.type} className="h-full w-full object-cover" />
+                      )
+                    ) : null}
+                  </div>
+                  <div className="mt-3 flex items-center justify-between text-xs text-muted-foreground">
+                    <span className="capitalize">{item.type.replace(/_/g, ' ')}</span>
+                    {getStatusIcon(item.status)}
+                  </div>
+                </div>
+              )
+            })}
+          </div>
+        </div>
 
+        <div className="surface rounded-xl p-6">
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center gap-2">
+              <Sparkles className="w-5 h-5 text-primary" />
+              <h2 className="text-lg font-semibold text-foreground">Suggested Ideas</h2>
+            </div>
+            <button
+              onClick={refreshSuggestions}
+              disabled={refreshing}
+              className="rounded-lg p-2 text-muted-foreground transition-colors hover:bg-primary/10 hover:text-primary"
+            >
+              <RefreshCw className={`w-4 h-4 ${refreshing ? 'animate-spin' : ''}`} />
+            </button>
+          </div>
           <div className="space-y-3">
             {!loading && suggestions.length === 0 && (
               <div className="surface-muted rounded-lg p-4 text-sm text-muted-foreground">
-                No suggestions yet. Generate content or run research to populate activity.
+                Suggested ideas will appear after research and asset generation runs.
               </div>
             )}
             {suggestions.map((suggestion) => {
               const typeStyle = getTypeBadge(suggestion.type)
               const TypeIcon = typeStyle.icon
               return (
-                <div
-                  key={suggestion.id}
-                  className="surface-muted flex items-start gap-4 rounded-lg p-4 transition-colors hover:border-primary/30"
-                >
+                <div key={suggestion.id} className="surface-muted flex items-start gap-4 rounded-lg p-4">
                   <div className={`p-2 rounded-lg ${typeStyle.bg}`}>
                     <TypeIcon className={`w-4 h-4 ${typeStyle.text}`} />
                   </div>
@@ -275,103 +285,49 @@ export default function Dashboard() {
               )
             })}
           </div>
+        </div>
+      </div>
 
-          <div className="mt-4 border-t border-[color:var(--surface-border)] pt-4">
-            <p className="flex items-center gap-1 text-xs text-muted-foreground">
-              <Zap className="w-3 h-3" />
-              Suggestions powered by market trends, engagement data, and your knowledge base
-            </p>
+      <div className="surface rounded-xl p-6">
+        <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center gap-2">
+            <DollarSign className="w-5 h-5 text-emerald-400" />
+            <h2 className="text-lg font-semibold text-foreground">Budget</h2>
           </div>
+          <Link href="/settings/budget" className="text-sm text-muted-foreground hover:text-primary">
+            Manage
+          </Link>
         </div>
 
-        {/* Right Column */}
-        <div className="space-y-6">
-          {/* Budget Tracker */}
-          <div className="surface rounded-xl p-6">
-            <div className="flex items-center justify-between mb-4">
-              <div className="flex items-center gap-2">
-                <DollarSign className="w-5 h-5 text-emerald-400" />
-                <h2 className="text-lg font-semibold text-foreground">Budget</h2>
-              </div>
-              <Link href="/settings/budget" className="text-sm text-muted-foreground hover:text-primary">
-                Manage
-              </Link>
-            </div>
-
-            <div className="mb-4">
-              <div className="flex justify-between text-sm mb-2">
-                <span className="text-muted-foreground">${budget.used.toFixed(2)} used</span>
-                <span className="font-medium text-foreground">${budget.limit.toFixed(2)} limit</span>
-              </div>
-              <div className="h-3 rounded-full overflow-hidden bg-muted">
-                <div
-                  className={`h-full rounded-full transition-all ${
-                    budgetPercentage > 90 ? 'bg-destructive' : budgetPercentage > 70 ? 'bg-warning' : 'bg-success'
-                  }`}
-                  style={{ width: `${budgetPercentage}%` }}
-                />
-              </div>
-              <p className="mt-1 text-xs text-muted-foreground">{budgetPercentage}% of monthly budget used</p>
-            </div>
-
-            <div className="space-y-2">
-              {!loading && budget.breakdown.length === 0 && (
-                <p className="text-xs text-muted-foreground">No costs logged yet.</p>
-              )}
-              {budget.breakdown.map((item) => (
-                <div key={item.category} className="flex items-center justify-between text-sm">
-                  <div className="flex items-center gap-2">
-                    <div className={`w-2 h-2 rounded-full ${item.color}`} />
-                    <span className="text-muted-foreground">{item.category}</span>
-                  </div>
-                  <span className="text-foreground">${item.amount.toFixed(2)}</span>
-                </div>
-              ))}
-            </div>
+        <div className="mb-4">
+          <div className="flex justify-between text-sm mb-2">
+            <span className="text-muted-foreground">${budget.used.toFixed(2)} used</span>
+            <span className="font-medium text-foreground">${budget.limit.toFixed(2)} limit</span>
           </div>
-
-          {/* Recent Tests */}
-          <div className="surface rounded-xl p-6">
-            <div className="flex items-center justify-between mb-4">
-              <div className="flex items-center gap-2">
-                <Play className="w-5 h-5 text-purple-300" />
-                <h2 className="text-lg font-semibold text-foreground">Recent Tests</h2>
-              </div>
-              <Link href="/history" className="text-sm text-muted-foreground hover:text-primary">
-                View All
-              </Link>
-            </div>
-
-            <div className="space-y-3">
-              {!loading && recentTests.length === 0 && (
-                <p className="text-xs text-muted-foreground">No recent generations yet.</p>
-              )}
-              {recentTests.map((test) => (
-                <div key={test.id} className="flex items-center gap-3 rounded-lg p-2 transition hover:bg-[color:var(--surface-muted)]">
-                  {test.preview && !test.type.toLowerCase().includes('video') ? (
-                    <img
-                      src={test.preview}
-                      alt={test.type}
-                      className="h-10 w-10 rounded-lg object-cover"
-                    />
-                  ) : (
-                    <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-muted">
-                      {test.type.includes('Video') ? (
-                        <Video className="w-5 h-5 text-muted-foreground" />
-                      ) : (
-                        <Image className="w-5 h-5 text-muted-foreground" />
-                      )}
-                    </div>
-                  )}
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium text-foreground truncate">{test.type}</p>
-                    <p className="text-xs text-muted-foreground">{test.city} · {test.timestamp}</p>
-                  </div>
-                  {getStatusIcon(test.status)}
-                </div>
-              ))}
-            </div>
+          <div className="h-3 rounded-full overflow-hidden bg-muted">
+            <div
+              className={`h-full rounded-full transition-all ${
+                budgetPercentage > 90 ? 'bg-destructive' : budgetPercentage > 70 ? 'bg-warning' : 'bg-success'
+              }`}
+              style={{ width: `${budgetPercentage}%` }}
+            />
           </div>
+          <p className="mt-1 text-xs text-muted-foreground">{budgetPercentage}% of monthly budget used</p>
+        </div>
+
+        <div className="space-y-2">
+          {!loading && budget.breakdown.length === 0 && (
+            <p className="text-xs text-muted-foreground">No costs logged yet.</p>
+          )}
+          {budget.breakdown.map((item) => (
+            <div key={item.category} className="flex items-center justify-between text-sm">
+              <div className="flex items-center gap-2">
+                <div className={`w-2 h-2 rounded-full ${item.color}`} />
+                <span className="text-muted-foreground">{item.category}</span>
+              </div>
+              <span className="text-foreground">${item.amount.toFixed(2)}</span>
+            </div>
+          ))}
         </div>
       </div>
 

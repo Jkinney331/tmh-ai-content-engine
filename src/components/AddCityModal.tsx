@@ -22,6 +22,10 @@ export default function AddCityModal({ isOpen, onClose, onCityAdded }: AddCityMo
   const [cityName, setCityName] = useState('')
   const [error, setError] = useState('')
   const [customPrompt, setCustomPrompt] = useState('')
+  const [referenceNotes, setReferenceNotes] = useState('')
+  const [referenceUrls, setReferenceUrls] = useState('')
+  const [referenceCities, setReferenceCities] = useState('')
+  const [referenceFiles, setReferenceFiles] = useState<File[]>([])
   const [isLoading, setIsLoading] = useState(false)
   const [researchCategories, setResearchCategories] = useState<ResearchCategories>({
     slang: true,
@@ -68,6 +72,23 @@ export default function AddCityModal({ isOpen, onClose, onCityAdded }: AddCityMo
     setError('')
 
     try {
+      const filesPayload = await Promise.all(
+        referenceFiles.map(
+          (file) =>
+            new Promise<{ name: string; type: string; size: number; data: string }>((resolve, reject) => {
+              const reader = new FileReader()
+              reader.onload = () => resolve({
+                name: file.name,
+                type: file.type,
+                size: file.size,
+                data: reader.result as string,
+              })
+              reader.onerror = () => reject(reader.error)
+              reader.readAsDataURL(file)
+            })
+        )
+      )
+
       const response = await fetch('/api/cities', {
         method: 'POST',
         headers: {
@@ -76,7 +97,19 @@ export default function AddCityModal({ isOpen, onClose, onCityAdded }: AddCityMo
         body: JSON.stringify({
           name: cityName,
           researchCategories,
-          customPrompt: customPrompt || undefined
+          customPrompt: customPrompt || undefined,
+          references: {
+            notes: referenceNotes || undefined,
+            urls: referenceUrls
+              .split('\n')
+              .map((url) => url.trim())
+              .filter(Boolean),
+            cities: referenceCities
+              .split(',')
+              .map((name) => name.trim())
+              .filter(Boolean),
+            files: filesPayload,
+          },
         })
       })
 
@@ -125,6 +158,10 @@ export default function AddCityModal({ isOpen, onClose, onCityAdded }: AddCityMo
       setCityName('')
       setError('')
       setCustomPrompt('')
+      setReferenceNotes('')
+      setReferenceUrls('')
+      setReferenceCities('')
+      setReferenceFiles([])
       setIsLoading(false)
       setResearchCategories({
         slang: true,
@@ -283,18 +320,57 @@ export default function AddCityModal({ isOpen, onClose, onCityAdded }: AddCityMo
                     id="customPrompt"
                     rows={3}
                     value={customPrompt}
-                    onChange={(e) => setCustomPrompt(e.target.value.slice(0, 500))}
+                  onChange={(e) => setCustomPrompt(e.target.value)}
                     placeholder="Any specific things to research?"
-                    maxLength={500}
                     className="block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
                   />
                   <div className="mt-1 text-right">
-                    <span className={`text-xs ${customPrompt.length >= 500 ? 'text-red-500' : 'text-gray-500'}`}>
-                      {customPrompt.length}/500
-                    </span>
+                  <span className="text-xs text-gray-500">{customPrompt.length} characters</span>
                   </div>
                 </div>
               </div>
+
+            <div className="mt-6">
+              <label className="block text-sm font-medium text-gray-700">Research Reference Inputs</label>
+              <p className="mt-1 text-xs text-gray-500">
+                Add notes, URLs, files, or other cities to reference during research.
+              </p>
+              <div className="mt-3 space-y-3">
+                <textarea
+                  rows={3}
+                  value={referenceNotes}
+                  onChange={(e) => setReferenceNotes(e.target.value)}
+                  placeholder="Reference notes or context..."
+                  className="block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+                />
+                <textarea
+                  rows={2}
+                  value={referenceUrls}
+                  onChange={(e) => setReferenceUrls(e.target.value)}
+                  placeholder="Reference URLs (one per line)"
+                  className="block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+                />
+                <input
+                  type="text"
+                  value={referenceCities}
+                  onChange={(e) => setReferenceCities(e.target.value)}
+                  placeholder="Reference other cities (comma-separated)"
+                  className="block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+                />
+                <input
+                  type="file"
+                  multiple
+                  onChange={(event) => {
+                    const files = Array.from(event.target.files || [])
+                    setReferenceFiles(files)
+                  }}
+                  className="block w-full text-sm text-gray-500 file:mr-4 file:rounded-md file:border-0 file:bg-indigo-50 file:px-3 file:py-2 file:text-sm file:font-semibold file:text-indigo-700 hover:file:bg-indigo-100"
+                />
+                {referenceFiles.length > 0 && (
+                  <p className="text-xs text-gray-500">{referenceFiles.length} file(s) selected</p>
+                )}
+              </div>
+            </div>
 
               <div className="mt-5 sm:mt-6 sm:flex sm:flex-row-reverse">
                 <button

@@ -16,6 +16,17 @@ interface CreateCityRequest {
   name: string
   researchCategories: ResearchCategories
   customPrompt?: string
+  references?: {
+    notes?: string
+    urls?: string[]
+    cities?: string[]
+    files?: Array<{
+      name: string
+      type: string
+      size: number
+      data: string
+    }>
+  }
 }
 
 interface City {
@@ -455,7 +466,80 @@ export async function POST(request: NextRequest) {
         // Trigger research in the background (don't await)
         const cityId = (newCity as any)?.id
         if (cityId) {
-          performCityResearch(cityId, cityName, body.researchCategories, body.customPrompt)
+          const references = body.references
+          const referenceSummaryParts: string[] = []
+          if (references?.notes) referenceSummaryParts.push(`Notes: ${references.notes}`)
+          if (references?.urls?.length) referenceSummaryParts.push(`URLs: ${references.urls.join(', ')}`)
+          if (references?.cities?.length) referenceSummaryParts.push(`Reference cities: ${references.cities.join(', ')}`)
+          if (references?.files?.length) {
+            referenceSummaryParts.push(
+              `Files: ${references.files.map((file) => `${file.name} (${file.type || 'file'})`).join(', ')}`
+            )
+          }
+          const combinedPrompt = [body.customPrompt, referenceSummaryParts.join('\n')].filter(Boolean).join('\n')
+          const referenceElements: Array<{
+            city_id: string
+            element_type: string
+            element_key: string
+            element_value: Record<string, unknown>
+            status?: string
+          }> = []
+
+          if (references?.notes) {
+            referenceElements.push({
+              city_id: cityId,
+              element_type: 'reference',
+              element_key: 'notes',
+              element_value: { notes: references.notes },
+              status: 'reviewed',
+            })
+          }
+
+          if (references?.urls?.length) {
+            references.urls.forEach((url, index) => {
+              referenceElements.push({
+                city_id: cityId,
+                element_type: 'reference',
+                element_key: `url-${index + 1}`,
+                element_value: { url },
+                status: 'reviewed',
+              })
+            })
+          }
+
+          if (references?.cities?.length) {
+            references.cities.forEach((refCity, index) => {
+              referenceElements.push({
+                city_id: cityId,
+                element_type: 'reference',
+                element_key: `city-${index + 1}`,
+                element_value: { city: refCity },
+                status: 'reviewed',
+              })
+            })
+          }
+
+          if (references?.files?.length) {
+            references.files.forEach((file, index) => {
+              referenceElements.push({
+                city_id: cityId,
+                element_type: 'reference',
+                element_key: `file-${index + 1}`,
+                element_value: file,
+                status: 'reviewed',
+              })
+            })
+          }
+
+          if (referenceElements.length > 0) {
+            try {
+              await cityDb.from('city_elements').insert(referenceElements)
+            } catch (insertErr) {
+              console.warn('[City Create] Failed to save reference inputs:', insertErr)
+            }
+          }
+
+          performCityResearch(cityId, cityName, body.researchCategories, combinedPrompt || undefined)
             .then(() => console.log(`[City Research] Completed for ${cityName}`))
             .catch(err => console.error(`[City Research] Failed for ${cityName}:`, err))
         }

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getCityById, hasRealCredentials } from '@/lib/supabase'
+import { supabaseAdmin } from '@/lib/supabaseAdmin'
 import { Database } from '@/types/database'
 
 type CityRow = Database['public']['Tables']['cities']['Row']
@@ -7,10 +8,10 @@ import { runCityResearch } from '@/lib/research'
 
 export async function POST(
   request: NextRequest,
-  { params }: { params: Promise<{ cityId: string }> }
+  { params }: { params: { cityId: string } }
 ) {
   try {
-    const { cityId } = await params
+    const { cityId } = params
     const body = await request.json().catch(() => ({}))
     const categories = Array.isArray(body?.categories) && body.categories.length > 0
       ? body.categories
@@ -35,7 +36,47 @@ export async function POST(
       return NextResponse.json({ error: 'City not found' }, { status: 404 })
     }
 
+    const runId = `run-${Date.now()}`
+    const startedAt = new Date().toISOString()
+    try {
+      await supabaseAdmin
+        .from('city_elements')
+        .insert({
+          city_id: city.id,
+          element_type: 'research_run',
+          element_key: runId,
+          element_value: {
+            status: 'running',
+            categories,
+            started_at: startedAt,
+          },
+          status: 'reviewed',
+        })
+    } catch (err) {
+      console.warn('[City Research] Failed to log research run start:', err)
+    }
+
     const result = await runCityResearch(city.id, city.name, categories, body?.customPrompt)
+
+    try {
+      await supabaseAdmin
+        .from('city_elements')
+        .update({
+          element_value: {
+            status: 'completed',
+            categories,
+            started_at: startedAt,
+            completed_at: new Date().toISOString(),
+            summary: result.synthesis,
+          },
+          status: 'reviewed',
+        })
+        .eq('city_id', city.id)
+        .eq('element_type', 'research_run')
+        .eq('element_key', runId)
+    } catch (err) {
+      console.warn('[City Research] Failed to log research run completion:', err)
+    }
 
     return NextResponse.json({
       cityId: city.id,
