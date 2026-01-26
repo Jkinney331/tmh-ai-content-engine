@@ -8,10 +8,10 @@ import { runCityResearch } from '@/lib/research'
 
 export async function POST(
   request: NextRequest,
-  { params }: { params: { cityId: string } }
+  { params }: { params: Promise<{ cityId: string }> }
 ) {
   try {
-    const { cityId } = params
+    const { cityId } = await params
     const body = await request.json().catch(() => ({}))
     const categories = Array.isArray(body?.categories) && body.categories.length > 0
       ? body.categories
