@@ -334,10 +334,22 @@ export async function checkVeoStatus(predictionId: string): Promise<VideoStatusR
   const data = await response.json();
 
   return {
-    status: data.status === 'succeeded' ? 'completed' : data.status,
-    progress: data.progress,
-    videoUrl: data.status === 'succeeded' ? (data.output?.video_url || data.output) : undefined,
-    error: data.error,
+    status: (() => {
+      const status = (data?.data?.status || data?.status || 'processing') as string;
+      if (status === 'completed' || status === 'succeeded') return 'completed';
+      if (status === 'failed') return 'failed';
+      if (status === 'created') return 'queued';
+      return status as 'queued' | 'processing' | 'completed' | 'failed';
+    })(),
+    progress: data?.data?.progress ?? data?.progress,
+    videoUrl: (() => {
+      const outputs = data?.data?.outputs ?? data?.outputs ?? data?.output;
+      if (Array.isArray(outputs)) return outputs[0];
+      if (outputs?.video_url) return outputs.video_url;
+      if (typeof outputs === 'string') return outputs;
+      return undefined;
+    })(),
+    error: data?.data?.error || data?.error,
   };
 }
 

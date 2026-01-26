@@ -357,6 +357,7 @@ export async function POST(request: NextRequest) {
     if (choice?.message?.tool_calls?.length > 0) {
       const baseUrl = process.env.NEXT_PUBLIC_APP_URL || request.nextUrl.origin
       const functionResults: { name: string; result: unknown }[] = []
+      const toolMessages: Array<{ role: 'tool'; content: string; tool_call_id: string }> = []
 
       for (const toolCall of choice.message.tool_calls) {
         const functionName = toolCall.function.name
@@ -364,17 +365,18 @@ export async function POST(request: NextRequest) {
 
         const result = await executeFunction(functionName, functionArgs, baseUrl)
         functionResults.push({ name: functionName, result })
+        toolMessages.push({
+          role: 'tool',
+          content: JSON.stringify(result),
+          tool_call_id: toolCall.id,
+        })
       }
 
       // Continue conversation with function results
       const followUpMessages = [
         ...apiMessages,
         choice.message,
-        {
-          role: 'tool',
-          content: JSON.stringify(functionResults),
-          tool_call_id: choice.message.tool_calls[0].id
-        }
+        ...toolMessages,
       ]
 
       const followUpResponse = await fetch(`${config.baseURL}/chat/completions`, {

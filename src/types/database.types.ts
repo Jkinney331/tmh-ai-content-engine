@@ -15,7 +15,7 @@ export interface Database {
           name: string
           nicknames: Json
           area_codes: Json
-          status: 'draft' | 'active' | 'archived'
+          status: 'draft' | 'active' | 'archived' | 'researching' | 'ready' | 'error'
           visual_identity: Json
           avoid: Json
           user_notes: string | null
@@ -27,7 +27,7 @@ export interface Database {
           name: string
           nicknames?: Json
           area_codes?: Json
-          status?: 'draft' | 'active' | 'archived'
+          status?: 'draft' | 'active' | 'archived' | 'researching' | 'ready' | 'error'
           visual_identity?: Json
           avoid?: Json
           user_notes?: string | null
@@ -39,7 +39,7 @@ export interface Database {
           name?: string
           nicknames?: Json
           area_codes?: Json
-          status?: 'draft' | 'active' | 'archived'
+          status?: 'draft' | 'active' | 'archived' | 'researching' | 'ready' | 'error'
           visual_identity?: Json
           avoid?: Json
           user_notes?: string | null
@@ -54,7 +54,7 @@ export interface Database {
           element_type: string
           element_key: string
           element_value: Json
-          status: 'draft' | 'reviewed' | 'approved' | 'rejected'
+          status: 'draft' | 'reviewed' | 'approved' | 'rejected' | 'pending'
           notes: string | null
           created_at: string
           updated_at: string
@@ -65,7 +65,7 @@ export interface Database {
           element_type: string
           element_key: string
           element_value: Json
-          status?: 'draft' | 'reviewed' | 'approved' | 'rejected'
+          status?: 'draft' | 'reviewed' | 'approved' | 'rejected' | 'pending'
           notes?: string | null
           created_at?: string
           updated_at?: string
@@ -76,7 +76,7 @@ export interface Database {
           element_type?: string
           element_key?: string
           element_value?: Json
-          status?: 'draft' | 'reviewed' | 'approved' | 'rejected'
+          status?: 'draft' | 'reviewed' | 'approved' | 'rejected' | 'pending'
           notes?: string | null
           created_at?: string
           updated_at?: string
@@ -119,12 +119,19 @@ export interface Database {
           id: string
           content_type: string
           parent_id: string | null
-          city_id: string
-          generation_params: Json
-          model_used: string
-          prompt_used: string
-          output_url: string
+          city_id: string | null
+          generation_params: Json | null
+          model_used: string | null
+          prompt_used: string | null
+          title?: string | null
+          model?: string | null
+          prompt?: string | null
+          output_url: string | null
           output_metadata: Json
+          order_index?: number | null
+          generation_cost_cents?: number | null
+          duration_seconds?: number | null
+          error_message?: string | null
           status: 'pending' | 'processing' | 'completed' | 'approved' | 'rejected' | 'failed'
           created_at: string
           updated_at: string
@@ -133,12 +140,19 @@ export interface Database {
           id?: string
           content_type: string
           parent_id?: string | null
-          city_id: string
-          generation_params: Json
-          model_used: string
-          prompt_used: string
-          output_url: string
+          city_id?: string | null
+          generation_params?: Json | null
+          model_used?: string | null
+          prompt_used?: string | null
+          title?: string | null
+          model?: string | null
+          prompt?: string | null
+          output_url?: string | null
           output_metadata: Json
+          order_index?: number | null
+          generation_cost_cents?: number | null
+          duration_seconds?: number | null
+          error_message?: string | null
           status?: 'pending' | 'processing' | 'completed' | 'approved' | 'rejected' | 'failed'
           created_at?: string
           updated_at?: string
@@ -147,12 +161,19 @@ export interface Database {
           id?: string
           content_type?: string
           parent_id?: string | null
-          city_id?: string
-          generation_params?: Json
-          model_used?: string
-          prompt_used?: string
-          output_url?: string
+          city_id?: string | null
+          generation_params?: Json | null
+          model_used?: string | null
+          prompt_used?: string | null
+          title?: string | null
+          model?: string | null
+          prompt?: string | null
+          output_url?: string | null
           output_metadata?: Json
+          order_index?: number | null
+          generation_cost_cents?: number | null
+          duration_seconds?: number | null
+          error_message?: string | null
           status?: 'pending' | 'processing' | 'completed' | 'approved' | 'rejected' | 'failed'
           created_at?: string
           updated_at?: string

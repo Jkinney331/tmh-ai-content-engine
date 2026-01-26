@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
+import { toast } from 'sonner';
 import { useGenerationStore } from '../../../stores/generationStore';
 import CitySelector from '../../../components/CitySelector';
 
@@ -409,21 +410,63 @@ export default function VideoGeneratePage() {
   };
 
   const handleApproveSelected = async () => {
-    // Save to generated_content with content_type='video_ad'
-    const approvedVideos = generationResults.map(result => ({
-      ...result,
-      approved: true,
-      content_type: 'video_ad'
-    }));
+    const winners = generationResults
+      .map((result) => {
+        const winner = result.winner || 'A';
+        const model = winner === 'B' ? result.modelB : result.modelA;
+        if (!model?.videoUrl) return null;
+        return { result, winner, model };
+      })
+      .filter(Boolean) as Array<{ result: GenerationResult; winner: 'A' | 'B'; model: GenerationResult['modelA'] }>;
 
-    // Simulate saving to database
-    console.log('Saving approved video ads to generated_content:', approvedVideos.filter(v => v.winner));
+    if (winners.length === 0) {
+      toast.error('No completed videos to approve.');
+      return;
+    }
 
-    setGenerationResults(approvedVideos);
-    setApprovalSaved(true);
+    try {
+      const savePromises = winners.map(async ({ result, winner, model }) => {
+        const variation = variations.find((v) => v.id === result.variationId);
+        const response = await fetch('/api/generated-content', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            city_id: selectedCity?.id,
+            content_type: 'video_ad',
+            title: `Video Ad - ${result.variationName}`,
+            prompt: variation?.prompt,
+            model: model?.model,
+            output_url: model?.videoUrl,
+            status: 'approved',
+            output_metadata: {
+              variation_id: result.variationId,
+              variation_name: result.variationName,
+              winner,
+              job_id: model?.jobId,
+              feedback: result.feedback,
+            },
+          }),
+        });
 
-    // Show success message
-    alert(`Successfully approved ${approvedVideos.filter(v => v.winner).length} video ads!`);
+        if (!response.ok) {
+          const error = await response.json();
+          throw new Error(error.error || 'Failed to save video');
+        }
+      });
+
+      await Promise.all(savePromises);
+      setGenerationResults((prev) =>
+        prev.map((result) => ({
+          ...result,
+          approved: true,
+        }))
+      );
+      setApprovalSaved(true);
+      toast.success(`Approved ${winners.length} video ads.`);
+    } catch (error) {
+      console.error('Error saving approved videos:', error);
+      toast.error(error instanceof Error ? error.message : 'Failed to approve videos.');
+    }
   };
 
   const handlePlayVideo = (index: number, model: 'A' | 'B') => {

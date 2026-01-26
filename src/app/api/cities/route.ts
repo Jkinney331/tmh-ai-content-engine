@@ -112,9 +112,9 @@ async function performCityResearch(cityId: string, cityName: string, categories:
       return null
     }
 
-    if (!apiKey.startsWith('sk-')) {
+    if (!apiKey.startsWith('sk-or-') && !apiKey.startsWith('sk-')) {
       console.error(`[City Research] OPENROUTER_API_KEY has invalid format`)
-      await updateCityError(cityId, 'API key has invalid format. Should start with sk-')
+      await updateCityError(cityId, 'API key has invalid format. Should start with sk- or sk-or-')
       return null
     }
 
@@ -213,7 +213,7 @@ Format your response as valid JSON with these fields:
 
       const elementsToInsert: Array<{
         city_id: string;
-        element_type: 'slang' | 'landmark' | 'sport' | 'cultural';
+        element_type: string;
         element_key: string;
         element_value: Record<string, unknown>;
         status: 'pending';
@@ -224,19 +224,15 @@ Format your response as valid JSON with these fields:
 
       // Map research results to city fields
       if (researchData) {
-        if (researchData.slang) updateData.slang = researchData.slang
-        if (researchData.landmarks) updateData.landmarks = researchData.landmarks
-        if (researchData.sports) updateData.sports_teams = researchData.sports
-        if (researchData.culture) updateData.culture = researchData.culture
         if (researchData.visualIdentity) {
           updateData.visual_identity = researchData.visualIdentity
         }
         if (researchData.areaCodes) {
-          updateData.area_codes = researchData.areaCodes.map((ac: { code: string }) => ac.code)
+          updateData.area_codes = researchData.areaCodes
+            .map((ac: { code?: string }) => ac.code)
+            .filter(Boolean)
         }
         if (researchData.avoid) updateData.avoid = researchData.avoid
-        updateData.research_raw = content
-        updateData.research_completed_at = new Date().toISOString()
 
         const now = new Date().toISOString();
 
@@ -325,14 +321,115 @@ Format your response as valid JSON with these fields:
         }
 
         if (Array.isArray(researchData.areaCodes)) {
-          researchData.areaCodes.forEach((item: { code?: string; area?: string; significance?: string }) => {
-            const key = slugify(item.code || 'area_code');
+          researchData.areaCodes.forEach((item: { code?: string; area?: string; significance?: string } | string) => {
+            const codeValue = typeof item === 'string' ? item : item.code || 'area_code';
+            const key = slugify(codeValue);
             if (!key) return;
             elementsToInsert.push({
               city_id: cityId,
-              element_type: 'cultural',
+              element_type: 'area_codes',
               element_key: key,
-              element_value: { type: 'area_code', ...item },
+              element_value: typeof item === 'string' ? { code: item } : item,
+              status: 'pending',
+              notes: 'Auto-generated from research',
+              created_at: now,
+              updated_at: now
+            });
+          });
+        }
+
+        if (researchData.visualIdentity) {
+          elementsToInsert.push({
+            city_id: cityId,
+            element_type: 'visual_identity',
+            element_key: 'visual_identity',
+            element_value: researchData.visualIdentity,
+            status: 'pending',
+            notes: 'Auto-generated from research',
+            created_at: now,
+            updated_at: now
+          });
+        }
+
+        if (Array.isArray(researchData.palettes)) {
+          researchData.palettes.forEach((palette: { name?: string; colors?: string[] } | string, index: number) => {
+            const paletteName = typeof palette === 'string' ? palette : palette.name || `palette_${index + 1}`;
+            const key = slugify(paletteName);
+            if (!key) return;
+            elementsToInsert.push({
+              city_id: cityId,
+              element_type: 'palettes',
+              element_key: key,
+              element_value: typeof palette === 'string' ? { name: palette } : palette,
+              status: 'pending',
+              notes: 'Auto-generated from research',
+              created_at: now,
+              updated_at: now
+            });
+          });
+        }
+
+        if (researchData.typography) {
+          elementsToInsert.push({
+            city_id: cityId,
+            element_type: 'typography',
+            element_key: 'typography',
+            element_value: typeof researchData.typography === 'string'
+              ? { description: researchData.typography }
+              : researchData.typography,
+            status: 'pending',
+            notes: 'Auto-generated from research',
+            created_at: now,
+            updated_at: now
+          });
+        }
+
+        if (Array.isArray(researchData.music)) {
+          researchData.music.forEach((item: { artist?: string; genre?: string; name?: string } | string, index: number) => {
+            const musicName = typeof item === 'string' ? item : item.name || item.artist || `music_${index + 1}`;
+            const key = slugify(musicName);
+            if (!key) return;
+            elementsToInsert.push({
+              city_id: cityId,
+              element_type: 'music',
+              element_key: key,
+              element_value: typeof item === 'string' ? { name: item } : item,
+              status: 'pending',
+              notes: 'Auto-generated from research',
+              created_at: now,
+              updated_at: now
+            });
+          });
+        }
+
+        if (Array.isArray(researchData.creators)) {
+          researchData.creators.forEach((item: { name?: string; field?: string } | string, index: number) => {
+            const creatorName = typeof item === 'string' ? item : item.name || `creator_${index + 1}`;
+            const key = slugify(creatorName);
+            if (!key) return;
+            elementsToInsert.push({
+              city_id: cityId,
+              element_type: 'creators',
+              element_key: key,
+              element_value: typeof item === 'string' ? { name: item } : item,
+              status: 'pending',
+              notes: 'Auto-generated from research',
+              created_at: now,
+              updated_at: now
+            });
+          });
+        }
+
+        if (Array.isArray(researchData.avoid)) {
+          researchData.avoid.forEach((item: { topic?: string; reason?: string } | string, index: number) => {
+            const avoidName = typeof item === 'string' ? item : item.topic || `avoid_${index + 1}`;
+            const key = slugify(avoidName);
+            if (!key) return;
+            elementsToInsert.push({
+              city_id: cityId,
+              element_type: 'avoid',
+              element_key: key,
+              element_value: typeof item === 'string' ? { topic: item } : item,
               status: 'pending',
               notes: 'Auto-generated from research',
               created_at: now,
