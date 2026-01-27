@@ -362,7 +362,7 @@ export default function LibraryContent() {
               className="group relative aspect-square bg-gray-100 rounded-lg overflow-hidden hover:shadow-lg transition-shadow cursor-pointer"
             >
               <div className="relative w-full h-full">
-                {asset.content_type === 'video' ? (
+                {asset.content_type === 'video' || asset.content_type === 'video_ad' ? (
                   <div className="w-full h-full flex items-center justify-center bg-gray-800">
                     <div className="text-center text-white">
                       <svg className="w-12 h-12 mx-auto mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -411,7 +411,7 @@ export default function LibraryContent() {
                       // Download functionality
                       const link = document.createElement('a')
                       link.href = getImageUrl(asset.output_url)
-                      link.download = `tmh-asset-${asset.id}.${asset.content_type === 'video' ? 'mp4' : 'jpg'}`
+                      link.download = `tmh-asset-${asset.id}.${asset.content_type === 'video' || asset.content_type === 'video_ad' ? 'mp4' : 'jpg'}`
                       link.click()
                     }}
                     className="p-2 bg-white rounded-full shadow-lg hover:shadow-xl transition-shadow"

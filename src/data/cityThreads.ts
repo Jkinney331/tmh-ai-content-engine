@@ -117,9 +117,18 @@ export function mergeCityThreads(existing: City[]) {
   const byName = new Map(existing.map((city) => [city.name.toLowerCase(), city]));
   const merged = [...existing];
   cityThreadSeeds.forEach((seed) => {
-    if (!byName.has(seed.name.toLowerCase())) {
+    const existingCity = byName.get(seed.name.toLowerCase());
+    if (!existingCity) {
       merged.push(seed);
+      return;
     }
+    const mergedCity = {
+      ...seed,
+      ...existingCity,
+      metadata: { ...(seed.metadata || {}), ...(existingCity.metadata || {}) },
+    };
+    const index = merged.findIndex((city) => city.name.toLowerCase() === seed.name.toLowerCase());
+    if (index >= 0) merged[index] = mergedCity as City;
   });
   return merged;
 }

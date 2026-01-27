@@ -47,7 +47,20 @@ export function CitySidebar({ collapsed }: CitySidebarProps) {
         if (response.ok) {
           const data = await response.json();
           const resolved = Array.isArray(data) ? data : data.cities || [];
-          setCities(mergeCityThreads(resolved));
+          const merged = mergeCityThreads(resolved);
+          setCities(merged);
+          const hasSlugOnly = merged.some((city) => !isUuid(city.id));
+          if (hasSlugOnly) {
+            await fetch("/api/cities/seed", { method: "POST" });
+            const refreshed = await fetch("/api/cities");
+            if (refreshed.ok) {
+              const refreshedData = await refreshed.json();
+              const refreshedList = Array.isArray(refreshedData)
+                ? refreshedData
+                : refreshedData.cities || [];
+              setCities(mergeCityThreads(refreshedList));
+            }
+          }
         }
       } catch (error) {
         console.error("Failed to load cities:", error);
@@ -70,6 +83,7 @@ export function CitySidebar({ collapsed }: CitySidebarProps) {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         name: city.name,
+        skipResearch: true,
         researchCategories: {
           slang: true,
           landmarks: true,

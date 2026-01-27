@@ -21,6 +21,7 @@ interface CreateCityRequest {
   name: string
   researchCategories: ResearchCategories
   customPrompt?: string
+  skipResearch?: boolean
   references?: {
     notes?: string
     urls?: string[]
@@ -565,9 +566,9 @@ export async function POST(request: NextRequest) {
           createdAt: (newCity as any)?.created_at || new Date().toISOString()
         }
 
-        // Trigger research in the background (don't await)
+        // Trigger research in the background (don't await) unless explicitly skipped
         const cityId = (newCity as any)?.id
-        if (cityId) {
+        if (cityId && !body.skipResearch) {
           const references = body.references
           const referenceSummaryParts: string[] = []
           if (references?.notes) referenceSummaryParts.push(`Notes: ${references.notes}`)

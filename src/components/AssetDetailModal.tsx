@@ -39,13 +39,17 @@ export default function AssetDetailModal({ asset, onClose, onDelete }: AssetDeta
   const contentType = asset.content_type || asset.image_type;
   const modelUsed = asset.model || asset.model_used;
   const promptUsed = asset.prompt || asset.prompt_used;
-  const isVideo = contentType === 'video';
+  const isVideo =
+    contentType === 'video' ||
+    contentType === 'video_ad' ||
+    imageUrl.toLowerCase().endsWith('.mp4');
 
   const getImageUrl = (url: string) => {
     if (!url) return '/placeholder-image.png';
     if (url.startsWith('http') || url.startsWith('data:') || url.startsWith('blob:')) return url;
     const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-    return `${supabaseUrl}/storage/v1/object/public/images/${url}`;
+    const bucket = isVideo ? 'videos' : 'images';
+    return `${supabaseUrl}/storage/v1/object/public/${bucket}/${url}`;
   };
 
   const handleDownload = () => {

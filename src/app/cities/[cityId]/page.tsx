@@ -147,9 +147,10 @@ const formatElementBody = (element: CityElement) => {
             Object.entries(value || {}).filter(([key]) => !HIDDEN_ELEMENT_FIELDS.has(key))
           )
         )
+  const normalizedFallback = fallback === '{}' || fallback === '[]' ? '' : fallback
 
   return {
-    primary: primary || fallback,
+    primary: primary || normalizedFallback,
     meta: metaParts.length > 0 ? metaParts.join(' • ') : ''
   }
 }
@@ -225,6 +226,7 @@ function CollapsibleBlock({
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         name: nameFromSlug,
+        skipResearch: true,
         researchCategories: {
           slang: true,
           landmarks: true,
@@ -734,17 +736,18 @@ function CollapsibleBlock({
     }
   }
 
-  const resolveAssetUrl = (url?: string) => {
+  const resolveAssetUrl = (url?: string, contentType?: string) => {
     if (!url) return ''
-    if (url.startsWith('http') || url.startsWith('data:')) return url
+    if (url.startsWith('http') || url.startsWith('data:') || url.startsWith('blob:')) return url
     const baseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
-    return baseUrl ? `${baseUrl}/storage/v1/object/public/images/${url}` : url
+    const bucket = contentType?.includes('video') ? 'videos' : 'images'
+    return baseUrl ? `${baseUrl}/storage/v1/object/public/${bucket}/${url}` : url
   }
 
   const handleAssetDownload = (asset: GeneratedAsset) => {
     if (!asset.output_url) return
     const link = document.createElement('a')
-    link.href = resolveAssetUrl(asset.output_url)
+    link.href = resolveAssetUrl(asset.output_url, asset.content_type)
     link.download = `${city?.name || 'city'}-${asset.id}`
     document.body.appendChild(link)
     link.click()
@@ -846,7 +849,7 @@ function CollapsibleBlock({
     if (lowerTitle.includes('product shot')) return 'Product Shots (with models)'
     if (lowerTitle.includes('lifestyle shot')) return 'Lifestyle / Scene Shots'
     if (lowerTitle.includes('sora video') || lowerTitle.includes('veo video')) return 'TikTok Ads'
-    if (asset.content_type === 'video') return 'TikTok Ads'
+    if (asset.content_type === 'video' || asset.content_type === 'video_ad') return 'TikTok Ads'
     if (asset.content_type === 'image') return 'Product Shots (without models)'
     return 'Other'
   }
@@ -1379,8 +1382,11 @@ function CollapsibleBlock({
                 ) : (
                   <div className="mt-4 grid grid-cols-1 gap-3 md:grid-cols-3">
                 {items.map((asset) => {
-                  const assetUrl = resolveAssetUrl(asset.output_url)
-                  const isVideo = asset.content_type === 'video' || asset.output_url?.endsWith('.mp4')
+                  const assetUrl = resolveAssetUrl(asset.output_url, asset.content_type)
+                  const isVideo =
+                    asset.content_type === 'video' ||
+                    asset.content_type === 'video_ad' ||
+                    asset.output_url?.endsWith('.mp4')
                   return (
                   <div key={asset.id} className="rounded-lg border border-[color:var(--surface-border)] bg-[color:var(--surface-muted)] p-3">
                     <div className="flex items-center justify-between">
@@ -1467,8 +1473,11 @@ function CollapsibleBlock({
         ) : (
           <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
             {approvedAssets.map((asset) => {
-              const assetUrl = resolveAssetUrl(asset.output_url)
-              const isVideo = asset.content_type === 'video' || asset.output_url?.endsWith('.mp4')
+              const assetUrl = resolveAssetUrl(asset.output_url, asset.content_type)
+              const isVideo =
+                asset.content_type === 'video' ||
+                asset.content_type === 'video_ad' ||
+                asset.output_url?.endsWith('.mp4')
               return (
               <GlassCard key={asset.id} className="p-4">
                 <div className="flex items-center justify-between text-xs text-muted-foreground">

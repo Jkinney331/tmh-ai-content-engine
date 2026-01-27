@@ -144,16 +144,17 @@ export default function DropProfilePage() {
     if (lowerTitle.includes('product shot')) return 'Product Shots (with models)'
     if (lowerTitle.includes('lifestyle shot')) return 'Lifestyle / Scene Shots'
     if (lowerTitle.includes('sora video') || lowerTitle.includes('veo video')) return 'TikTok Ads'
-    if (asset.content_type === 'video') return 'TikTok Ads'
+    if (asset.content_type === 'video' || asset.content_type === 'video_ad') return 'TikTok Ads'
     if (asset.content_type === 'image') return 'Product Shots (without models)'
     return 'Community Content'
   }
 
-  const resolveAssetUrl = (url?: string) => {
+  const resolveAssetUrl = (url?: string, contentType?: string) => {
     if (!url) return ''
-    if (url.startsWith('http') || url.startsWith('data:')) return url
+    if (url.startsWith('http') || url.startsWith('data:') || url.startsWith('blob:')) return url
     const baseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
-    return baseUrl ? `${baseUrl}/storage/v1/object/public/images/${url}` : url
+    const bucket = contentType?.includes('video') ? 'videos' : 'images'
+    return baseUrl ? `${baseUrl}/storage/v1/object/public/${bucket}/${url}` : url
   }
 
   const assetCountByCity = useMemo(() => {
@@ -172,7 +173,7 @@ export default function DropProfilePage() {
   }, [cities])
 
   const handleViewFull = (asset: GeneratedAsset) => {
-    const assetUrl = resolveAssetUrl(asset.output_url)
+    const assetUrl = resolveAssetUrl(asset.output_url, asset.content_type)
     if (assetUrl) {
       window.open(assetUrl, '_blank', 'noopener,noreferrer')
     }
@@ -330,7 +331,11 @@ export default function DropProfilePage() {
                       ) : (
                         <div className="mt-3 grid grid-cols-1 gap-2">
                           {items.map((asset) => {
-                            const assetUrl = resolveAssetUrl(asset.output_url)
+                            const assetUrl = resolveAssetUrl(asset.output_url, asset.content_type)
+                            const isVideo =
+                              asset.content_type === 'video' ||
+                              asset.content_type === 'video_ad' ||
+                              asset.output_url?.endsWith('.mp4')
                             return (
                             <div key={asset.id} className="rounded-lg bg-[color:var(--surface-strong)] p-2 text-xs text-muted-foreground">
                               <div className="flex items-center justify-between">
@@ -339,7 +344,7 @@ export default function DropProfilePage() {
                               </div>
                               <div className="mt-2 h-20 w-full overflow-hidden rounded bg-[color:var(--surface)]">
                                 {assetUrl ? (
-                                  asset.content_type === 'video' ? (
+                                  isVideo ? (
                                     <video src={assetUrl} className="h-full w-full object-cover" muted playsInline />
                                   ) : (
                                     <img src={assetUrl} alt="Approved asset" className="h-full w-full object-cover" />
