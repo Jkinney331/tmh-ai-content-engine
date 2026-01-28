@@ -253,7 +253,7 @@ Before starting, confirm these are true (check with Jay if unsure):
       6. Upload images to Supabase storage
     - *Verification:* Full flow works end-to-end
 
-- [ ] **D5: Create ImageVariationGrid component**
+- [x] **D5: Create ImageVariationGrid component**
     - *Display:*
       - 2x2 grid of generated images
       - Click to enlarge (modal)

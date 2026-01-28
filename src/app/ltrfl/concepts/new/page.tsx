@@ -7,7 +7,6 @@ import {
   FileText,
   Edit3,
   Loader2,
-  Check,
   RefreshCw,
   ArrowLeft,
   Save
@@ -15,6 +14,7 @@ import {
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
+import { ImageVariationGrid } from '@/components/ltrfl/ImageVariationGrid'
 import { useLTRFLTemplates } from '@/hooks/useLTRFLTemplates'
 import { LTRFLTemplate, LTRFL_CATEGORIES, LTRFL_BRAND_COLORS } from '@/types/ltrfl'
 import { cn } from '@/lib/utils'
@@ -45,6 +45,7 @@ function ConceptGeneratorContent() {
   const [generating, setGenerating] = useState(false)
   const [generatedImages, setGeneratedImages] = useState<GeneratedImage[]>([])
   const [selectedImageIndex, setSelectedImageIndex] = useState<number | null>(null)
+  const [regeneratingIndex, setRegeneratingIndex] = useState<number | null>(null)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
@@ -168,6 +169,52 @@ function ConceptGeneratorContent() {
       setError(err instanceof Error ? err.message : 'Failed to save concept')
     } finally {
       setSaving(false)
+    }
+  }
+
+  const handleRegenerateSlot = async (index: number) => {
+    const prompt = getPromptToUse()
+    if (!prompt.trim()) {
+      setError('Please enter a prompt or select a template')
+      return
+    }
+
+    setRegeneratingIndex(index)
+    setError(null)
+
+    try {
+      const res = await fetch('/api/ltrfl/generate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          prompt,
+          templateId: mode === 'template' ? template?.id : undefined,
+          category: selectedCategory,
+          subcategory: selectedSubcategory || undefined,
+          name: conceptName || `${selectedCategory} Concept`,
+          model: selectedModel,
+          numVariations: 1
+        })
+      })
+
+      if (!res.ok) {
+        const data = await res.json()
+        throw new Error(data.error || 'Regeneration failed')
+      }
+
+      const data = await res.json()
+      const newImage = data.images?.[0]
+      if (newImage) {
+        setGeneratedImages((prev) => {
+          const next = [...prev]
+          next[index] = newImage
+          return next
+        })
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Regeneration failed')
+    } finally {
+      setRegeneratingIndex(null)
     }
   }
 
@@ -458,49 +505,16 @@ function ConceptGeneratorContent() {
                 </div>
               )}
 
-              {/* Thumbnail Grid */}
-              <div
-                className={cn(
-                  'grid gap-2',
-                  numVariations === 1 && 'grid-cols-1',
-                  numVariations === 2 && 'grid-cols-2',
-                  numVariations === 3 && 'grid-cols-3',
-                  numVariations >= 4 && 'grid-cols-4'
-                )}
-              >
-                {generatedImages.map((img, index) => (
-                  <button
-                    key={index}
-                    onClick={() => setSelectedImageIndex(index)}
-                    className={cn(
-                      "aspect-square rounded-lg overflow-hidden border-2 transition-colors relative",
-                      selectedImageIndex === index
-                        ? "border-[var(--ltrfl-sage)]"
-                        : "border-[color:var(--surface-border)] hover:border-[color:var(--surface-border-hover)]"
-                    )}
-                    style={selectedImageIndex === index ? { borderColor: LTRFL_BRAND_COLORS.sage } : undefined}
-                  >
-                    <img
-                      src={img.url}
-                      alt={`Variation ${index + 1}`}
-                      className="w-full h-full object-cover"
-                    />
-                    {selectedImageIndex === index && (
-                      <div
-                        className="absolute top-1 right-1 w-5 h-5 rounded-full flex items-center justify-center"
-                        style={{ backgroundColor: LTRFL_BRAND_COLORS.sage }}
-                      >
-                        <Check className="w-3 h-3 text-white" />
-                      </div>
-                    )}
-                    {img.error && (
-                      <div className="absolute inset-0 bg-red-500/50 flex items-center justify-center">
-                        <span className="text-white text-xs">Error</span>
-                      </div>
-                    )}
-                  </button>
-                ))}
-              </div>
+              <ImageVariationGrid
+                images={generatedImages}
+                selectedIndex={selectedImageIndex}
+                onSelect={(index) => setSelectedImageIndex(index)}
+                onRegenerate={(index) => {
+                  if (regeneratingIndex === null) {
+                    handleRegenerateSlot(index)
+                  }
+                }}
+              />
 
               {/* Save Button */}
               <Button
