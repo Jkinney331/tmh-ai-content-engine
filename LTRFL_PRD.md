@@ -438,7 +438,7 @@ Phase 1 is complete when:
 - [x] Can navigate to LTRFL tab
 - [x] Can browse and filter template library
 - [x] Can create/edit templates
-- [ ] Can generate urn concept images from prompts
+- [x] Can generate urn concept images from prompts
 - [ ] Can view multiple variations
 - [ ] Can select and approve concepts
 - [ ] Concepts saved with versioning
