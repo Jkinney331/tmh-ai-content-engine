@@ -54,3 +54,47 @@ export async function uploadImageDataUrl(options: {
     contentType,
   }
 }
+
+export async function uploadImageFromUrl(options: {
+  url: string
+  bucket?: string
+  prefix?: string
+  cityId?: string | null
+}): Promise<UploadResult | null> {
+  if (!hasServiceKey) return null
+
+  const response = await fetch(options.url)
+  if (!response.ok) {
+    console.warn('[Storage] Failed to fetch image url:', response.status)
+    return null
+  }
+
+  const contentType = response.headers.get('content-type') || 'image/png'
+  const fileExt = contentType.split('/')[1] || 'png'
+  const safePrefix = options.prefix ? options.prefix.replace(/[^a-z0-9-_]+/gi, '-') : 'generated'
+  const citySegment = options.cityId ? options.cityId : 'global'
+  const filePath = `${safePrefix}/${citySegment}/${Date.now()}-${randomUUID()}.${fileExt}`
+
+  const buffer = Buffer.from(await response.arrayBuffer())
+  const bucket = options.bucket || 'images'
+
+  const { error } = await supabaseAdmin.storage
+    .from(bucket)
+    .upload(filePath, buffer, {
+      contentType,
+      upsert: true,
+    })
+
+  if (error) {
+    console.warn('[Storage] Failed to upload image url:', error)
+    return null
+  }
+
+  const { data } = supabaseAdmin.storage.from(bucket).getPublicUrl(filePath)
+
+  return {
+    path: filePath,
+    publicUrl: data.publicUrl,
+    contentType,
+  }
+}

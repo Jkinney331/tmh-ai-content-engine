@@ -89,14 +89,15 @@ export async function POST(req: NextRequest) {
       .from('ltrfl_concepts')
       .insert({
         template_id: body.template_id || null,
-        name: body.name,
-        category: body.category,
-        subcategory: body.subcategory,
         prompt_used: body.prompt_used,
-        generated_image_url: body.generated_image_url || null,
-        thumbnail_url: body.thumbnail_url || null,
-        status: 'draft',
-        metadata: body.metadata || {}
+        category: body.category,
+        subcategory: body.subcategory || null,
+        images: body.images || [],
+        selected_image_index: body.selected_image_index ?? null,
+        status: body.status || 'reviewing',
+        version: body.version || 1,
+        parent_version_id: body.parent_version_id || null,
+        notes: body.notes || null
       })
       .select()
       .single()

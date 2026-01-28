@@ -147,16 +147,13 @@ function ConceptGeneratorContent() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           template_id: mode === 'template' ? template?.id : null,
-          name: conceptName || `${selectedCategory} Concept`,
           category: selectedCategory,
           subcategory: selectedSubcategory || null,
           prompt_used: getPromptToUse(),
-          generated_image_url: selectedImage.url,
-          metadata: {
-            all_images: generatedImages,
-            selected_index: selectedImageIndex,
-            model: selectedModel
-          }
+          images: generatedImages,
+          selected_image_index: selectedImageIndex,
+          status: 'reviewing',
+          notes: conceptName ? `Concept name: ${conceptName}` : null
         })
       })
 

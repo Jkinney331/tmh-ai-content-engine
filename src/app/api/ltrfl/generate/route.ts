@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 import { generateImage, isImageGenerationConfigured } from '@/lib/image-generation'
-import { isImageDataUrl, uploadImageDataUrl } from '@/lib/storageAdmin'
+import { isImageDataUrl, uploadImageDataUrl, uploadImageFromUrl } from '@/lib/storageAdmin'
+import { generateImages as generateWavespeedImages } from '@/services/wavespeed'
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || ''
 const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || ''
@@ -68,50 +69,89 @@ export async function POST(request: NextRequest) {
       })
     }
 
-    // Generate images
-    const generationPromises = Array(numVariations).fill(null).map(async (_, index) => {
-      try {
-        // Add variation hint to make each image different
-        const variedPrompt = `${ltrflPrompt} Variation ${index + 1} of ${numVariations}, unique interpretation.`
+    // Generate images (WaveSpeed primary, OpenRouter fallback)
+    let images: Array<{ url: string; index: number; generated_at: string; model: string; error?: string }> = []
+    try {
+      if (!process.env.WAVESPEED_API_KEY) {
+        throw new Error('WAVESPEED_API_KEY not configured')
+      }
 
-        const result = await generateImage({
-          prompt: variedPrompt,
-          model,
-          aspectRatio: '1:1'
+      const urls = await generateWavespeedImages(ltrflPrompt, numVariations)
+      images = await Promise.all(
+        urls.map(async (url, index) => {
+          let finalUrl = url
+
+          if (isImageDataUrl(url)) {
+            const stored = await uploadImageDataUrl({
+              dataUrl: url,
+              bucket: 'ltrfl-concepts',
+              prefix: 'ltrfl-concept',
+              cityId: null
+            })
+            if (stored) finalUrl = stored.publicUrl
+          } else {
+            const stored = await uploadImageFromUrl({
+              url,
+              bucket: 'ltrfl-concepts',
+              prefix: 'ltrfl-concept',
+              cityId: null
+            })
+            if (stored) finalUrl = stored.publicUrl
+          }
+
+          return {
+            url: finalUrl,
+            index,
+            generated_at: new Date().toISOString(),
+            model: 'wavespeed'
+          }
         })
+      )
+    } catch (wavespeedError) {
+      console.warn('[LTRFL Generate] WaveSpeed failed, falling back to OpenRouter:', wavespeedError)
+      const generationPromises = Array(numVariations).fill(null).map(async (_, index) => {
+        try {
+          const variedPrompt = `${ltrflPrompt} Variation ${index + 1} of ${numVariations}, unique interpretation.`
 
-        // Upload to storage if it's a data URL
-        let finalUrl = result.imageUrl
-        if (isImageDataUrl(result.imageUrl)) {
-          const stored = await uploadImageDataUrl({
-            dataUrl: result.imageUrl,
-            cityId: null,
-            prefix: 'ltrfl-concept'
+          const result = await generateImage({
+            prompt: variedPrompt,
+            model,
+            aspectRatio: '1:1'
           })
-          if (stored) {
-            finalUrl = stored.publicUrl
+
+          let finalUrl = result.imageUrl
+          if (isImageDataUrl(result.imageUrl)) {
+            const stored = await uploadImageDataUrl({
+              dataUrl: result.imageUrl,
+              bucket: 'ltrfl-concepts',
+              cityId: null,
+              prefix: 'ltrfl-concept'
+            })
+            if (stored) {
+              finalUrl = stored.publicUrl
+            }
+          }
+
+          return {
+            url: finalUrl,
+            index,
+            generated_at: result.generatedAt,
+            model: result.model
+          }
+        } catch (error) {
+          console.error(`[LTRFL Generate] Failed to generate variation ${index}:`, error)
+          return {
+            url: `https://placehold.co/800x800/9CAF88/ffffff?text=${encodeURIComponent('Generation Failed')}`,
+            index,
+            generated_at: new Date().toISOString(),
+            model: 'error',
+            error: error instanceof Error ? error.message : 'Unknown error'
           }
         }
+      })
 
-        return {
-          url: finalUrl,
-          index,
-          generated_at: result.generatedAt,
-          model: result.model
-        }
-      } catch (error) {
-        console.error(`[LTRFL Generate] Failed to generate variation ${index}:`, error)
-        return {
-          url: `https://placehold.co/800x800/9CAF88/ffffff?text=${encodeURIComponent('Generation Failed')}`,
-          index,
-          generated_at: new Date().toISOString(),
-          model: 'error',
-          error: error instanceof Error ? error.message : 'Unknown error'
-        }
-      }
-    })
-
-    const images = await Promise.all(generationPromises)
+      images = await Promise.all(generationPromises)
+    }
 
     // Optionally save as a draft concept
     const supabase = getSupabaseClient()
@@ -123,17 +163,12 @@ export async function POST(request: NextRequest) {
           .from('ltrfl_concepts')
           .insert({
             template_id: templateId || null,
-            name: name || `${category} Concept`,
+            prompt_used: ltrflPrompt,
             category,
             subcategory: subcategory || null,
-            prompt_used: ltrflPrompt,
-            generated_image_url: images[0]?.url || null,
-            metadata: {
-              all_images: images,
-              model,
-              generated_at: new Date().toISOString()
-            },
-            status: 'draft'
+            images,
+            selected_image_index: images.length > 0 ? 0 : null,
+            status: 'reviewing'
           })
           .select('id')
           .single()

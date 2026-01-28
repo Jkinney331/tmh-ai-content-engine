@@ -243,7 +243,7 @@ Before starting, confirm these are true (check with Jay if unsure):
       - Error handling with retries
     - *Verification:* Can call API, returns image URLs (test with simple prompt)
 
-- [ ] **D4: Implement image generation flow**
+- [x] **D4: Implement image generation flow**
     - *Flow:*
       1. User submits prompt
       2. Show loading state with progress
