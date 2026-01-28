@@ -26,7 +26,7 @@ LTRFL is a new tab in the TMH Social Media Engine for Jay's cremation urn busine
 Before starting, confirm these are true (check with Jay if unsure):
 
 - [x] **CONFIRM:** TMH codebase access available
-- [ ] **CONFIRM:** Supabase project credentials available
+- [x] **CONFIRM:** Supabase project credentials available
 - [ ] **CONFIRM:** Wavespeed API key available
 - [ ] **CONFIRM:** Current tech stack documented (see Discovery Questions in Handoff doc)
 
