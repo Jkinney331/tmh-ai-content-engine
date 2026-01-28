@@ -235,7 +235,7 @@ Before starting, confirm these are true (check with Jay if unsure):
       - Model selector (for future multi-model support)
     - *Verification:* Form validates, template selection populates prompt
 
-- [ ] **D3: Integrate Wavespeed API service**
+- [x] **D3: Integrate Wavespeed API service**
     - *Create:* `src/services/wavespeed.ts` (or appropriate location)
     - *Functions:*
       - `generateImages(prompt: string, count: number): Promise<string[]>`
