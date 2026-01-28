@@ -311,7 +311,7 @@ Before starting, confirm these are true (check with Jay if unsure):
       - Delete
     - *Verification:* Detail page shows all concept data
 
-- [ ] **E4: Implement versioning functionality**
+- [x] **E4: Implement versioning functionality**
     - *"Create New Version" action:*
       - Copies current concept
       - Increments version number

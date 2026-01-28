@@ -32,6 +32,11 @@ function ConceptGeneratorContent() {
   const searchParams = useSearchParams()
   const router = useRouter()
   const templateId = searchParams.get('template')
+  const promptParam = searchParams.get('prompt')
+  const categoryParam = searchParams.get('category')
+  const subcategoryParam = searchParams.get('subcategory')
+  const parentVersionId = searchParams.get('parent_id')
+  const versionParam = Number(searchParams.get('version') || '1')
 
   const [mode, setMode] = useState<'template' | 'custom'>('template')
   const [template, setTemplate] = useState<LTRFLTemplate | null>(null)
@@ -41,6 +46,7 @@ function ConceptGeneratorContent() {
   const [selectedSubcategory, setSelectedSubcategory] = useState('')
   const [selectedModel, setSelectedModel] = useState<string>('gemini-pro')
   const [numVariations, setNumVariations] = useState(4)
+  const [version, setVersion] = useState(Number.isNaN(versionParam) ? 1 : versionParam)
 
   const [generating, setGenerating] = useState(false)
   const [generatedImages, setGeneratedImages] = useState<GeneratedImage[]>([])
@@ -61,6 +67,19 @@ function ConceptGeneratorContent() {
       setMode('template')
     }
   }, [templateId])
+
+  useEffect(() => {
+    if (promptParam) {
+      setMode('custom')
+      setCustomPrompt(promptParam)
+    }
+    if (categoryParam) {
+      setSelectedCategory(categoryParam)
+    }
+    if (subcategoryParam) {
+      setSelectedSubcategory(subcategoryParam)
+    }
+  }, [promptParam, categoryParam, subcategoryParam])
 
   const loadTemplate = async (id: string) => {
     try {
@@ -154,7 +173,9 @@ function ConceptGeneratorContent() {
           images: generatedImages,
           selected_image_index: selectedImageIndex,
           status: 'reviewing',
-          notes: conceptName ? `Concept name: ${conceptName}` : null
+          notes: conceptName ? `Concept name: ${conceptName}` : null,
+          version,
+          parent_version_id: parentVersionId || null
         })
       })
 

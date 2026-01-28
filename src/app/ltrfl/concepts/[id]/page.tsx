@@ -349,6 +349,25 @@ export default function ConceptDetailPage({
                   Return to Review
                 </Button>
               )}
+
+              <Button
+                variant="ghost"
+                className="w-full"
+                onClick={() => {
+                  const rootId = concept.parent_version_id || concept.id
+                  const params = new URLSearchParams({
+                    prompt: concept.prompt_used,
+                    category: concept.category,
+                    subcategory: concept.subcategory || '',
+                    parent_id: rootId,
+                    version: String(concept.version + 1)
+                  })
+                  router.push(`/ltrfl/concepts/new?${params.toString()}`)
+                }}
+              >
+                <Sparkles className="w-4 h-4 mr-2" />
+                Create New Version
+              </Button>
             </div>
 
             {updating && (
