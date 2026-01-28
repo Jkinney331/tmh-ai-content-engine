@@ -13,7 +13,9 @@ import {
   Trash2,
   Download,
   RefreshCw,
-  Loader2
+  Loader2,
+  Box,
+  Settings2
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
@@ -311,6 +313,49 @@ export default function ConceptDetailPage({
               </div>
             )}
           </div>
+
+          {/* CAD Pipeline Actions - Show for approved, cad_pending, or cad_complete */}
+          {(concept.status === 'approved' || concept.status === 'cad_pending' || concept.status === 'cad_complete') && (
+            <div className="p-4 rounded-lg border border-[color:var(--surface-border)] bg-[color:var(--surface)]">
+              <h3 className="text-sm font-medium text-foreground mb-3">CAD Pipeline</h3>
+              <div className="space-y-2">
+                {concept.status === 'approved' && (
+                  <Link href={`/ltrfl/concepts/${id}/cad-specs`} className="block">
+                    <Button
+                      className="w-full text-white"
+                      style={{ backgroundColor: LTRFL_BRAND_COLORS.sage }}
+                    >
+                      <Settings2 className="w-4 h-4 mr-2" />
+                      Create CAD Specifications
+                    </Button>
+                  </Link>
+                )}
+
+                {(concept.status === 'cad_pending' || concept.status === 'cad_complete') && (
+                  <>
+                    <Link href={`/ltrfl/concepts/${id}/cad-status`} className="block">
+                      <Button
+                        className="w-full text-white"
+                        style={{ backgroundColor: concept.status === 'cad_complete' ? LTRFL_BRAND_COLORS.sage : LTRFL_BRAND_COLORS.brass }}
+                      >
+                        <Box className="w-4 h-4 mr-2" />
+                        {concept.status === 'cad_complete' ? 'View CAD File' : 'View CAD Status'}
+                      </Button>
+                    </Link>
+                    <Link href={`/ltrfl/concepts/${id}/cad-specs`} className="block">
+                      <Button
+                        variant="secondary"
+                        className="w-full"
+                      >
+                        <Settings2 className="w-4 h-4 mr-2" />
+                        Edit CAD Specifications
+                      </Button>
+                    </Link>
+                  </>
+                )}
+              </div>
+            </div>
+          )}
 
           {/* Info */}
           <div className="p-4 rounded-lg border border-[color:var(--surface-border)] bg-[color:var(--surface)]">
