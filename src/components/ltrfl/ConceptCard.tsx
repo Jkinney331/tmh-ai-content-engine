@@ -8,10 +8,11 @@ import { cn } from '@/lib/utils'
 interface ConceptCardProps {
   concept: {
     id: string
-    name: string
     category: string
     subcategory: string | null
-    generated_image_url: string | null
+    images: Array<{ url: string; index: number }>
+    selected_image_index: number | null
+    notes?: string | null
     status: LTRFLConceptStatus
     created_at: string
     ltrfl_templates?: {
@@ -44,6 +45,14 @@ export function ConceptCard({ concept, viewMode }: ConceptCardProps) {
   const StatusIcon = STATUS_ICONS[concept.status]
   const statusColors = LTRFL_STATUS_COLORS[concept.status]
   const formattedDate = new Date(concept.created_at).toLocaleDateString()
+  const imageUrl = concept.selected_image_index !== null
+    ? concept.images?.[concept.selected_image_index]?.url
+    : concept.images?.[0]?.url
+  const displayName = concept.notes?.startsWith('Concept name:')
+    ? concept.notes.replace('Concept name:', '').trim()
+    : concept.subcategory
+      ? `${concept.subcategory} Concept`
+      : `${concept.category} Concept`
 
   if (viewMode === 'list') {
     return (
@@ -68,7 +77,7 @@ export function ConceptCard({ concept, viewMode }: ConceptCardProps) {
 
         {/* Info */}
         <div className="flex-1 min-w-0">
-          <h3 className="font-medium text-foreground truncate">{concept.name}</h3>
+          <h3 className="font-medium text-foreground truncate">{displayName}</h3>
           <p className="text-xs text-muted-foreground truncate">
             {concept.category} {concept.subcategory && `• ${concept.subcategory}`}
           </p>
@@ -98,10 +107,10 @@ export function ConceptCard({ concept, viewMode }: ConceptCardProps) {
     >
       {/* Image */}
       <div className="aspect-square bg-[color:var(--surface-muted)] relative">
-        {concept.generated_image_url ? (
+        {imageUrl ? (
           <img
-            src={concept.generated_image_url}
-            alt={concept.name}
+            src={imageUrl}
+            alt={displayName}
             className="w-full h-full object-cover"
           />
         ) : (
@@ -122,7 +131,7 @@ export function ConceptCard({ concept, viewMode }: ConceptCardProps) {
 
       {/* Info */}
       <div className="p-3">
-        <h3 className="font-medium text-foreground truncate mb-1">{concept.name}</h3>
+        <h3 className="font-medium text-foreground truncate mb-1">{displayName}</h3>
         <p className="text-xs text-muted-foreground">
           {concept.category} {concept.subcategory && `• ${concept.subcategory}`}
         </p>

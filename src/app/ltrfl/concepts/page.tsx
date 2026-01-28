@@ -20,10 +20,12 @@ import { cn } from '@/lib/utils'
 
 interface ConceptListItem {
   id: string
-  name: string
   category: string
   subcategory: string | null
-  generated_image_url: string | null
+  images: Array<{ url: string; index: number }>
+  selected_image_index: number | null
+  notes: string | null
+  prompt_used: string
   status: LTRFLConceptStatus
   created_at: string
   ltrfl_templates?: {
@@ -78,7 +80,8 @@ function ConceptsContent() {
     if (!searchQuery) return true
     const query = searchQuery.toLowerCase()
     return (
-      concept.name.toLowerCase().includes(query) ||
+      concept.prompt_used.toLowerCase().includes(query) ||
+      (concept.notes?.toLowerCase().includes(query)) ||
       concept.category.toLowerCase().includes(query) ||
       (concept.subcategory?.toLowerCase().includes(query))
     )

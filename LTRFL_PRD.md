@@ -276,7 +276,7 @@ Before starting, confirm these are true (check with Jay if unsure):
 
 ### Section E: My Concepts (Gallery/Management)
 
-- [ ] **E1: Create MyConcepts page component**
+- [x] **E1: Create MyConcepts page component**
     - *Route:* `/ltrfl/concepts`
     - *Features:*
       - Grid view of all user's concepts
