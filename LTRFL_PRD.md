@@ -177,7 +177,7 @@ Before starting, confirm these are true (check with Jay if unsure):
       - Pagination
     - *Verification:* Console log shows templates from database
 
-- [ ] **C3: Create TemplateCard component**
+- [x] **C3: Create TemplateCard component**
     - *Display:*
       - Template name
       - Category badge

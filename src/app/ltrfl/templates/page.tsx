@@ -139,7 +139,10 @@ export default function TemplateLibraryPage() {
                   key={template.id}
                   template={template}
                   viewMode={viewMode}
-                  onClick={() => setSelectedTemplate(template)}
+                  onSelect={() => setSelectedTemplate(template)}
+                  onUseTemplate={() => {
+                    window.location.href = `/ltrfl/concepts/new?template=${template.id}`
+                  }}
                 />
               ))}
             </div>
@@ -167,7 +170,10 @@ export default function TemplateLibraryPage() {
                         key={template.id}
                         template={template}
                         viewMode={viewMode}
-                        onClick={() => setSelectedTemplate(template)}
+                        onSelect={() => setSelectedTemplate(template)}
+                        onUseTemplate={() => {
+                          window.location.href = `/ltrfl/concepts/new?template=${template.id}`
+                        }}
                       />
                     ))}
                   </div>
