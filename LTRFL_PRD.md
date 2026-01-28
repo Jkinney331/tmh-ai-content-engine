@@ -350,7 +350,7 @@ Before starting, confirm these are true (check with Jay if unsure):
       - Search with no results: "No matches found."
     - *Verification:* Empty states display correctly
 
-- [ ] **F4: Responsive design check**
+- [x] **F4: Responsive design check**
     - *Breakpoints:*
       - Mobile: Stack layout, hide sidebar, hamburger menu
       - Tablet: Compact sidebar
