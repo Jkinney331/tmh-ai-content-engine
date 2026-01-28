@@ -129,36 +129,38 @@ export default function MarketingHubPage() {
   const filteredContent = content.filter(c => c.content_type === activeTab)
 
   return (
-    <div className="p-6 max-w-7xl mx-auto">
+    <div className="p-4 sm:p-6 max-w-7xl mx-auto">
       {/* Header */}
-      <div className="flex items-center justify-between mb-6">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
         <div>
-          <h1 className="text-2xl font-bold text-foreground">Marketing Content</h1>
-          <p className="text-muted-foreground">
-            Create ads, social posts, and product photography for your urn products
+          <h1 className="text-xl sm:text-2xl font-bold text-foreground">Marketing Content</h1>
+          <p className="text-sm sm:text-base text-muted-foreground">
+            Create ads, social posts, and product photography
           </p>
         </div>
-        <div className="flex gap-3">
+        <div className="flex gap-2 sm:gap-3">
           <Link href="/ltrfl/marketing/calendar">
-            <Button variant="secondary">
-              <Calendar className="w-4 h-4 mr-2" />
-              Calendar
+            <Button variant="secondary" size="sm" className="sm:size-default">
+              <Calendar className="w-4 h-4 sm:mr-2" />
+              <span className="hidden sm:inline">Calendar</span>
             </Button>
           </Link>
           <Link href={activeTabConfig.newRoute}>
             <Button
-              className="text-white"
+              size="sm"
+              className="text-white sm:size-default"
               style={{ backgroundColor: LTRFL_BRAND_COLORS.sage }}
             >
-              <Plus className="w-4 h-4 mr-2" />
-              Create {activeTabConfig.label.slice(0, -1)}
+              <Plus className="w-4 h-4 sm:mr-2" />
+              <span className="hidden sm:inline">Create {activeTabConfig.label.slice(0, -1)}</span>
+              <span className="sm:hidden">New</span>
             </Button>
           </Link>
         </div>
       </div>
 
       {/* Stats Row */}
-      <div className="grid grid-cols-4 gap-4 mb-6">
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-4 mb-6">
         {tabs.map((tab) => {
           const Icon = tab.icon
           const count = stats[tab.id]
@@ -168,26 +170,26 @@ export default function MarketingHubPage() {
               key={tab.id}
               onClick={() => setActiveTab(tab.id)}
               className={cn(
-                "p-4 rounded-lg border transition-all text-left",
+                "p-3 sm:p-4 rounded-lg border transition-all text-left",
                 activeTab === tab.id
                   ? "border-[#9CAF88] bg-[#9CAF88]/10"
                   : "border-[color:var(--surface-border)] bg-[color:var(--surface)] hover:border-[#9CAF88]/50"
               )}
             >
-              <div className="flex items-center gap-3">
+              <div className="flex items-center gap-2 sm:gap-3">
                 <div
                   className={cn(
-                    "w-10 h-10 rounded-lg flex items-center justify-center",
+                    "w-8 h-8 sm:w-10 sm:h-10 rounded-lg flex items-center justify-center flex-shrink-0",
                     activeTab === tab.id
                       ? "bg-[#9CAF88] text-white"
                       : "bg-[color:var(--surface-muted)] text-muted-foreground"
                   )}
                 >
-                  <Icon className="w-5 h-5" />
+                  <Icon className="w-4 h-4 sm:w-5 sm:h-5" />
                 </div>
-                <div>
-                  <p className="text-2xl font-bold text-foreground">{count}</p>
-                  <p className="text-sm text-muted-foreground">{tab.label}</p>
+                <div className="min-w-0">
+                  <p className="text-lg sm:text-2xl font-bold text-foreground">{count}</p>
+                  <p className="text-xs sm:text-sm text-muted-foreground truncate">{tab.label}</p>
                 </div>
               </div>
             </button>
@@ -196,8 +198,8 @@ export default function MarketingHubPage() {
       </div>
 
       {/* Tab Navigation */}
-      <div className="flex items-center justify-between mb-6 border-b border-[color:var(--surface-border)]">
-        <div className="flex gap-1">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-6 border-b border-[color:var(--surface-border)]">
+        <div className="flex gap-1 overflow-x-auto pb-0 sm:pb-0 -mx-4 px-4 sm:mx-0 sm:px-0 scrollbar-hide">
           {tabs.map((tab) => {
             const Icon = tab.icon
             return (
@@ -205,26 +207,27 @@ export default function MarketingHubPage() {
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id)}
                 className={cn(
-                  "flex items-center gap-2 px-4 py-3 text-sm font-medium border-b-2 -mb-px transition-colors",
+                  "flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-2 sm:py-3 text-xs sm:text-sm font-medium border-b-2 -mb-px transition-colors whitespace-nowrap",
                   activeTab === tab.id
                     ? "border-[#9CAF88] text-[#9CAF88]"
                     : "border-transparent text-muted-foreground hover:text-foreground"
                 )}
               >
-                <Icon className="w-4 h-4" />
-                {tab.label}
+                <Icon className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                <span className="hidden xs:inline">{tab.label}</span>
+                <span className="xs:hidden">{tab.label.split(' ')[0]}</span>
               </button>
             )
           })}
         </div>
 
         {/* Filters */}
-        <div className="flex items-center gap-2 pb-3">
-          <Filter className="w-4 h-4 text-muted-foreground" />
+        <div className="flex items-center gap-2 pb-3 sm:pb-0">
+          <Filter className="w-4 h-4 text-muted-foreground hidden sm:block" />
           <select
             value={statusFilter}
             onChange={(e) => setStatusFilter(e.target.value)}
-            className="text-sm bg-[color:var(--surface)] border border-[color:var(--surface-border)] rounded-lg px-3 py-1.5 text-foreground"
+            className="text-xs sm:text-sm bg-[color:var(--surface)] border border-[color:var(--surface-border)] rounded-lg px-2 sm:px-3 py-1.5 text-foreground w-full sm:w-auto"
           >
             <option value="all">All Status</option>
             <option value="draft">Draft</option>
@@ -286,6 +289,7 @@ function MarketingContentCard({ content }: { content: MarketingContent }) {
               src={thumbnail}
               alt={content.title || 'Marketing content'}
               className="w-full h-full object-cover"
+              loading="lazy"
             />
           ) : (
             <div className="w-full h-full flex items-center justify-center">
