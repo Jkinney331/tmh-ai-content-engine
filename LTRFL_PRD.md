@@ -28,7 +28,7 @@ Before starting, confirm these are true (check with Jay if unsure):
 - [x] **CONFIRM:** TMH codebase access available
 - [x] **CONFIRM:** Supabase project credentials available
 - [x] **CONFIRM:** Wavespeed API key available
-- [ ] **CONFIRM:** Current tech stack documented (see Discovery Questions in Handoff doc)
+- [x] **CONFIRM:** Current tech stack documented (see Discovery Questions in Handoff doc)
 
 ---
 
