@@ -434,7 +434,7 @@ NEXT_PUBLIC_LTRFL_ENABLED=true
 ## Completion Criteria
 
 Phase 1 is complete when:
-- [ ] All tasks above marked `[x]`
+- [x] All tasks above marked `[x]`
 - [ ] Can navigate to LTRFL tab
 - [ ] Can browse and filter template library
 - [ ] Can create/edit templates
