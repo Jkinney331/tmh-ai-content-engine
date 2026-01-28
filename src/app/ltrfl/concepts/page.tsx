@@ -17,6 +17,7 @@ import { Input } from '@/components/ui/input'
 import { ConceptCard } from '@/components/ltrfl/ConceptCard'
 import { LTRFL_BRAND_COLORS, LTRFLConceptStatus } from '@/types/ltrfl'
 import { cn } from '@/lib/utils'
+import { toast } from 'sonner'
 
 interface ConceptListItem {
   id: string
@@ -70,7 +71,7 @@ function ConceptsContent() {
         setConcepts(data)
       }
     } catch (error) {
-      console.error('Failed to load concepts:', error)
+      toast.error('Failed to load concepts')
     } finally {
       setLoading(false)
     }

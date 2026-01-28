@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { Suspense, useEffect, useState } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { Search, Plus, Filter, Grid, List } from 'lucide-react'
 import { Button } from '@/components/ui/button'
@@ -13,7 +13,7 @@ import { useLTRFLTemplates } from '@/hooks/useLTRFLTemplates'
 import { LTRFLTemplate, LTRFL_CATEGORIES, LTRFL_BRAND_COLORS } from '@/types/ltrfl'
 import { toast } from 'sonner'
 
-export default function TemplateLibraryPage() {
+function TemplateLibraryContent() {
   const [templates, setTemplates] = useState<LTRFLTemplate[]>([])
   const [loading, setLoading] = useState(true)
   const router = useRouter()
@@ -344,5 +344,19 @@ export default function TemplateLibraryPage() {
         />
       )}
     </div>
+  )
+}
+
+export default function TemplateLibraryPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="flex items-center justify-center h-64">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2" style={{ borderColor: LTRFL_BRAND_COLORS.sage }} />
+        </div>
+      }
+    >
+      <TemplateLibraryContent />
+    </Suspense>
   )
 }

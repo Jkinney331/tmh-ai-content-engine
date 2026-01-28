@@ -6,6 +6,7 @@ import { Camera, Plus, Filter, ArrowLeft, Loader2, Sun, Aperture } from 'lucide-
 import { Button } from '@/components/ui/button'
 import { LTRFL_BRAND_COLORS } from '@/types/ltrfl'
 import { cn } from '@/lib/utils'
+import { toast } from 'sonner'
 
 interface ProductPhoto {
   id: string
@@ -55,7 +56,7 @@ export default function ProductPhotosPage() {
         setContent(data)
       }
     } catch (error) {
-      console.error('Failed to load product photos:', error)
+      toast.error('Failed to load product photos')
     } finally {
       setLoading(false)
     }

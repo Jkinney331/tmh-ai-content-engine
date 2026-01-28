@@ -6,6 +6,7 @@ import { Image, Plus, Filter, ArrowLeft, Loader2, Layers } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { LTRFL_BRAND_COLORS } from '@/types/ltrfl'
 import { cn } from '@/lib/utils'
+import { toast } from 'sonner'
 
 interface ImageAd {
   id: string
@@ -53,7 +54,7 @@ export default function ImageAdsPage() {
         setContent(data)
       }
     } catch (error) {
-      console.error('Failed to load image ads:', error)
+      toast.error('Failed to load image ads')
     } finally {
       setLoading(false)
     }

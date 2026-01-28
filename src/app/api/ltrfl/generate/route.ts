@@ -45,16 +45,9 @@ export async function POST(request: NextRequest) {
     // Build LTRFL-specific prompt
     const ltrflPrompt = buildLTRFLPrompt(prompt)
 
-    console.log('[LTRFL Generate] Generating with:', {
-      category,
-      promptLength: ltrflPrompt.length,
-      model,
-      numVariations
-    })
 
     // Check if API is configured
     if (!isImageGenerationConfigured()) {
-      console.warn('[LTRFL Generate] OpenRouter not configured, returning placeholder')
       const placeholderImages = Array(numVariations).fill(null).map((_, i) => ({
         url: `https://placehold.co/800x800/9CAF88/ffffff?text=${encodeURIComponent(`Urn Concept ${i + 1}`)}`,
         index: i,
@@ -108,7 +101,6 @@ export async function POST(request: NextRequest) {
         })
       )
     } catch (wavespeedError) {
-      console.warn('[LTRFL Generate] WaveSpeed failed, falling back to OpenRouter:', wavespeedError)
       const generationPromises = Array(numVariations).fill(null).map(async (_, index) => {
         try {
           const variedPrompt = `${ltrflPrompt} Variation ${index + 1} of ${numVariations}, unique interpretation.`
@@ -139,7 +131,6 @@ export async function POST(request: NextRequest) {
             model: result.model
           }
         } catch (error) {
-          console.error(`[LTRFL Generate] Failed to generate variation ${index}:`, error)
           return {
             url: `https://placehold.co/800x800/9CAF88/ffffff?text=${encodeURIComponent('Generation Failed')}`,
             index,
@@ -177,7 +168,6 @@ export async function POST(request: NextRequest) {
           conceptId = data.id
         }
       } catch (dbError) {
-        console.warn('[LTRFL Generate] Failed to save concept to database:', dbError)
       }
     }
 
@@ -190,7 +180,6 @@ export async function POST(request: NextRequest) {
     })
 
   } catch (error) {
-    console.error('[LTRFL Generate] Generation error:', error)
     return NextResponse.json(
       {
         error: 'Failed to generate urn concepts',

@@ -365,7 +365,7 @@ Before starting, confirm these are true (check with Jay if unsure):
     - *Tool:* Use existing test framework in TMH
     - *Verification:* All tests pass
 
-- [ ] **F6: Final review and cleanup**
+- [x] **F6: Final review and cleanup**
     - *Checklist:*
       - Remove console.logs
       - Check for TypeScript errors

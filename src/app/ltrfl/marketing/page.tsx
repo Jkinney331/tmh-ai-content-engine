@@ -15,6 +15,7 @@ import {
 import { Button } from '@/components/ui/button'
 import { LTRFL_BRAND_COLORS } from '@/types/ltrfl'
 import { cn } from '@/lib/utils'
+import { toast } from 'sonner'
 
 type ContentType = 'video_ad' | 'image_ad' | 'social_post' | 'product_photo'
 
@@ -119,7 +120,7 @@ export default function MarketingHubPage() {
         setStats(data)
       }
     } catch (error) {
-      console.error('Failed to load content:', error)
+      toast.error('Failed to load marketing content')
     } finally {
       setLoading(false)
     }

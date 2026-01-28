@@ -87,7 +87,7 @@ export default function ConceptDetailPage({
         setError('Concept not found')
       }
     } catch (error) {
-      console.error('Failed to load concept:', error)
+      toast.error('Failed to load concept')
       setError('Failed to load concept')
     } finally {
       setLoading(false)
@@ -134,7 +134,7 @@ export default function ConceptDetailPage({
         setVersionHistory(data || [])
       }
     } catch (err) {
-      console.error('Failed to load version history:', err)
+      toast.error('Failed to load version history')
     }
   }
 
@@ -151,7 +151,7 @@ export default function ConceptDetailPage({
         })
       })
     } catch (err) {
-      console.error('Failed to update selected image:', err)
+      toast.error('Failed to update selected image')
     }
   }
 

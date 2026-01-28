@@ -6,6 +6,7 @@ import { MessageSquare, Plus, Filter, ArrowLeft, Loader2, Hash, Instagram, Faceb
 import { Button } from '@/components/ui/button'
 import { LTRFL_BRAND_COLORS } from '@/types/ltrfl'
 import { cn } from '@/lib/utils'
+import { toast } from 'sonner'
 
 interface SocialPost {
   id: string
@@ -58,7 +59,7 @@ export default function SocialPostsPage() {
         setContent(data)
       }
     } catch (error) {
-      console.error('Failed to load social posts:', error)
+      toast.error('Failed to load social posts')
     } finally {
       setLoading(false)
     }

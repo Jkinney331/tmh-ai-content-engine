@@ -62,10 +62,10 @@ export function ConceptCard({ concept, viewMode }: ConceptCardProps) {
       >
         {/* Thumbnail */}
         <div className="w-16 h-16 rounded-lg overflow-hidden flex-shrink-0 bg-[color:var(--surface-muted)]">
-          {concept.generated_image_url ? (
+        {imageUrl ? (
             <img
-              src={concept.generated_image_url}
-              alt={concept.name}
+            src={imageUrl}
+            alt={displayName}
               className="w-full h-full object-cover"
             />
           ) : (

@@ -93,7 +93,7 @@ function ConceptGeneratorContent() {
         setConceptName(`${data.name} Concept`)
       }
     } catch (error) {
-      console.error('Failed to load template:', error)
+      toast.error('Failed to load template')
     }
   }
 

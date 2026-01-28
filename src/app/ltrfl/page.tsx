@@ -13,6 +13,7 @@ import {
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { LTRFL_BRAND_COLORS } from '@/types/ltrfl'
+import { toast } from 'sonner'
 
 interface DashboardStats {
   totalTemplates: number
@@ -51,7 +52,7 @@ export default function LTRFLDashboard() {
           })
         }
       } catch (error) {
-        console.error('Failed to load dashboard stats:', error)
+        toast.error('Failed to load dashboard stats')
       } finally {
         setLoading(false)
       }

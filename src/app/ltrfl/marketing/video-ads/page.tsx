@@ -6,6 +6,7 @@ import { Video, Plus, Filter, ArrowLeft, Loader2, Play, Clock } from 'lucide-rea
 import { Button } from '@/components/ui/button'
 import { LTRFL_BRAND_COLORS } from '@/types/ltrfl'
 import { cn } from '@/lib/utils'
+import { toast } from 'sonner'
 
 interface VideoAd {
   id: string
@@ -53,7 +54,7 @@ export default function VideoAdsPage() {
         setContent(data)
       }
     } catch (error) {
-      console.error('Failed to load video ads:', error)
+      toast.error('Failed to load video ads')
     } finally {
       setLoading(false)
     }

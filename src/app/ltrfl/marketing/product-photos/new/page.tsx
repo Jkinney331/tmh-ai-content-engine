@@ -18,6 +18,7 @@ import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { LTRFL_BRAND_COLORS } from '@/types/ltrfl'
 import { cn } from '@/lib/utils'
+import { toast } from 'sonner'
 
 interface UrnConcept {
   id: string
@@ -99,7 +100,7 @@ export default function NewProductPhotoPage() {
         setConcepts(data)
       }
     } catch (error) {
-      console.error('Failed to load concepts:', error)
+      toast.error('Failed to load concepts')
     } finally {
       setLoadingConcepts(false)
     }
