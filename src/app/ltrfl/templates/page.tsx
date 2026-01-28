@@ -17,6 +17,7 @@ export default function TemplateLibraryPage() {
   const [searchQuery, setSearchQuery] = useState('')
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null)
   const [selectedTemplate, setSelectedTemplate] = useState<LTRFLTemplate | null>(null)
+  const [editingTemplate, setEditingTemplate] = useState<LTRFLTemplate | null>(null)
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid')
   const [showFilters, setShowFilters] = useState(true)
   const [currentPage, setCurrentPage] = useState(1)
@@ -64,7 +65,40 @@ export default function TemplateLibraryPage() {
     if (!res.ok) {
       throw new Error('Failed to create template')
     }
+    const created = await res.json()
+    setTemplates((prev) => [created, ...prev])
     setRefreshKey((prev) => prev + 1)
+  }
+
+  const handleUpdateTemplate = async (id: string, payload: Partial<LTRFLTemplate>) => {
+    setTemplates((prev) =>
+      prev.map((template) => (template.id === id ? { ...template, ...payload } : template))
+    )
+
+    const res = await fetch(`/api/ltrfl/templates/${id}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    })
+
+    if (!res.ok) {
+      setRefreshKey((prev) => prev + 1)
+      throw new Error('Failed to update template')
+    }
+
+    const updated = await res.json()
+    setTemplates((prev) =>
+      prev.map((template) => (template.id === id ? updated : template))
+    )
+  }
+
+  const handleDeleteTemplate = async (id: string) => {
+    setTemplates((prev) => prev.filter((template) => template.id !== id))
+    const res = await fetch(`/api/ltrfl/templates/${id}`, { method: 'DELETE' })
+    if (!res.ok) {
+      setRefreshKey((prev) => prev + 1)
+      throw new Error('Failed to delete template')
+    }
   }
 
   return (
@@ -166,6 +200,9 @@ export default function TemplateLibraryPage() {
                   onUseTemplate={() => {
                     window.location.href = `/ltrfl/concepts/new?template=${template.id}`
                   }}
+                  onEdit={() => setEditingTemplate(template)}
+                  onDelete={() => handleDeleteTemplate(template.id)}
+                  showAdminActions
                 />
               ))}
             </div>
@@ -197,6 +234,9 @@ export default function TemplateLibraryPage() {
                         onUseTemplate={() => {
                           window.location.href = `/ltrfl/concepts/new?template=${template.id}`
                         }}
+                        onEdit={() => setEditingTemplate(template)}
+                        onDelete={() => handleDeleteTemplate(template.id)}
+                        showAdminActions
                       />
                     ))}
                   </div>
@@ -251,6 +291,14 @@ export default function TemplateLibraryPage() {
         <TemplateEditor
           onClose={() => setShowEditor(false)}
           onSave={handleCreateTemplate}
+        />
+      )}
+
+      {editingTemplate && (
+        <TemplateEditor
+          template={editingTemplate}
+          onClose={() => setEditingTemplate(null)}
+          onSave={(payload) => handleUpdateTemplate(editingTemplate.id, payload)}
         />
       )}
     </div>

@@ -197,7 +197,7 @@ Before starting, confirm these are true (check with Jay if unsure):
     - *Actions:* Save, Cancel
     - *Verification:* Can create new template, appears in list
 
-- [ ] **C5: Implement template CRUD operations**
+- [x] **C5: Implement template CRUD operations**
     - *Operations:*
       - Create: Insert new template
       - Read: Already done in C2
