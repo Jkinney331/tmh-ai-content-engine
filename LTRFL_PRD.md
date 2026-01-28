@@ -186,7 +186,7 @@ Before starting, confirm these are true (check with Jay if unsure):
       - Edit/Delete dropdown (for admin)
     - *Verification:* Cards render with seeded data
 
-- [ ] **C4: Create TemplateEditor modal/drawer**
+- [x] **C4: Create TemplateEditor modal/drawer**
     - *Fields:*
       - Name (required)
       - Category (dropdown, required)

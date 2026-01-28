@@ -7,6 +7,7 @@ interface UseLTRFLTemplatesOptions {
   search?: string
   page?: number
   pageSize?: number
+  refreshKey?: number
 }
 
 interface UseLTRFLTemplatesResult {
@@ -22,7 +23,7 @@ export function useLTRFLTemplates(options: UseLTRFLTemplatesOptions): UseLTRFLTe
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
-  const { category, subcategory, search, page = 1, pageSize = 20 } = options
+  const { category, subcategory, search, page = 1, pageSize = 20, refreshKey } = options
 
   useEffect(() => {
     let isMounted = true
@@ -70,7 +71,7 @@ export function useLTRFLTemplates(options: UseLTRFLTemplatesOptions): UseLTRFLTe
     return () => {
       isMounted = false
     }
-  }, [category, subcategory, search, page, pageSize])
+  }, [category, subcategory, search, page, pageSize, refreshKey])
 
   return { templates, total, loading, error }
 }

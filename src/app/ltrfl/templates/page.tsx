@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { TemplateCard } from '@/components/ltrfl/TemplateCard'
 import { TemplateDetailModal } from '@/components/ltrfl/TemplateDetailModal'
+import { TemplateEditor } from '@/components/ltrfl/TemplateEditor'
 import { CategoryFilter } from '@/components/ltrfl/CategoryFilter'
 import { useLTRFLTemplates } from '@/hooks/useLTRFLTemplates'
 import { LTRFLTemplate, LTRFL_CATEGORIES, LTRFL_BRAND_COLORS } from '@/types/ltrfl'
@@ -19,6 +20,8 @@ export default function TemplateLibraryPage() {
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid')
   const [showFilters, setShowFilters] = useState(true)
   const [currentPage, setCurrentPage] = useState(1)
+  const [showEditor, setShowEditor] = useState(false)
+  const [refreshKey, setRefreshKey] = useState(0)
   const pageSize = 20
 
   useEffect(() => {
@@ -30,7 +33,8 @@ export default function TemplateLibraryPage() {
     category: selectedCategory,
     search: searchQuery,
     page: selectedCategory || searchQuery ? currentPage : 1,
-    pageSize: effectivePageSize
+    pageSize: effectivePageSize,
+    refreshKey
   })
 
   useEffect(() => {
@@ -50,6 +54,18 @@ export default function TemplateLibraryPage() {
     acc[cat].push(template)
     return acc
   }, {} as Record<string, LTRFLTemplate[]>)
+
+  const handleCreateTemplate = async (payload: Partial<LTRFLTemplate>) => {
+    const res = await fetch('/api/ltrfl/templates', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    })
+    if (!res.ok) {
+      throw new Error('Failed to create template')
+    }
+    setRefreshKey((prev) => prev + 1)
+  }
 
   return (
     <div className="flex h-full">
@@ -78,6 +94,13 @@ export default function TemplateLibraryPage() {
               </p>
             </div>
             <div className="flex items-center gap-2">
+              <Button
+                size="sm"
+                onClick={() => setShowEditor(true)}
+              >
+                <Plus className="w-4 h-4 mr-1" />
+                Create Template
+              </Button>
               <Button
                 variant="ghost"
                 size="sm"
@@ -221,6 +244,13 @@ export default function TemplateLibraryPage() {
             // Navigate to concept generator with template
             window.location.href = `/ltrfl/concepts/new?template=${template.id}`
           }}
+        />
+      )}
+
+      {showEditor && (
+        <TemplateEditor
+          onClose={() => setShowEditor(false)}
+          onSave={handleCreateTemplate}
         />
       )}
     </div>
