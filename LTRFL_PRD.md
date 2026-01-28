@@ -217,7 +217,7 @@ Before starting, confirm these are true (check with Jay if unsure):
 
 ### Section D: Concept Generation Feature
 
-- [ ] **D1: Create ConceptGenerator page component**
+- [x] **D1: Create ConceptGenerator page component**
     - *Route:* `/ltrfl/concepts/new`
     - *Layout:*
       - Left panel: Prompt input area
