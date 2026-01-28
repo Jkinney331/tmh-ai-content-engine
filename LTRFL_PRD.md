@@ -285,7 +285,7 @@ Before starting, confirm these are true (check with Jay if unsure):
       - Search by prompt/category
     - *Verification:* Page renders with user's concepts
 
-- [ ] **E2: Create ConceptCard component**
+- [x] **E2: Create ConceptCard component**
     - *Display:*
       - Thumbnail of selected image (or first image)
       - Status badge (color-coded)
