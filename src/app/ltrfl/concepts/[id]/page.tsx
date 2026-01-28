@@ -21,6 +21,7 @@ import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
 import { LTRFL_BRAND_COLORS, LTRFL_STATUS_COLORS, LTRFLConceptStatus } from '@/types/ltrfl'
 import { cn } from '@/lib/utils'
+import { toast } from 'sonner'
 
 interface ConceptDetail {
   id: string
@@ -115,8 +116,11 @@ export default function ConceptDetailPage({
 
       const updated = await res.json()
       setConcept(updated)
+      toast.success(`Concept ${STATUS_LABELS[newStatus].toLowerCase()}`)
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Update failed')
+      const message = err instanceof Error ? err.message : 'Update failed'
+      setError(message)
+      toast.error(message)
     } finally {
       setUpdating(false)
     }
@@ -167,8 +171,11 @@ export default function ConceptDetailPage({
       }
 
       router.push('/ltrfl/concepts')
+      toast.success('Concept deleted')
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Delete failed')
+      const message = err instanceof Error ? err.message : 'Delete failed'
+      setError(message)
+      toast.error(message)
       setDeleting(false)
     }
   }

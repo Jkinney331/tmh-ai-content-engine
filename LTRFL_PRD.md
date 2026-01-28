@@ -333,7 +333,7 @@ Before starting, confirm these are true (check with Jay if unsure):
       - Image loading placeholders
     - *Verification:* No flash of empty content
 
-- [ ] **F2: Add error handling and toast notifications**
+- [x] **F2: Add error handling and toast notifications**
     - *Errors:*
       - API failures show user-friendly message
       - Network errors have retry option

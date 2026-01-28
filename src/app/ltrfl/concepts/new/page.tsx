@@ -19,6 +19,7 @@ import { useLTRFLTemplates } from '@/hooks/useLTRFLTemplates'
 import { LTRFLTemplate, LTRFL_CATEGORIES, LTRFL_BRAND_COLORS } from '@/types/ltrfl'
 import { cn } from '@/lib/utils'
 import Link from 'next/link'
+import { toast } from 'sonner'
 
 interface GeneratedImage {
   url: string
@@ -144,8 +145,11 @@ function ConceptGeneratorContent() {
       if (data.images && data.images.length > 0) {
         setSelectedImageIndex(0)
       }
+      toast.success('Concept images generated')
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Generation failed')
+      const message = err instanceof Error ? err.message : 'Generation failed'
+      setError(message)
+      toast.error(message)
     } finally {
       setGenerating(false)
     }
@@ -186,8 +190,11 @@ function ConceptGeneratorContent() {
 
       const data = await res.json()
       router.push(`/ltrfl/concepts/${data.id}`)
+      toast.success('Concept saved for review')
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to save concept')
+      const message = err instanceof Error ? err.message : 'Failed to save concept'
+      setError(message)
+      toast.error(message)
     } finally {
       setSaving(false)
     }

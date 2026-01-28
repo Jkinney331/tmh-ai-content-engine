@@ -11,6 +11,7 @@ import { TemplateEditor } from '@/components/ltrfl/TemplateEditor'
 import { CategoryFilter } from '@/components/ltrfl/CategoryFilter'
 import { useLTRFLTemplates } from '@/hooks/useLTRFLTemplates'
 import { LTRFLTemplate, LTRFL_CATEGORIES, LTRFL_BRAND_COLORS } from '@/types/ltrfl'
+import { toast } from 'sonner'
 
 export default function TemplateLibraryPage() {
   const [templates, setTemplates] = useState<LTRFLTemplate[]>([])
@@ -75,47 +76,65 @@ export default function TemplateLibraryPage() {
   }
 
   const handleCreateTemplate = async (payload: Partial<LTRFLTemplate>) => {
-    const res = await fetch('/api/ltrfl/templates', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload)
-    })
-    if (!res.ok) {
-      throw new Error('Failed to create template')
+    try {
+      const res = await fetch('/api/ltrfl/templates', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      })
+      if (!res.ok) {
+        throw new Error('Failed to create template')
+      }
+      const created = await res.json()
+      setTemplates((prev) => [created, ...prev])
+      setRefreshKey((prev) => prev + 1)
+      toast.success('Template created')
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Failed to create template')
+      throw err
     }
-    const created = await res.json()
-    setTemplates((prev) => [created, ...prev])
-    setRefreshKey((prev) => prev + 1)
   }
 
   const handleUpdateTemplate = async (id: string, payload: Partial<LTRFLTemplate>) => {
-    setTemplates((prev) =>
-      prev.map((template) => (template.id === id ? { ...template, ...payload } : template))
-    )
+    try {
+      setTemplates((prev) =>
+        prev.map((template) => (template.id === id ? { ...template, ...payload } : template))
+      )
 
-    const res = await fetch(`/api/ltrfl/templates/${id}`, {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload)
-    })
+      const res = await fetch(`/api/ltrfl/templates/${id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      })
 
-    if (!res.ok) {
-      setRefreshKey((prev) => prev + 1)
-      throw new Error('Failed to update template')
+      if (!res.ok) {
+        setRefreshKey((prev) => prev + 1)
+        throw new Error('Failed to update template')
+      }
+
+      const updated = await res.json()
+      setTemplates((prev) =>
+        prev.map((template) => (template.id === id ? updated : template))
+      )
+      toast.success('Template updated')
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Failed to update template')
+      throw err
     }
-
-    const updated = await res.json()
-    setTemplates((prev) =>
-      prev.map((template) => (template.id === id ? updated : template))
-    )
   }
 
   const handleDeleteTemplate = async (id: string) => {
-    setTemplates((prev) => prev.filter((template) => template.id !== id))
-    const res = await fetch(`/api/ltrfl/templates/${id}`, { method: 'DELETE' })
-    if (!res.ok) {
-      setRefreshKey((prev) => prev + 1)
-      throw new Error('Failed to delete template')
+    try {
+      setTemplates((prev) => prev.filter((template) => template.id !== id))
+      const res = await fetch(`/api/ltrfl/templates/${id}`, { method: 'DELETE' })
+      if (!res.ok) {
+        setRefreshKey((prev) => prev + 1)
+        throw new Error('Failed to delete template')
+      }
+      toast.success('Template deleted')
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Failed to delete template')
+      throw err
     }
   }
 
