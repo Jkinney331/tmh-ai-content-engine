@@ -15,6 +15,7 @@ import {
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
+import { useLTRFLTemplates } from '@/hooks/useLTRFLTemplates'
 import { LTRFLTemplate, LTRFL_CATEGORIES, LTRFL_BRAND_COLORS } from '@/types/ltrfl'
 import { cn } from '@/lib/utils'
 import Link from 'next/link'
@@ -39,12 +40,18 @@ function ConceptGeneratorContent() {
   const [selectedCategory, setSelectedCategory] = useState(LTRFL_CATEGORIES[0].name)
   const [selectedSubcategory, setSelectedSubcategory] = useState('')
   const [selectedModel, setSelectedModel] = useState<string>('gemini-pro')
+  const [numVariations, setNumVariations] = useState(4)
 
   const [generating, setGenerating] = useState(false)
   const [generatedImages, setGeneratedImages] = useState<GeneratedImage[]>([])
   const [selectedImageIndex, setSelectedImageIndex] = useState<number | null>(null)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
+
+  const { templates: templateOptions } = useLTRFLTemplates({
+    pageSize: 200,
+    page: 1
+  })
 
   // Load template if ID provided
   useEffect(() => {
@@ -102,7 +109,7 @@ function ConceptGeneratorContent() {
           subcategory: selectedSubcategory || undefined,
           name: conceptName || `${selectedCategory} Concept`,
           model: selectedModel,
-          numVariations: 4
+          numVariations
         })
       })
 
@@ -221,6 +228,31 @@ function ConceptGeneratorContent() {
           {/* Template Mode */}
           {mode === 'template' && (
             <div className="space-y-4">
+              <div>
+                <label className="text-sm font-medium text-foreground mb-1 block">
+                  Template
+                </label>
+                <select
+                  value={template?.id || ''}
+                  onChange={(e) => {
+                    const selected = templateOptions.find((option) => option.id === e.target.value) || null
+                    setTemplate(selected)
+                    if (selected) {
+                      setSelectedCategory(selected.category)
+                      setSelectedSubcategory(selected.subcategory || '')
+                      setConceptName(`${selected.name} Concept`)
+                    }
+                  }}
+                  className="w-full px-3 py-2 rounded-lg border border-[color:var(--surface-border)] bg-[color:var(--surface)] text-foreground text-sm"
+                >
+                  <option value="">Select a template</option>
+                  {templateOptions.map((option) => (
+                    <option key={option.id} value={option.id}>
+                      {option.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
               {template ? (
                 <div className="p-4 rounded-lg border border-[color:var(--surface-border)] bg-[color:var(--surface)]">
                   <div className="flex items-center justify-between mb-2">
@@ -342,6 +374,24 @@ function ConceptGeneratorContent() {
             </select>
           </div>
 
+          {/* Variation Count */}
+          <div>
+            <label className="text-sm font-medium text-foreground mb-1 block">
+              Variations
+            </label>
+            <select
+              value={numVariations}
+              onChange={(e) => setNumVariations(Number(e.target.value))}
+              className="w-full px-3 py-2 rounded-lg border border-[color:var(--surface-border)] bg-[color:var(--surface)] text-foreground text-sm"
+            >
+              {[1, 2, 3, 4].map((count) => (
+                <option key={count} value={count}>
+                  {count} variation{count > 1 ? 's' : ''}
+                </option>
+              ))}
+            </select>
+          </div>
+
           {/* Error Message */}
           {error && (
             <div className="p-3 rounded-lg bg-red-500/10 border border-red-500/20 text-red-400 text-sm">
@@ -412,7 +462,15 @@ function ConceptGeneratorContent() {
               )}
 
               {/* Thumbnail Grid */}
-              <div className="grid grid-cols-4 gap-2">
+              <div
+                className={cn(
+                  'grid gap-2',
+                  numVariations === 1 && 'grid-cols-1',
+                  numVariations === 2 && 'grid-cols-2',
+                  numVariations === 3 && 'grid-cols-3',
+                  numVariations >= 4 && 'grid-cols-4'
+                )}
+              >
                 {generatedImages.map((img, index) => (
                   <button
                     key={index}

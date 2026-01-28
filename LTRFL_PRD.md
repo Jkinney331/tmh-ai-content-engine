@@ -224,7 +224,7 @@ Before starting, confirm these are true (check with Jay if unsure):
       - Right panel: Generated images grid
     - *Verification:* Page renders with empty state
 
-- [ ] **D2: Create prompt input form**
+- [x] **D2: Create prompt input form**
     - *Options:*
       - Start from template (dropdown to select)
       - Start from scratch (free text)
