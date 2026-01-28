@@ -440,7 +440,7 @@ Phase 1 is complete when:
 - [x] Can create/edit templates
 - [x] Can generate urn concept images from prompts
 - [x] Can view multiple variations
-- [ ] Can select and approve concepts
+- [x] Can select and approve concepts
 - [ ] Concepts saved with versioning
 - [ ] All tests pass
 - [ ] No build errors
