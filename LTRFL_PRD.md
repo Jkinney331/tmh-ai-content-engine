@@ -159,7 +159,7 @@ Before starting, confirm these are true (check with Jay if unsure):
 
 ### Section C: Template Library Feature
 
-- [ ] **C1: Create TemplateLibrary page component**
+- [x] **C1: Create TemplateLibrary page component**
     - *Route:* `/ltrfl/templates`
     - *Features:*
       - Grid/list view toggle

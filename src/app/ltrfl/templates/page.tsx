@@ -17,9 +17,15 @@ export default function TemplateLibraryPage() {
   const [selectedTemplate, setSelectedTemplate] = useState<LTRFLTemplate | null>(null)
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid')
   const [showFilters, setShowFilters] = useState(true)
+  const [currentPage, setCurrentPage] = useState(1)
+  const pageSize = 20
 
   useEffect(() => {
     loadTemplates()
+  }, [selectedCategory, searchQuery])
+
+  useEffect(() => {
+    setCurrentPage(1)
   }, [selectedCategory, searchQuery])
 
   const loadTemplates = async () => {
@@ -42,6 +48,11 @@ export default function TemplateLibraryPage() {
   }
 
   const filteredTemplates = templates
+  const totalPages = Math.max(1, Math.ceil(filteredTemplates.length / pageSize))
+  const paginatedTemplates = filteredTemplates.slice(
+    (currentPage - 1) * pageSize,
+    currentPage * pageSize
+  )
 
   const groupedByCategory = filteredTemplates.reduce((acc, template) => {
     const cat = template.category
@@ -127,13 +138,13 @@ export default function TemplateLibraryPage() {
                   : 'Templates will appear here once seeded'}
               </p>
             </div>
-          ) : selectedCategory ? (
+          ) : selectedCategory || searchQuery ? (
             // Single category view
             <div className={viewMode === 'grid'
               ? 'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4'
               : 'space-y-2'
             }>
-              {filteredTemplates.map((template) => (
+              {paginatedTemplates.map((template) => (
                 <TemplateCard
                   key={template.id}
                   template={template}
@@ -175,6 +186,34 @@ export default function TemplateLibraryPage() {
             </div>
           )}
         </div>
+
+        {((selectedCategory || searchQuery) && totalPages > 1) && (
+          <div className="border-t border-[color:var(--surface-border)] px-4 py-3">
+            <div className="flex items-center justify-between text-sm text-muted-foreground">
+              <span>
+                Page {currentPage} of {totalPages}
+              </span>
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  disabled={currentPage === 1}
+                  onClick={() => setCurrentPage((prev) => Math.max(1, prev - 1))}
+                >
+                  Previous
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  disabled={currentPage === totalPages}
+                  onClick={() => setCurrentPage((prev) => Math.min(totalPages, prev + 1))}
+                >
+                  Next
+                </Button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Template Detail Modal */}
