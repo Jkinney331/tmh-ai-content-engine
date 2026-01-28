@@ -1,13 +1,15 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Book, Grid2X2, ImageIcon, Layers, Settings, Video } from "lucide-react";
+import { Book, Grid2X2, Layers, Settings } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { UrnIcon } from "@/components/icons/UrnIcon";
 import { cn } from "@/lib/utils";
 
 const items = [
   { id: "dashboard", label: "Dashboard", href: "/", icon: Grid2X2 },
   { id: "knowledge", label: "Knowledge Base", href: "/settings/knowledge-base", icon: Book },
   { id: "drops", label: "Drops", href: "/drops", icon: Layers },
+  { id: "ltrfl", label: "LTRFL", href: "/ltrfl", icon: UrnIcon },
 ];
 
 export function IconRail() {
