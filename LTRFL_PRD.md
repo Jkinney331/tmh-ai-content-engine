@@ -127,7 +127,7 @@ Before starting, confirm these are true (check with Jay if unsure):
 
 ### Section B: Frontend - Navigation & Layout
 
-- [ ] **B1: Add LTRFL tab to main navigation**
+- [x] **B1: Add LTRFL tab to main navigation**
     - *Location:* Same level as existing TMH tabs
     - *Icon:* Use appropriate icon (urn, memorial, or custom)
     - *Route:* `/ltrfl` or `/ltrfl/dashboard`
