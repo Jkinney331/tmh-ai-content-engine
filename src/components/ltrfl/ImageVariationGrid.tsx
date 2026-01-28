@@ -17,13 +17,15 @@ interface ImageVariationGridProps {
   selectedIndex: number | null
   onSelect: (index: number) => void
   onRegenerate?: (index: number) => void
+  onReject?: (index: number) => void
 }
 
 export function ImageVariationGrid({
   images,
   selectedIndex,
   onSelect,
-  onRegenerate
+  onRegenerate,
+  onReject
 }: ImageVariationGridProps) {
   const [previewIndex, setPreviewIndex] = useState<number | null>(null)
 
@@ -64,11 +66,18 @@ export function ImageVariationGrid({
               >
                 {selectedIndex === index ? 'Selected' : 'Select'}
               </Button>
-              {onRegenerate && (
-                <Button size="sm" variant="ghost" onClick={() => onRegenerate(index)}>
-                  <RefreshCw className="w-4 h-4" />
-                </Button>
-              )}
+              <div className="flex items-center gap-1">
+                {onReject && (
+                  <Button size="sm" variant="ghost" onClick={() => onReject(index)}>
+                    Reject
+                  </Button>
+                )}
+                {onRegenerate && (
+                  <Button size="sm" variant="ghost" onClick={() => onRegenerate(index)}>
+                    <RefreshCw className="w-4 h-4" />
+                  </Button>
+                )}
+              </div>
             </div>
             {img.error && (
               <div className="absolute inset-0 bg-red-500/50 flex items-center justify-center">

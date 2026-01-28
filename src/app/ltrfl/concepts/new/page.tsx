@@ -218,6 +218,19 @@ function ConceptGeneratorContent() {
     }
   }
 
+  const handleRejectSlot = (index: number) => {
+    setGeneratedImages((prev) => prev.filter((_, idx) => idx !== index).map((img, idx) => ({
+      ...img,
+      index: idx
+    })))
+
+    setSelectedImageIndex((prev) => {
+      if (prev === null) return null
+      if (prev === index) return null
+      return prev > index ? prev - 1 : prev
+    })
+  }
+
   return (
     <div className="p-6 max-w-6xl mx-auto">
       {/* Header */}
@@ -509,6 +522,7 @@ function ConceptGeneratorContent() {
                 images={generatedImages}
                 selectedIndex={selectedImageIndex}
                 onSelect={(index) => setSelectedImageIndex(index)}
+                onReject={handleRejectSlot}
                 onRegenerate={(index) => {
                   if (regeneratingIndex === null) {
                     handleRegenerateSlot(index)

@@ -25,18 +25,13 @@ import { cn } from '@/lib/utils'
 interface ConceptDetail {
   id: string
   template_id: string | null
-  name: string
   category: string
   subcategory: string | null
   prompt_used: string
-  generated_image_url: string | null
-  thumbnail_url: string | null
+  images: Array<{ url: string; index: number }>
+  selected_image_index: number | null
   status: LTRFLConceptStatus
-  review_notes: string | null
-  metadata: {
-    all_images?: Array<{ url: string; index: number }>
-    model?: string
-  } | null
+  notes: string | null
   created_at: string
   updated_at: string
   ltrfl_templates?: {
@@ -81,7 +76,7 @@ export default function ConceptDetailPage({
       if (res.ok) {
         const data = await res.json()
         setConcept(data)
-        setReviewNotes(data.review_notes || '')
+        setReviewNotes(data.notes || '')
       } else {
         setError('Concept not found')
       }
@@ -105,7 +100,7 @@ export default function ConceptDetailPage({
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           status: newStatus,
-          review_notes: reviewNotes || null
+          notes: reviewNotes || null
         })
       })
 
@@ -119,6 +114,23 @@ export default function ConceptDetailPage({
       setError(err instanceof Error ? err.message : 'Update failed')
     } finally {
       setUpdating(false)
+    }
+  }
+
+  const handleSelectImage = async (index: number) => {
+    if (!concept) return
+    setConcept({ ...concept, selected_image_index: index })
+
+    try {
+      await fetch(`/api/ltrfl/concepts/${id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          selected_image_index: index
+        })
+      })
+    } catch (err) {
+      console.error('Failed to update selected image:', err)
     }
   }
 
@@ -164,7 +176,13 @@ export default function ConceptDetailPage({
   }
 
   const statusColors = LTRFL_STATUS_COLORS[concept.status]
-  const allImages = concept.metadata?.all_images || []
+  const allImages = concept.images || []
+  const selectedImage = concept.selected_image_index !== null
+    ? allImages[concept.selected_image_index]
+    : allImages[0]
+  const conceptTitle = concept.subcategory
+    ? `${concept.subcategory} Concept`
+    : `${concept.category} Concept`
 
   return (
     <div className="p-6 max-w-6xl mx-auto">
@@ -177,7 +195,7 @@ export default function ConceptDetailPage({
           <ArrowLeft className="w-5 h-5 text-muted-foreground" />
         </Link>
         <div className="flex-1">
-          <h1 className="text-xl font-bold text-foreground">{concept.name}</h1>
+          <h1 className="text-xl font-bold text-foreground">{conceptTitle}</h1>
           <p className="text-sm text-muted-foreground">
             {concept.category} {concept.subcategory && `• ${concept.subcategory}`}
           </p>
@@ -195,10 +213,10 @@ export default function ConceptDetailPage({
         <div className="lg:col-span-2 space-y-4">
           {/* Main Image */}
           <div className="aspect-square rounded-lg overflow-hidden border border-[color:var(--surface-border)] bg-[color:var(--surface)]">
-            {concept.generated_image_url ? (
+            {selectedImage?.url ? (
               <img
-                src={concept.generated_image_url}
-                alt={concept.name}
+                src={selectedImage.url}
+                alt={conceptTitle}
                 className="w-full h-full object-cover"
               />
             ) : (
@@ -214,16 +232,23 @@ export default function ConceptDetailPage({
               <h3 className="text-sm font-medium text-foreground mb-2">All Variations</h3>
               <div className="grid grid-cols-4 gap-2">
                 {allImages.map((img, index) => (
-                  <div
+                  <button
                     key={index}
-                    className="aspect-square rounded-lg overflow-hidden border border-[color:var(--surface-border)]"
+                    onClick={() => handleSelectImage(index)}
+                    className={cn(
+                      "aspect-square rounded-lg overflow-hidden border-2 transition-colors",
+                      concept.selected_image_index === index
+                        ? "border-[var(--ltrfl-sage)]"
+                        : "border-[color:var(--surface-border)] hover:border-[color:var(--surface-border-hover)]"
+                    )}
+                    style={concept.selected_image_index === index ? { borderColor: LTRFL_BRAND_COLORS.sage } : undefined}
                   >
                     <img
                       src={img.url}
                       alt={`Variation ${index + 1}`}
                       className="w-full h-full object-cover"
                     />
-                  </div>
+                  </button>
                 ))}
               </div>
             </div>
@@ -273,7 +298,10 @@ export default function ConceptDetailPage({
               {concept.status === 'reviewing' && (
                 <>
                   <Button
-                    onClick={() => updateStatus('approved')}
+                    onClick={async () => {
+                      await updateStatus('approved')
+                      router.push(`/ltrfl/concepts/${id}/cad-specs`)
+                    }}
                     disabled={updating}
                     className="w-full text-white"
                     style={{ backgroundColor: LTRFL_BRAND_COLORS.sage }}
@@ -373,12 +401,10 @@ export default function ConceptDetailPage({
                   {new Date(concept.updated_at).toLocaleDateString()}
                 </span>
               </div>
-              {concept.metadata?.model && (
-                <div className="flex justify-between">
-                  <span className="text-muted-foreground">Model</span>
-                  <span className="text-foreground">{concept.metadata.model}</span>
-                </div>
-              )}
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">Images</span>
+                <span className="text-foreground">{allImages.length}</span>
+              </div>
               {concept.ltrfl_templates && (
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">Template</span>
@@ -389,10 +415,10 @@ export default function ConceptDetailPage({
           </div>
 
           {/* Download */}
-          {concept.generated_image_url && (
+          {selectedImage?.url && (
             <a
-              href={concept.generated_image_url}
-              download={`${concept.name.replace(/\s+/g, '-')}.png`}
+              href={selectedImage.url}
+              download={`${conceptTitle.replace(/\s+/g, '-')}.png`}
               target="_blank"
               rel="noopener noreferrer"
               className="flex items-center justify-center gap-2 w-full px-4 py-2 rounded-lg border border-[color:var(--surface-border)] bg-[color:var(--surface)] hover:bg-[color:var(--surface-muted)] transition-colors text-sm font-medium text-foreground"

@@ -261,7 +261,7 @@ Before starting, confirm these are true (check with Jay if unsure):
       - Regenerate button
     - *Verification:* Grid displays images, selection works
 
-- [ ] **D6: Implement concept selection and approval**
+- [x] **D6: Implement concept selection and approval**
     - *Actions on each image:*
       - Select as final (sets selected_image_index)
       - Reject (removes from consideration)

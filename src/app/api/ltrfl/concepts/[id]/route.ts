@@ -52,15 +52,15 @@ export async function PUT(
     }
 
     // Only update provided fields
-    if (body.name !== undefined) updateData.name = body.name
     if (body.category !== undefined) updateData.category = body.category
     if (body.subcategory !== undefined) updateData.subcategory = body.subcategory
     if (body.prompt_used !== undefined) updateData.prompt_used = body.prompt_used
-    if (body.generated_image_url !== undefined) updateData.generated_image_url = body.generated_image_url
-    if (body.thumbnail_url !== undefined) updateData.thumbnail_url = body.thumbnail_url
+    if (body.images !== undefined) updateData.images = body.images
+    if (body.selected_image_index !== undefined) updateData.selected_image_index = body.selected_image_index
     if (body.status !== undefined) updateData.status = body.status
-    if (body.review_notes !== undefined) updateData.review_notes = body.review_notes
-    if (body.metadata !== undefined) updateData.metadata = body.metadata
+    if (body.notes !== undefined) updateData.notes = body.notes
+    if (body.version !== undefined) updateData.version = body.version
+    if (body.parent_version_id !== undefined) updateData.parent_version_id = body.parent_version_id
 
     const { data, error } = await supabase
       .from('ltrfl_concepts')
