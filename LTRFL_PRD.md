@@ -118,7 +118,7 @@ Before starting, confirm these are true (check with Jay if unsure):
       - Variables for customization (color, size, personalization)
     - *Verification:* `SELECT COUNT(*) FROM ltrfl_templates;` returns > 50
 
-- [ ] **A5: Create Supabase storage bucket for generated images**
+- [x] **A5: Create Supabase storage bucket for generated images**
     - *Bucket name:* `ltrfl-concepts`
     - *Access:* Public read, authenticated write
     - *Verification:* Bucket visible in Supabase dashboard
