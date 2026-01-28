@@ -77,7 +77,7 @@ Before starting, confirm these are true (check with Jay if unsure):
     - *Verification:* Table exists and accepts insert
     - *Notes:* Add index on `status` and `category`
 
-- [ ] **A3: Create `ltrfl_cad_specs` table**
+- [x] **A3: Create `ltrfl_cad_specs` table**
     - *Schema:*
       ```sql
       CREATE TABLE ltrfl_cad_specs (
