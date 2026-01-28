@@ -326,7 +326,7 @@ Before starting, confirm these are true (check with Jay if unsure):
 
 ### Section F: Testing & Polish
 
-- [ ] **F1: Add loading states to all async operations**
+- [x] **F1: Add loading states to all async operations**
     - *Components:*
       - Template list loading skeleton
       - Concept generation loading spinner/progress

@@ -185,8 +185,13 @@ export default function TemplateLibraryPage() {
         {/* Templates Grid/List */}
         <div className="flex-1 overflow-auto p-4">
           {loading ? (
-            <div className="flex items-center justify-center h-64">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2" style={{ borderColor: LTRFL_BRAND_COLORS.sage }} />
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {Array.from({ length: 6 }).map((_, index) => (
+                <div
+                  key={index}
+                  className="h-40 rounded-lg border border-[color:var(--surface-border)] bg-[color:var(--surface)] animate-pulse"
+                />
+              ))}
             </div>
           ) : filteredTemplates.length === 0 ? (
             <div className="flex flex-col items-center justify-center h-64 text-center">

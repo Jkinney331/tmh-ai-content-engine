@@ -516,16 +516,25 @@ function ConceptGeneratorContent() {
           </div>
 
           {generatedImages.length === 0 ? (
-            <div className="aspect-square rounded-lg border-2 border-dashed border-[color:var(--surface-border)] flex items-center justify-center">
-              <div className="text-center p-6">
-                <Sparkles className="w-12 h-12 mx-auto mb-3 text-muted-foreground opacity-50" />
-                <p className="text-sm text-muted-foreground">
-                  {generating
-                    ? 'Generating your urn concepts...'
-                    : 'Configure your prompt and click Generate'}
-                </p>
+            generating ? (
+              <div className="grid grid-cols-2 gap-3">
+                {Array.from({ length: 4 }).map((_, index) => (
+                  <div
+                    key={index}
+                    className="aspect-square rounded-lg border border-[color:var(--surface-border)] bg-[color:var(--surface)] animate-pulse"
+                  />
+                ))}
               </div>
-            </div>
+            ) : (
+              <div className="aspect-square rounded-lg border-2 border-dashed border-[color:var(--surface-border)] flex items-center justify-center">
+                <div className="text-center p-6">
+                  <Sparkles className="w-12 h-12 mx-auto mb-3 text-muted-foreground opacity-50" />
+                  <p className="text-sm text-muted-foreground">
+                    Configure your prompt and click Generate
+                  </p>
+                </div>
+              </div>
+            )
           ) : (
             <>
               {/* Main Selected Image */}
