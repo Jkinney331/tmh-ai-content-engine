@@ -55,7 +55,7 @@ Before starting, confirm these are true (check with Jay if unsure):
     - *Verification:* Run `SELECT * FROM ltrfl_templates LIMIT 1;` returns empty result (not error)
     - *Notes:* Enable RLS, create policy for authenticated users
 
-- [ ] **A2: Create `ltrfl_concepts` table**
+- [x] **A2: Create `ltrfl_concepts` table**
     - *Schema:*
       ```sql
       CREATE TABLE ltrfl_concepts (
