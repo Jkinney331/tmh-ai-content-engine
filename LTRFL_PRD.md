@@ -437,7 +437,7 @@ Phase 1 is complete when:
 - [x] All tasks above marked `[x]`
 - [x] Can navigate to LTRFL tab
 - [x] Can browse and filter template library
-- [ ] Can create/edit templates
+- [x] Can create/edit templates
 - [ ] Can generate urn concept images from prompts
 - [ ] Can view multiple variations
 - [ ] Can select and approve concepts
