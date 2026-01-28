@@ -104,7 +104,7 @@ Before starting, confirm these are true (check with Jay if unsure):
     - *Verification:* Table exists and foreign key constraint works
     - *Notes:* This table used in Phase 2 but created now for schema completeness
 
-- [ ] **A4: Seed template library with initial categories**
+- [x] **A4: Seed template library with initial categories**
     - *Insert these categories:*
       - Sports & Recreation (Baseball, Basketball, Football, Golf, Soccer, Hockey, Tennis, Fishing, Hunting)
       - Pets & Animals (Dogs, Cats, Horses, Birds, Elephants, Butterflies)
