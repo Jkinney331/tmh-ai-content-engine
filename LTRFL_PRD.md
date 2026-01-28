@@ -436,7 +436,7 @@ NEXT_PUBLIC_LTRFL_ENABLED=true
 Phase 1 is complete when:
 - [x] All tasks above marked `[x]`
 - [x] Can navigate to LTRFL tab
-- [ ] Can browse and filter template library
+- [x] Can browse and filter template library
 - [ ] Can create/edit templates
 - [ ] Can generate urn concept images from prompts
 - [ ] Can view multiple variations
