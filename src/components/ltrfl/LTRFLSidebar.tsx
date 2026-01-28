@@ -26,7 +26,7 @@ const navItems: NavItem[] = [
   { id: 'dashboard', label: 'Dashboard', href: '/ltrfl', icon: LayoutDashboard },
   { id: 'templates', label: 'Template Library', href: '/ltrfl/templates', icon: FileText },
   { id: 'concepts', label: 'My Concepts', href: '/ltrfl/concepts', icon: Lightbulb },
-  { id: 'marketing', label: 'Marketing Content', href: '/ltrfl/marketing', icon: Megaphone, disabled: true, badge: 'Phase 3' },
+  { id: 'marketing', label: 'Marketing Content', href: '/ltrfl/marketing', icon: Megaphone },
 ]
 
 export function LTRFLSidebar() {
