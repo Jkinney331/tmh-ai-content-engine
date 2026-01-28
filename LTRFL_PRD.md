@@ -133,7 +133,7 @@ Before starting, confirm these are true (check with Jay if unsure):
     - *Route:* `/ltrfl` or `/ltrfl/dashboard`
     - *Verification:* Click tab, page loads without error
 
-- [ ] **B2: Create LTRFL layout component**
+- [x] **B2: Create LTRFL layout component**
     - *Structure:*
       ```
       LTRFLLayout
