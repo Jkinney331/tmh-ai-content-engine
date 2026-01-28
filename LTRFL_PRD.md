@@ -36,7 +36,7 @@ Before starting, confirm these are true (check with Jay if unsure):
 
 ### Section A: Database Setup (Supabase)
 
-- [ ] **A1: Create `ltrfl_templates` table**
+- [x] **A1: Create `ltrfl_templates` table**
     - *Schema:*
       ```sql
       CREATE TABLE ltrfl_templates (
