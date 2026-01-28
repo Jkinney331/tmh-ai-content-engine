@@ -343,7 +343,7 @@ Before starting, confirm these are true (check with Jay if unsure):
       - Error toasts with action to retry
     - *Verification:* Disconnect network, errors handled gracefully
 
-- [ ] **F3: Add empty states**
+- [x] **F3: Add empty states**
     - *Locations:*
       - Template library: "No templates yet. Create your first template."
       - My Concepts: "No concepts yet. Start generating!"
