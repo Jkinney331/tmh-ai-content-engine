@@ -357,7 +357,7 @@ Before starting, confirm these are true (check with Jay if unsure):
       - Desktop: Full layout
     - *Verification:* Test at 375px, 768px, 1024px, 1440px
 
-- [ ] **F5: Write integration tests for critical paths**
+- [x] **F5: Write integration tests for critical paths**
     - *Tests:*
       - Template CRUD operations
       - Concept generation flow
