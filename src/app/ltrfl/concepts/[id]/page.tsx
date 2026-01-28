@@ -32,6 +32,8 @@ interface ConceptDetail {
   selected_image_index: number | null
   status: LTRFLConceptStatus
   notes: string | null
+  version: number
+  parent_version_id: string | null
   created_at: string
   updated_at: string
   ltrfl_templates?: {
@@ -63,6 +65,7 @@ export default function ConceptDetailPage({
   const [updating, setUpdating] = useState(false)
   const [deleting, setDeleting] = useState(false)
   const [reviewNotes, setReviewNotes] = useState('')
+  const [versionHistory, setVersionHistory] = useState<ConceptDetail[]>([])
   const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
@@ -77,6 +80,8 @@ export default function ConceptDetailPage({
         const data = await res.json()
         setConcept(data)
         setReviewNotes(data.notes || '')
+        const rootId = data.parent_version_id || data.id
+        loadVersionHistory(rootId)
       } else {
         setError('Concept not found')
       }
@@ -114,6 +119,18 @@ export default function ConceptDetailPage({
       setError(err instanceof Error ? err.message : 'Update failed')
     } finally {
       setUpdating(false)
+    }
+  }
+
+  const loadVersionHistory = async (rootId: string) => {
+    try {
+      const res = await fetch(`/api/ltrfl/concepts?root_id=${rootId}`)
+      if (res.ok) {
+        const data = await res.json()
+        setVersionHistory(data || [])
+      }
+    } catch (err) {
+      console.error('Failed to load version history:', err)
     }
   }
 
@@ -413,6 +430,29 @@ export default function ConceptDetailPage({
               )}
             </div>
           </div>
+
+          {versionHistory.length > 1 && (
+            <div className="p-4 rounded-lg border border-[color:var(--surface-border)] bg-[color:var(--surface)]">
+              <h3 className="text-sm font-medium text-foreground mb-3">Version History</h3>
+              <div className="space-y-2 text-sm">
+                {versionHistory.map((version) => (
+                  <Link
+                    key={version.id}
+                    href={`/ltrfl/concepts/${version.id}`}
+                    className={cn(
+                      "flex items-center justify-between rounded-md px-2 py-1.5 border",
+                      version.id === concept.id
+                        ? "border-[color:var(--surface-border-hover)] bg-[color:var(--surface-muted)]"
+                        : "border-[color:var(--surface-border)] hover:bg-[color:var(--surface-muted)]"
+                    )}
+                  >
+                    <span>v{version.version}</span>
+                    <span className="text-xs text-muted-foreground">{STATUS_LABELS[version.status]}</span>
+                  </Link>
+                ))}
+              </div>
+            </div>
+          )}
 
           {/* Download */}
           {selectedImage?.url && (

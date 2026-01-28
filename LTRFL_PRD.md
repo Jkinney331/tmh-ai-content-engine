@@ -295,7 +295,7 @@ Before starting, confirm these are true (check with Jay if unsure):
     - *Click action:* Navigate to concept detail
     - *Verification:* Cards render correctly
 
-- [ ] **E3: Create ConceptDetail page**
+- [x] **E3: Create ConceptDetail page**
     - *Route:* `/ltrfl/concepts/:id`
     - *Display:*
       - All generated images

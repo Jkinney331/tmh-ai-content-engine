@@ -16,6 +16,7 @@ export async function GET(req: NextRequest) {
   const stats = searchParams.get('stats') === 'true'
   const status = searchParams.get('status')
   const category = searchParams.get('category')
+  const rootId = searchParams.get('root_id')
   const limit = parseInt(searchParams.get('limit') || '50')
   const offset = parseInt(searchParams.get('offset') || '0')
 
@@ -68,6 +69,10 @@ export async function GET(req: NextRequest) {
 
     if (category) {
       query = query.eq('category', category)
+    }
+
+    if (rootId) {
+      query = query.or(`id.eq.${rootId},parent_version_id.eq.${rootId}`).order('version', { ascending: true })
     }
 
     const { data, error } = await query
