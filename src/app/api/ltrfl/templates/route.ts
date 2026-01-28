@@ -17,6 +17,9 @@ export async function GET(req: NextRequest) {
   const category = searchParams.get('category')
   const subcategory = searchParams.get('subcategory')
   const search = searchParams.get('search')
+  const includeCount = searchParams.get('include_count') === 'true'
+  const page = Math.max(1, Number(searchParams.get('page') || '1'))
+  const pageSize = Math.max(1, Math.min(100, Number(searchParams.get('page_size') || '20')))
 
   if (!supabase) {
     // Return mock data for development
@@ -27,19 +30,9 @@ export async function GET(req: NextRequest) {
   }
 
   try {
-    if (countOnly) {
-      const { count, error } = await supabase
-        .from('ltrfl_templates')
-        .select('*', { count: 'exact', head: true })
-        .eq('is_active', true)
-
-      if (error) return NextResponse.json({ error: error.message }, { status: 500 })
-      return NextResponse.json({ count: count || 0 })
-    }
-
     let query = supabase
       .from('ltrfl_templates')
-      .select('*')
+      .select('*', includeCount || countOnly ? { count: 'exact' } : undefined)
       .eq('is_active', true)
       .order('category')
       .order('subcategory')
@@ -57,9 +50,23 @@ export async function GET(req: NextRequest) {
       query = query.or(`name.ilike.%${search}%,prompt.ilike.%${search}%`)
     }
 
-    const { data, error } = await query
+    if (countOnly) {
+      const { count, error } = await query
+        .range(0, 0)
+        .limit(1)
+
+      if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+      return NextResponse.json({ count: count || 0 })
+    }
+
+    const from = (page - 1) * pageSize
+    const to = from + pageSize - 1
+    const { data, error, count } = await query.range(from, to)
 
     if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+    if (includeCount) {
+      return NextResponse.json({ data: data || [], total: count || 0, page, pageSize })
+    }
     return NextResponse.json(data || [])
   } catch (error) {
     return NextResponse.json({ error: 'Failed to fetch templates' }, { status: 500 })

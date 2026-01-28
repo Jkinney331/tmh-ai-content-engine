@@ -168,7 +168,7 @@ Before starting, confirm these are true (check with Jay if unsure):
       - Pagination (20 per page)
     - *Verification:* Page renders, shows loading state
 
-- [ ] **C2: Implement Supabase query for templates**
+- [x] **C2: Implement Supabase query for templates**
     - *Create hook:* `useLTRFLTemplates`
     - *Supports:* 
       - Filter by category

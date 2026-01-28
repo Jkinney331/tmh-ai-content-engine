@@ -7,6 +7,7 @@ import { Input } from '@/components/ui/input'
 import { TemplateCard } from '@/components/ltrfl/TemplateCard'
 import { TemplateDetailModal } from '@/components/ltrfl/TemplateDetailModal'
 import { CategoryFilter } from '@/components/ltrfl/CategoryFilter'
+import { useLTRFLTemplates } from '@/hooks/useLTRFLTemplates'
 import { LTRFLTemplate, LTRFL_CATEGORIES, LTRFL_BRAND_COLORS } from '@/types/ltrfl'
 
 export default function TemplateLibraryPage() {
@@ -21,38 +22,27 @@ export default function TemplateLibraryPage() {
   const pageSize = 20
 
   useEffect(() => {
-    loadTemplates()
-  }, [selectedCategory, searchQuery])
-
-  useEffect(() => {
     setCurrentPage(1)
   }, [selectedCategory, searchQuery])
 
-  const loadTemplates = async () => {
-    try {
-      setLoading(true)
-      const params = new URLSearchParams()
-      if (selectedCategory) params.set('category', selectedCategory)
-      if (searchQuery) params.set('search', searchQuery)
+  const effectivePageSize = selectedCategory || searchQuery ? pageSize : 200
+  const { templates: fetchedTemplates, total, loading: isLoading } = useLTRFLTemplates({
+    category: selectedCategory,
+    search: searchQuery,
+    page: selectedCategory || searchQuery ? currentPage : 1,
+    pageSize: effectivePageSize
+  })
 
-      const res = await fetch(`/api/ltrfl/templates?${params}`)
-      if (res.ok) {
-        const data = await res.json()
-        setTemplates(data)
-      }
-    } catch (error) {
-      console.error('Failed to load templates:', error)
-    } finally {
-      setLoading(false)
-    }
-  }
+  useEffect(() => {
+    setTemplates(fetchedTemplates)
+    setLoading(isLoading)
+  }, [fetchedTemplates, isLoading])
 
   const filteredTemplates = templates
-  const totalPages = Math.max(1, Math.ceil(filteredTemplates.length / pageSize))
-  const paginatedTemplates = filteredTemplates.slice(
-    (currentPage - 1) * pageSize,
-    currentPage * pageSize
-  )
+  const totalPages = Math.max(1, Math.ceil((selectedCategory || searchQuery ? total : filteredTemplates.length) / pageSize))
+  const paginatedTemplates = selectedCategory || searchQuery
+    ? filteredTemplates
+    : filteredTemplates.slice((currentPage - 1) * pageSize, currentPage * pageSize)
 
   const groupedByCategory = filteredTemplates.reduce((acc, template) => {
     const cat = template.category
