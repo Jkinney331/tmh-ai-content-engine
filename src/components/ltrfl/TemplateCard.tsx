@@ -25,11 +25,11 @@ export function TemplateCard({
 }: TemplateCardProps) {
   if (viewMode === 'list') {
     return (
-      <div className="w-full flex items-center gap-4 p-3 rounded-lg border border-[color:var(--surface-border)] bg-[color:var(--surface)] hover:border-[color:var(--surface-border-hover)] transition-colors">
-        <button
-          onClick={onSelect}
-          className="flex items-center gap-4 flex-1 min-w-0 text-left"
-        >
+      <div
+        onClick={onSelect}
+        className="w-full flex items-center gap-4 p-3 rounded-lg border border-[color:var(--surface-border)] bg-[color:var(--surface)] hover:border-[color:var(--surface-border-hover)] transition-colors cursor-pointer"
+      >
+        <div className="flex items-center gap-4 flex-1 min-w-0 text-left">
           <div
             className="w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0"
             style={{ backgroundColor: `${LTRFL_BRAND_COLORS.sage}20` }}
@@ -42,12 +42,12 @@ export function TemplateCard({
               {template.category} {template.subcategory && `• ${template.subcategory}`}
             </p>
           </div>
-        </button>
-        <Button variant="secondary" size="sm" onClick={onUseTemplate}>
+        </div>
+        <Button variant="secondary" size="sm" onClick={(e) => { e.stopPropagation(); onUseTemplate(); }}>
           Use Template
         </Button>
         {showAdminActions && (onEdit || onDelete) && (
-          <details className="relative">
+          <details className="relative" onClick={(e) => e.stopPropagation()}>
             <summary className="list-none cursor-pointer text-muted-foreground hover:text-foreground">
               <MoreHorizontal className="w-4 h-4" />
             </summary>
@@ -76,9 +76,12 @@ export function TemplateCard({
   }
 
   return (
-    <div className="w-full p-4 rounded-lg border border-[color:var(--surface-border)] bg-[color:var(--surface)] hover:border-[color:var(--surface-border-hover)] transition-colors text-left group">
+    <div
+      onClick={onSelect}
+      className="w-full p-4 rounded-lg border border-[color:var(--surface-border)] bg-[color:var(--surface)] hover:border-[color:var(--surface-border-hover)] transition-colors text-left group cursor-pointer"
+    >
       <div className="flex items-start justify-between mb-3">
-        <button onClick={onSelect} className="flex items-start gap-3 text-left">
+        <div className="flex items-start gap-3 text-left">
           <div
             className="w-10 h-10 rounded-lg flex items-center justify-center"
             style={{ backgroundColor: `${LTRFL_BRAND_COLORS.sage}20` }}
@@ -94,7 +97,7 @@ export function TemplateCard({
               {template.subcategory && <span>{template.subcategory}</span>}
             </div>
           </div>
-        </button>
+        </div>
         <Sparkles
           className="w-4 h-4 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity"
         />
@@ -105,11 +108,11 @@ export function TemplateCard({
       </p>
 
       <div className="flex items-center justify-between gap-2">
-        <Button variant="secondary" size="sm" onClick={onUseTemplate}>
+        <Button variant="secondary" size="sm" onClick={(e) => { e.stopPropagation(); onUseTemplate(); }}>
           Use Template
         </Button>
         {showAdminActions && (onEdit || onDelete) && (
-          <details className="relative">
+          <details className="relative" onClick={(e) => e.stopPropagation()}>
             <summary className="list-none cursor-pointer text-muted-foreground hover:text-foreground">
               <MoreHorizontal className="w-4 h-4" />
             </summary>
