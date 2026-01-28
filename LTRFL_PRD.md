@@ -205,7 +205,7 @@ Before starting, confirm these are true (check with Jay if unsure):
       - Delete: Soft delete (set is_active = false) or hard delete
     - *Verification:* All CRUD operations work, UI updates optimistically
 
-- [ ] **C6: Add category filter functionality**
+- [x] **C6: Add category filter functionality**
     - *Behavior:*
       - Clicking category filters list
       - "All" option shows all templates

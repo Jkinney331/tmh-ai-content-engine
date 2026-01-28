@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { Search, Plus, Filter, Grid, List } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -14,8 +15,10 @@ import { LTRFLTemplate, LTRFL_CATEGORIES, LTRFL_BRAND_COLORS } from '@/types/ltr
 export default function TemplateLibraryPage() {
   const [templates, setTemplates] = useState<LTRFLTemplate[]>([])
   const [loading, setLoading] = useState(true)
+  const router = useRouter()
+  const searchParams = useSearchParams()
   const [searchQuery, setSearchQuery] = useState('')
-  const [selectedCategory, setSelectedCategory] = useState<string | null>(null)
+  const [selectedCategory, setSelectedCategory] = useState<string | null>(searchParams.get('category'))
   const [selectedTemplate, setSelectedTemplate] = useState<LTRFLTemplate | null>(null)
   const [editingTemplate, setEditingTemplate] = useState<LTRFLTemplate | null>(null)
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid')
@@ -28,6 +31,10 @@ export default function TemplateLibraryPage() {
   useEffect(() => {
     setCurrentPage(1)
   }, [selectedCategory, searchQuery])
+
+  useEffect(() => {
+    setSelectedCategory(searchParams.get('category'))
+  }, [searchParams])
 
   const effectivePageSize = selectedCategory || searchQuery ? pageSize : 200
   const { templates: fetchedTemplates, total, loading: isLoading } = useLTRFLTemplates({
@@ -55,6 +62,17 @@ export default function TemplateLibraryPage() {
     acc[cat].push(template)
     return acc
   }, {} as Record<string, LTRFLTemplate[]>)
+
+  const handleSelectCategory = (category: string | null) => {
+    const params = new URLSearchParams(searchParams.toString())
+    if (category) {
+      params.set('category', category)
+    } else {
+      params.delete('category')
+    }
+    router.replace(`/ltrfl/templates?${params.toString()}`)
+    setSelectedCategory(category)
+  }
 
   const handleCreateTemplate = async (payload: Partial<LTRFLTemplate>) => {
     const res = await fetch('/api/ltrfl/templates', {
@@ -108,7 +126,7 @@ export default function TemplateLibraryPage() {
         <CategoryFilter
           categories={LTRFL_CATEGORIES}
           selectedCategory={selectedCategory}
-          onSelectCategory={setSelectedCategory}
+            onSelectCategory={handleSelectCategory}
           templateCounts={Object.entries(groupedByCategory).reduce((acc, [cat, temps]) => {
             acc[cat] = temps.length
             return acc
