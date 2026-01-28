@@ -147,7 +147,7 @@ Before starting, confirm these are true (check with Jay if unsure):
     - *Styling:* Match TMH aesthetic, use LTRFL brand colors (#9CAF88 sage, #F5F1EB cream)
     - *Verification:* Layout renders, sidebar navigation works
 
-- [ ] **B3: Create LTRFL Dashboard page**
+- [x] **B3: Create LTRFL Dashboard page**
     - *Content:*
       - Welcome message
       - Quick stats (total templates, concepts in review, approved concepts)
