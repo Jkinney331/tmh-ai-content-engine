@@ -244,7 +244,7 @@ export default function ContentCalendarPage() {
                       <div className="space-y-1">
                         {dayContent.slice(0, 3).map((item) => {
                           const config = contentTypeConfig[item.content_type]
-                          const Icon = config.icon
+                          const Icon = config.icon as React.ComponentType<{ className?: string }>
                           return (
                             <div
                               key={item.id}
