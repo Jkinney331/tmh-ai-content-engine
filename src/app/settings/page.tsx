@@ -12,10 +12,12 @@ import {
   ChevronRightIcon
 } from '@heroicons/react/24/outline'
 
+type IconComponent = React.ComponentType<{ className?: string }>
+
 interface SectionCard {
   title: string
   description: string
-  icon: React.ElementType
+  icon: IconComponent
   href: string
   stats: {
     label: string
