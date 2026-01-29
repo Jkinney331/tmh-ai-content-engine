@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState, Suspense } from 'react'
+import { useEffect, useRef, useState, Suspense } from 'react'
 import { useSearchParams, useRouter } from 'next/navigation'
 import {
   Sparkles,
@@ -42,6 +42,7 @@ function ConceptGeneratorContent() {
   const [mode, setMode] = useState<'template' | 'custom'>('template')
   const [template, setTemplate] = useState<LTRFLTemplate | null>(null)
   const [customPrompt, setCustomPrompt] = useState('')
+  const customPromptRef = useRef<HTMLTextAreaElement | null>(null)
   const [conceptName, setConceptName] = useState('')
   const [selectedCategory, setSelectedCategory] = useState(LTRFL_CATEGORIES[0].name)
   const [selectedSubcategory, setSelectedSubcategory] = useState('')
@@ -101,11 +102,13 @@ function ConceptGeneratorContent() {
   const currentCategory = LTRFL_CATEGORIES.find(c => c.name === selectedCategory)
   const subcategories = currentCategory?.subcategories || []
 
+  const getCustomPromptValue = () => customPromptRef.current?.value ?? customPrompt
+
   const getPromptToUse = () => {
     if (mode === 'template' && template) {
       return template.prompt
     }
-    return customPrompt
+    return getCustomPromptValue()
   }
 
   const handleGenerate = async () => {
@@ -430,6 +433,7 @@ function ConceptGeneratorContent() {
                   Custom Prompt
                 </label>
                 <Textarea
+                  ref={customPromptRef}
                   value={customPrompt}
                   onChange={(e) => setCustomPrompt(e.target.value)}
                   placeholder="Describe your urn design concept in detail... e.g., 'A sleek baseball-themed urn with stitching details and a wooden base'"
@@ -536,8 +540,13 @@ function ConceptGeneratorContent() {
 
           {/* Generate Button */}
           <Button
+            type="button"
             onClick={handleGenerate}
-            disabled={generating || (mode === 'template' && !template) || (mode === 'custom' && !customPrompt.trim())}
+            disabled={
+              generating ||
+              (mode === 'template' && !template) ||
+              (mode === 'custom' && !getCustomPromptValue().trim())
+            }
             className="w-full text-white"
             style={{ backgroundColor: LTRFL_BRAND_COLORS.sage }}
           >
@@ -549,7 +558,7 @@ function ConceptGeneratorContent() {
             ) : (
               <>
                 <Sparkles className="w-4 h-4 mr-2" />
-                Generate 4 Variations
+                Generate {numVariations} Variation{numVariations > 1 ? 's' : ''}
               </>
             )}
           </Button>
