@@ -55,6 +55,7 @@ function ConceptGeneratorContent() {
   const [regeneratingIndex, setRegeneratingIndex] = useState<number | null>(null)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [generatedConceptId, setGeneratedConceptId] = useState<string | null>(null)
 
   const { templates: templateOptions } = useLTRFLTemplates({
     pageSize: 200,
@@ -118,6 +119,7 @@ function ConceptGeneratorContent() {
     setError(null)
     setGeneratedImages([])
     setSelectedImageIndex(null)
+    setGeneratedConceptId(null)
 
     try {
       const res = await fetch('/api/ltrfl/generate', {
@@ -148,6 +150,7 @@ function ConceptGeneratorContent() {
 
       const data = await res.json()
       setGeneratedImages(data.images || [])
+      setGeneratedConceptId(data.conceptId || null)
 
       if (data.images && data.images.length > 0) {
         setSelectedImageIndex(0)
@@ -172,7 +175,34 @@ function ConceptGeneratorContent() {
     setError(null)
 
     try {
-      const selectedImage = generatedImages[selectedImageIndex]
+      // If we already have a concept ID from generation, just update it
+      if (generatedConceptId) {
+        const res = await fetch(`/api/ltrfl/concepts/${generatedConceptId}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            selected_image_index: selectedImageIndex,
+            notes: conceptName ? `Concept name: ${conceptName}` : null
+          })
+        })
+
+        if (!res.ok) {
+          const contentType = res.headers.get('content-type')
+          if (contentType && contentType.includes('application/json')) {
+            const data = await res.json()
+            throw new Error(data.error || 'Failed to save concept')
+          } else {
+            const text = await res.text()
+            throw new Error(text || `Failed to save concept (HTTP ${res.status})`)
+          }
+        }
+
+        router.push(`/ltrfl/concepts/${generatedConceptId}`)
+        toast.success('Concept saved for review')
+        return
+      }
+
+      // Fallback: Create new concept with just URLs (no full image data)
       const res = await fetch('/api/ltrfl/concepts', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -181,7 +211,8 @@ function ConceptGeneratorContent() {
           category: selectedCategory,
           subcategory: selectedSubcategory || null,
           prompt_used: getPromptToUse(),
-          images: generatedImages,
+          // Only send minimal image data (URL and index)
+          images: generatedImages.map(img => ({ url: img.url, index: img.index })),
           selected_image_index: selectedImageIndex,
           status: 'reviewing',
           notes: conceptName ? `Concept name: ${conceptName}` : null,
