@@ -244,7 +244,7 @@ export default function ContentCalendarPage() {
                       <div className="space-y-1">
                         {dayContent.slice(0, 3).map((item) => {
                           const config = contentTypeConfig[item.content_type]
-                          const Icon = config.icon as React.ComponentType<{ className?: string }>
+                          const Icon = config.icon as React.ComponentType<{ className?: string; style?: React.CSSProperties }>
                           return (
                             <div
                               key={item.id}
@@ -344,7 +344,7 @@ export default function ContentCalendarPage() {
             <h4 className="text-sm font-medium text-foreground mb-3">Content Types</h4>
             <div className="space-y-2">
               {Object.entries(contentTypeConfig).map(([type, config]) => {
-                const Icon = config.icon
+                const Icon = config.icon as React.ComponentType<{ className?: string; style?: React.CSSProperties }>
                 const labels: Record<string, string> = {
                   video_ad: 'Video Ads',
                   image_ad: 'Image Ads',
