@@ -32,7 +32,9 @@ type Setting = 'indoor' | 'outdoor' | 'seasonal'
 type Lighting = 'natural' | 'warm' | 'dramatic' | 'soft'
 type OutputUse = 'website' | 'catalog' | 'social'
 
-const photoStyles: { id: PhotoStyle; name: string; description: string; icon: React.ElementType }[] = [
+type IconComponent = React.ComponentType<{ className?: string }>
+
+const photoStyles: { id: PhotoStyle; name: string; description: string; icon: IconComponent }[] = [
   { id: 'studio', name: 'Studio', description: 'Clean background, professional lighting', icon: Aperture },
   { id: 'lifestyle', name: 'Lifestyle', description: 'In a real environment with context', icon: Sun },
   { id: 'detail', name: 'Detail/Close-up', description: 'Focus on craftsmanship and texture', icon: Focus },

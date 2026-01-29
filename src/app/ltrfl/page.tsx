@@ -15,6 +15,8 @@ import { Button } from '@/components/ui/button'
 import { LTRFL_BRAND_COLORS } from '@/types/ltrfl'
 import { toast } from 'sonner'
 
+type IconComponent = React.ComponentType<{ className?: string; style?: React.CSSProperties }>
+
 interface DashboardStats {
   totalTemplates: number
   totalConcepts: number
@@ -105,7 +107,7 @@ export default function LTRFLDashboard() {
       {/* Stats Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
         {statCards.map((stat) => {
-          const Icon = stat.icon
+          const Icon = stat.icon as IconComponent
           return (
             <Link
               key={stat.label}
