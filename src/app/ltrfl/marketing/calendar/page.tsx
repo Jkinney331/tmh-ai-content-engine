@@ -30,7 +30,9 @@ interface ScheduledContent {
   platform: string | null
 }
 
-const contentTypeConfig: Record<ContentType, { icon: React.ElementType; color: string }> = {
+type IconComponent = React.ComponentType<{ className?: string; style?: React.CSSProperties }>
+
+const contentTypeConfig: Record<ContentType, { icon: IconComponent; color: string }> = {
   video_ad: { icon: Video, color: '#9333EA' },
   image_ad: { icon: Image, color: '#2563EB' },
   social_post: { icon: MessageSquare, color: '#16A34A' },

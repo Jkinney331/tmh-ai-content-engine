@@ -23,7 +23,9 @@ interface ConceptCardProps {
   viewMode: 'grid' | 'list'
 }
 
-const STATUS_ICONS: Record<LTRFLConceptStatus, React.ElementType> = {
+type IconComponent = React.ComponentType<{ className?: string }>
+
+const STATUS_ICONS: Record<LTRFLConceptStatus, IconComponent> = {
   draft: FileText,
   reviewing: Clock,
   approved: CheckCircle,

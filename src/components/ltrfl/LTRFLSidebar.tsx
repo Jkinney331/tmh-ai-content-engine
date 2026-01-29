@@ -13,11 +13,13 @@ import {
 import { cn } from '@/lib/utils'
 import { LTRFL_BRAND_COLORS } from '@/types/ltrfl'
 
+type IconComponent = React.ComponentType<{ className?: string }>
+
 interface NavItem {
   id: string
   label: string
   href: string
-  icon: React.ElementType
+  icon: IconComponent
   disabled?: boolean
   badge?: string
 }

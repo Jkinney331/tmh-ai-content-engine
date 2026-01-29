@@ -30,11 +30,13 @@ interface UrnConcept {
 type Platform = 'instagram' | 'facebook' | 'twitter' | 'linkedin' | 'pinterest' | 'tiktok'
 type PostType = 'image' | 'video' | 'text' | 'link'
 
+type IconComponent = React.ComponentType<{ className?: string }>
+
 interface PlatformConfig {
   id: Platform
   name: string
   charLimit: number
-  icon: React.ElementType
+  icon: IconComponent
 }
 
 const platformConfigs: PlatformConfig[] = [
