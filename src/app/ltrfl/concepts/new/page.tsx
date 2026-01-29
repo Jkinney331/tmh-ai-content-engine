@@ -135,8 +135,15 @@ function ConceptGeneratorContent() {
       })
 
       if (!res.ok) {
-        const data = await res.json()
-        throw new Error(data.error || 'Generation failed')
+        // Try to parse as JSON, but handle plain text errors gracefully
+        const contentType = res.headers.get('content-type')
+        if (contentType && contentType.includes('application/json')) {
+          const data = await res.json()
+          throw new Error(data.error || 'Generation failed')
+        } else {
+          const text = await res.text()
+          throw new Error(text || `Generation failed (HTTP ${res.status})`)
+        }
       }
 
       const data = await res.json()
@@ -184,8 +191,14 @@ function ConceptGeneratorContent() {
       })
 
       if (!res.ok) {
-        const data = await res.json()
-        throw new Error(data.error || 'Failed to save concept')
+        const contentType = res.headers.get('content-type')
+        if (contentType && contentType.includes('application/json')) {
+          const data = await res.json()
+          throw new Error(data.error || 'Failed to save concept')
+        } else {
+          const text = await res.text()
+          throw new Error(text || `Failed to save concept (HTTP ${res.status})`)
+        }
       }
 
       const data = await res.json()
@@ -226,8 +239,14 @@ function ConceptGeneratorContent() {
       })
 
       if (!res.ok) {
-        const data = await res.json()
-        throw new Error(data.error || 'Regeneration failed')
+        const contentType = res.headers.get('content-type')
+        if (contentType && contentType.includes('application/json')) {
+          const data = await res.json()
+          throw new Error(data.error || 'Regeneration failed')
+        } else {
+          const text = await res.text()
+          throw new Error(text || `Regeneration failed (HTTP ${res.status})`)
+        }
       }
 
       const data = await res.json()

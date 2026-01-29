@@ -17,6 +17,9 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [chatCollapsed, setChatCollapsed] = useState(false);
 
+  // LTRFL has its own layout, so hide city-related components
+  const isLTRFL = pathname.startsWith("/ltrfl");
+
   useEffect(() => {
     document.documentElement.classList.toggle("dark", isDark);
   }, [isDark]);
@@ -31,6 +34,19 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
     if (pathname.startsWith("/settings")) return "Settings";
     return "Dashboard";
   }, [pathname]);
+
+  // LTRFL pages use their own layout without the main AppShell chrome
+  if (isLTRFL) {
+    return (
+      <div className="app-shell relative h-screen overflow-hidden">
+        <div className="app-glow pointer-events-none absolute inset-0" />
+        <div className="relative flex h-full">
+          <IconRail />
+          <div className="flex-1 overflow-hidden">{children}</div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="app-shell relative h-screen overflow-hidden">
