@@ -5,6 +5,7 @@ import { Canvas } from '@react-three/fiber'
 import { OrbitControls } from '@react-three/drei'
 import { STLLoader } from 'three/examples/jsm/loaders/STLLoader'
 import { Box3, BufferGeometry, Color, Vector3 } from 'three'
+import { Loader2 } from 'lucide-react'
 
 interface CadModelViewerProps {
   url: string
@@ -12,9 +13,11 @@ interface CadModelViewerProps {
 
 export function CadModelViewer({ url }: CadModelViewerProps) {
   const [error, setError] = useState<string | null>(null)
+  const [loading, setLoading] = useState(true)
 
   useEffect(() => {
     setError(null)
+    setLoading(true)
   }, [url])
 
   return (
@@ -29,9 +32,22 @@ export function CadModelViewer({ url }: CadModelViewerProps) {
         <directionalLight position={[3, 3, 2]} intensity={1} />
         <directionalLight position={[-3, -2, 2]} intensity={0.5} />
         <gridHelper args={[10, 10, '#1f2937', '#111827']} />
-        <CadMesh url={url} onError={setError} />
+        <CadMesh
+          url={url}
+          onError={(message) => {
+            setError(message)
+            setLoading(false)
+          }}
+          onLoad={() => setLoading(false)}
+        />
         <OrbitControls enableDamping makeDefault />
       </Canvas>
+      {loading && (
+        <div className="absolute inset-0 flex items-center justify-center bg-black/60 text-sm text-muted-foreground">
+          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+          Loading 3D preview...
+        </div>
+      )}
       {error && (
         <div className="absolute inset-0 flex items-center justify-center text-sm text-red-300 bg-black/70">
           {error}
@@ -41,12 +57,25 @@ export function CadModelViewer({ url }: CadModelViewerProps) {
   )
 }
 
-function CadMesh({ url, onError }: { url: string; onError: (message: string | null) => void }) {
+function CadMesh({
+  url,
+  onError,
+  onLoad
+}: {
+  url: string
+  onError: (message: string | null) => void
+  onLoad: () => void
+}) {
   const [geometry, setGeometry] = useState<BufferGeometry | null>(null)
 
   useEffect(() => {
     let cancelled = false
     const loader = new STLLoader()
+    const timeout = setTimeout(() => {
+      if (!cancelled) {
+        onError('STL preview is taking longer than expected.')
+      }
+    }, 15000)
 
     loader.load(
       url,
@@ -54,18 +83,22 @@ function CadMesh({ url, onError }: { url: string; onError: (message: string | nu
         if (cancelled) return
         setGeometry(loaded)
         onError(null)
+        onLoad()
+        clearTimeout(timeout)
       },
       undefined,
       () => {
         if (cancelled) return
         onError('Failed to load STL file')
+        clearTimeout(timeout)
       }
     )
 
     return () => {
       cancelled = true
+      clearTimeout(timeout)
     }
-  }, [url, onError])
+  }, [url, onError, onLoad])
 
   const transform = useMemo(() => {
     if (!geometry) return null

@@ -51,6 +51,7 @@ function ConceptGeneratorContent() {
   const [version, setVersion] = useState(Number.isNaN(versionParam) ? 1 : versionParam)
 
   const [generating, setGenerating] = useState(false)
+  const [showLongGenHint, setShowLongGenHint] = useState(false)
   const [generatedImages, setGeneratedImages] = useState<GeneratedImage[]>([])
   const [selectedImageIndex, setSelectedImageIndex] = useState<number | null>(null)
   const [regeneratingIndex, setRegeneratingIndex] = useState<number | null>(null)
@@ -70,6 +71,15 @@ function ConceptGeneratorContent() {
       setMode('template')
     }
   }, [templateId])
+
+  useEffect(() => {
+    if (!generating) {
+      setShowLongGenHint(false)
+      return
+    }
+    const timer = setTimeout(() => setShowLongGenHint(true), 15000)
+    return () => clearTimeout(timer)
+  }, [generating])
 
   useEffect(() => {
     if (promptParam) {
@@ -533,12 +543,17 @@ function ConceptGeneratorContent() {
             </select>
           </div>
 
-          {/* Error Message */}
+              {/* Error Message */}
           {error && (
             <div className="p-3 rounded-lg bg-red-500/10 border border-red-500/20 text-red-400 text-sm">
               {error}
             </div>
           )}
+              {showLongGenHint && (
+                <div className="rounded-lg border border-amber-500/30 bg-amber-500/10 p-3 text-xs text-amber-200">
+                  Generation is taking longer than expected. We are still working—please keep this tab open.
+                </div>
+              )}
 
           {/* Generate Button */}
           <Button
