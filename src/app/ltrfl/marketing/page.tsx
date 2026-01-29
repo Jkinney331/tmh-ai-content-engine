@@ -20,10 +20,12 @@ import { toast } from 'sonner'
 
 type ContentType = 'video_ad' | 'image_ad' | 'social_post' | 'product_photo'
 
+type IconComponent = React.ComponentType<{ className?: string; style?: React.CSSProperties }>
+
 interface TabConfig {
   id: ContentType
   label: string
-  icon: React.ElementType
+  icon: IconComponent
   description: string
   newRoute: string
 }
@@ -271,7 +273,7 @@ export default function MarketingHubPage() {
 
 function MarketingContentCard({ content }: { content: MarketingContent }) {
   const tabConfig = tabs.find(t => t.id === content.content_type)
-  const Icon = tabConfig?.icon || Image
+  const Icon = (tabConfig?.icon || Image) as IconComponent
 
   const thumbnail =
     content.generated_content?.thumbnail_url ||
