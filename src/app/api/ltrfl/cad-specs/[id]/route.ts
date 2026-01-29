@@ -83,18 +83,85 @@ export async function PATCH(
       return NextResponse.json({ error: error.message }, { status: 500 })
     }
 
-    // If status is complete, update concept status to cad_complete
-    if (updateData.status === 'complete') {
+    let updatedData = data
+    const isComplete = updateData.status === 'complete'
+    const needsStubUpload =
+      isComplete && (!updatedData.cad_file_url || String(updatedData.cad_file_url).startsWith('/stub/'))
+
+    if (needsStubUpload && hasServiceKey) {
+      const stubUpload = await uploadStubCadFile(supabase, updatedData)
+      if (stubUpload?.cad_file_url) {
+        const { data: refreshed, error: refreshError } = await supabase
+          .from('ltrfl_cad_specs')
+          .update({
+            cad_file_url: stubUpload.cad_file_url,
+            cad_format: stubUpload.cad_format
+          })
+          .eq('id', updatedData.id)
+          .select()
+          .single()
+
+        if (!refreshError && refreshed) {
+          updatedData = refreshed
+        }
+      }
+    }
+
+    if (isComplete) {
       await supabase
         .from('ltrfl_concepts')
         .update({ status: 'cad_complete' })
-        .eq('id', data.concept_id)
+        .eq('id', updatedData.concept_id)
     }
 
-    return NextResponse.json(data)
+    return NextResponse.json(updatedData)
   } catch (error) {
     return NextResponse.json({ error: 'Failed to update CAD spec' }, { status: 500 })
   }
+}
+
+async function uploadStubCadFile(
+  supabase: typeof supabaseAdmin,
+  cadSpec: {
+    id: string
+    concept_id: string
+    cad_format: string | null
+  }
+) {
+  const bucket = 'ltrfl-cad'
+  const format = (cadSpec.cad_format || 'STL').toLowerCase()
+  const filename = `${cadSpec.id}.${format}`
+  const path = `concepts/${cadSpec.concept_id}/${filename}`
+  const stubContent = buildStubStl(`LTRFL CAD ${cadSpec.id}`)
+
+  const { error } = await supabase.storage
+    .from(bucket)
+    .upload(path, new Blob([stubContent], { type: 'model/stl' }), { upsert: true })
+
+  if (error) {
+    console.warn('[LTRFL CAD] Stub upload failed:', error)
+    return null
+  }
+
+  return {
+    cad_file_url: path,
+    cad_format: 'STL'
+  }
+}
+
+function buildStubStl(name: string) {
+  const safeName = name.replace(/[^a-zA-Z0-9 _-]/g, '').slice(0, 60) || 'LTRFL CAD'
+  return [
+    `solid ${safeName}`,
+    'facet normal 0 0 0',
+    '  outer loop',
+    '    vertex 0 0 0',
+    '    vertex 0 1 0',
+    '    vertex 1 0 0',
+    '  endloop',
+    'endfacet',
+    'endsolid'
+  ].join('\n')
 }
 
 export async function DELETE(

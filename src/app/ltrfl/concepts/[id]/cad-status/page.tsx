@@ -141,13 +141,12 @@ export default function CADStatusPage({ params }: { params: Promise<{ id: string
 
       // Simulate processing time
       setTimeout(async () => {
-        // Mark as complete with a stub file URL
+        // Mark as complete (API will attach a stub CAD file if needed)
         await fetch(`/api/ltrfl/cad-specs/${cadSpec.id}`, {
           method: 'PATCH',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             status: 'complete',
-            cad_file_url: '/stub/cad-file.stl',
             cad_format: 'STL'
           })
         })

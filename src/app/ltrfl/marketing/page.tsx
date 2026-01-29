@@ -10,7 +10,8 @@ import {
   Plus,
   Filter,
   Calendar,
-  Loader2
+  Loader2,
+  Box
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { LTRFL_BRAND_COLORS } from '@/types/ltrfl'
@@ -144,6 +145,13 @@ export default function MarketingHubPage() {
             <Button variant="secondary" size="sm" className="sm:size-default">
               <Calendar className="w-4 h-4 sm:mr-2" />
               <span className="hidden sm:inline">Calendar</span>
+            </Button>
+          </Link>
+          <Link href="/ltrfl/marketing/cad-files">
+            <Button variant="secondary" size="sm" className="sm:size-default">
+              <Box className="w-4 h-4 sm:mr-2" />
+              <span className="hidden sm:inline">CAD Files</span>
+              <span className="sm:hidden">CAD</span>
             </Button>
           </Link>
           <Link href={activeTabConfig.newRoute}>
