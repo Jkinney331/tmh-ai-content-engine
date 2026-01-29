@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
+import { hasServiceKey, supabaseAdmin } from '@/lib/supabaseAdmin'
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || ''
 const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || ''
@@ -13,7 +14,7 @@ export async function GET(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  const supabase = getSupabaseClient()
+  const supabase = hasServiceKey ? supabaseAdmin : getSupabaseClient()
   if (!supabase) return NextResponse.json({ error: 'Supabase not configured' }, { status: 503 })
 
   const { id } = await params
@@ -42,7 +43,7 @@ export async function PATCH(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  const supabase = getSupabaseClient()
+  const supabase = hasServiceKey ? supabaseAdmin : getSupabaseClient()
   if (!supabase) return NextResponse.json({ error: 'Supabase not configured' }, { status: 503 })
 
   const { id } = await params
@@ -100,7 +101,7 @@ export async function DELETE(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  const supabase = getSupabaseClient()
+  const supabase = hasServiceKey ? supabaseAdmin : getSupabaseClient()
   if (!supabase) return NextResponse.json({ error: 'Supabase not configured' }, { status: 503 })
 
   const { id } = await params

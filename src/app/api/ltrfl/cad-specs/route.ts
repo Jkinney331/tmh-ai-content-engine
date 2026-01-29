@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 import { validateCADSpecs } from '@/services/cadSpecDefaults'
+import { hasServiceKey, supabaseAdmin } from '@/lib/supabaseAdmin'
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || ''
 const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || ''
@@ -48,7 +49,7 @@ export async function GET(req: NextRequest) {
 }
 
 export async function POST(req: NextRequest) {
-  const supabase = getSupabaseClient()
+  const supabase = hasServiceKey ? supabaseAdmin : getSupabaseClient()
   if (!supabase) return NextResponse.json({ error: 'Supabase not configured' }, { status: 503 })
 
   try {
