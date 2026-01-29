@@ -151,17 +151,37 @@ async function uploadStubCadFile(
 
 function buildStubStl(name: string) {
   const safeName = name.replace(/[^a-zA-Z0-9 _-]/g, '').slice(0, 60) || 'LTRFL CAD'
-  return [
-    `solid ${safeName}`,
-    'facet normal 0 0 0',
-    '  outer loop',
-    '    vertex 0 0 0',
-    '    vertex 0 1 0',
-    '    vertex 1 0 0',
-    '  endloop',
-    'endfacet',
-    'endsolid'
-  ].join('\n')
+  const vertices = [
+    [0, 0, 0],
+    [1, 0, 0],
+    [1, 1, 0],
+    [0, 1, 0],
+    [0, 0, 1],
+    [1, 0, 1],
+    [1, 1, 1],
+    [0, 1, 1]
+  ]
+  const faces = [
+    [0, 1, 2], [0, 2, 3], // bottom
+    [4, 5, 6], [4, 6, 7], // top
+    [0, 1, 5], [0, 5, 4], // front
+    [1, 2, 6], [1, 6, 5], // right
+    [2, 3, 7], [2, 7, 6], // back
+    [3, 0, 4], [3, 4, 7]  // left
+  ]
+
+  const lines = [`solid ${safeName}`]
+  for (const [a, b, c] of faces) {
+    lines.push('facet normal 0 0 0')
+    lines.push('  outer loop')
+    lines.push(`    vertex ${vertices[a].join(' ')}`)
+    lines.push(`    vertex ${vertices[b].join(' ')}`)
+    lines.push(`    vertex ${vertices[c].join(' ')}`)
+    lines.push('  endloop')
+    lines.push('endfacet')
+  }
+  lines.push('endsolid')
+  return lines.join('\n')
 }
 
 export async function DELETE(
