@@ -56,7 +56,9 @@ interface MarketingContent {
   } | null
 }
 
-const contentTypeConfig = {
+type IconComponent = React.ComponentType<{ className?: string; style?: React.CSSProperties }>
+
+const contentTypeConfig: Record<ContentType, { icon: IconComponent; label: string; color: string }> = {
   video_ad: { icon: Video, label: 'Video Ad', color: '#9333EA' },
   image_ad: { icon: Image, label: 'Image Ad', color: '#2563EB' },
   social_post: { icon: MessageSquare, label: 'Social Post', color: '#16A34A' },

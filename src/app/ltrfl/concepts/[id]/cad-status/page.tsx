@@ -33,7 +33,9 @@ interface CADSpec {
   } | null
 }
 
-const statusConfig = {
+type IconComponent = React.ComponentType<{ className?: string }>
+
+const statusConfig: Record<string, { icon: IconComponent; color: string; bgColor: string; label: string; description: string }> = {
   pending: {
     icon: Loader2,
     color: 'text-yellow-500',

@@ -29,7 +29,9 @@ const statusColors: Record<string, { bg: string; text: string }> = {
   published: { bg: 'bg-purple-500/10', text: 'text-purple-400' }
 }
 
-const platformIcons: Record<string, React.ElementType> = {
+type IconComponent = React.ComponentType<{ className?: string }>
+
+const platformIcons: Record<string, IconComponent> = {
   instagram: Instagram,
   facebook: Facebook,
 }
