@@ -34,6 +34,7 @@ export async function POST(request: NextRequest) {
       model = 'gemini-pro',
       numVariations = 4
     } = body
+    const conceptName = name?.trim() || `${category || 'Concept'} Concept`
 
     if (!prompt) {
       return NextResponse.json(
@@ -154,6 +155,7 @@ export async function POST(request: NextRequest) {
           .from('ltrfl_concepts')
           .insert({
             template_id: templateId || null,
+            name: conceptName,
             prompt_used: ltrflPrompt,
             category,
             subcategory: subcategory || null,

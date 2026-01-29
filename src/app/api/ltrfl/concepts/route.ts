@@ -90,10 +90,13 @@ export async function POST(req: NextRequest) {
 
   try {
     const body = await req.json()
+    const rawName = typeof body.name === 'string' ? body.name : body.concept_name || body.title
+    const conceptName = (rawName || '').toString().trim() || `${body.category || 'Concept'} Concept`
     const { data, error } = await supabase
       .from('ltrfl_concepts')
       .insert({
         template_id: body.template_id || null,
+        name: conceptName,
         prompt_used: body.prompt_used,
         category: body.category,
         subcategory: body.subcategory || null,

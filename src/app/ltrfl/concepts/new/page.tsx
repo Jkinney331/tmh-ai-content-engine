@@ -133,7 +133,7 @@ function ConceptGeneratorContent() {
           templateId: mode === 'template' ? template?.id : undefined,
           category: selectedCategory,
           subcategory: selectedSubcategory || undefined,
-          name: conceptName || `${selectedCategory} Concept`,
+          name: conceptName.trim() || `${selectedCategory} Concept`,
           model: selectedModel,
           numVariations
         })
@@ -184,6 +184,7 @@ function ConceptGeneratorContent() {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
+            name: conceptName.trim() || undefined,
             selected_image_index: selectedImageIndex,
             review_notes: conceptName ? `Concept name: ${conceptName}` : null
           })
@@ -211,6 +212,7 @@ function ConceptGeneratorContent() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           template_id: mode === 'template' ? template?.id : null,
+          name: conceptName.trim() || `${selectedCategory} Concept`,
           category: selectedCategory,
           subcategory: selectedSubcategory || null,
           prompt_used: getPromptToUse(),

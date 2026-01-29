@@ -52,6 +52,7 @@ export async function PUT(
     }
 
     // Only update provided fields
+    if (body.name !== undefined) updateData.name = body.name
     if (body.category !== undefined) updateData.category = body.category
     if (body.subcategory !== undefined) updateData.subcategory = body.subcategory
     if (body.prompt_used !== undefined) updateData.prompt_used = body.prompt_used
