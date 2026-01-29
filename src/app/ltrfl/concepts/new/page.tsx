@@ -182,7 +182,7 @@ function ConceptGeneratorContent() {
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             selected_image_index: selectedImageIndex,
-            notes: conceptName ? `Concept name: ${conceptName}` : null
+            review_notes: conceptName ? `Concept name: ${conceptName}` : null
           })
         })
 
@@ -215,7 +215,7 @@ function ConceptGeneratorContent() {
           images: generatedImages.map(img => ({ url: img.url, index: img.index })),
           selected_image_index: selectedImageIndex,
           status: 'reviewing',
-          notes: conceptName ? `Concept name: ${conceptName}` : null,
+          review_notes: conceptName ? `Concept name: ${conceptName}` : null,
           version,
           parent_version_id: parentVersionId || null
         })

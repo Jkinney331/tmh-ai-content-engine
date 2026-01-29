@@ -25,7 +25,7 @@ interface ConceptListItem {
   subcategory: string | null
   images: Array<{ url: string; index: number }>
   selected_image_index: number | null
-  notes: string | null
+  review_notes: string | null
   prompt_used: string
   status: LTRFLConceptStatus
   created_at: string
@@ -82,7 +82,7 @@ function ConceptsContent() {
     const query = searchQuery.toLowerCase()
     return (
       concept.prompt_used.toLowerCase().includes(query) ||
-      (concept.notes?.toLowerCase().includes(query)) ||
+      (concept.review_notes?.toLowerCase().includes(query)) ||
       concept.category.toLowerCase().includes(query) ||
       (concept.subcategory?.toLowerCase().includes(query))
     )

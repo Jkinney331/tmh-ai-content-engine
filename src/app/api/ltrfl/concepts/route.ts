@@ -102,7 +102,7 @@ export async function POST(req: NextRequest) {
         status: body.status || 'reviewing',
         version: body.version || 1,
         parent_version_id: body.parent_version_id || null,
-        notes: body.notes || null
+        review_notes: body.review_notes || null
       })
       .select()
       .single()

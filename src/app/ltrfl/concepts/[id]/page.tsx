@@ -32,7 +32,7 @@ interface ConceptDetail {
   images: Array<{ url: string; index: number }>
   selected_image_index: number | null
   status: LTRFLConceptStatus
-  notes: string | null
+  review_notes: string | null
   version: number
   parent_version_id: string | null
   created_at: string
@@ -80,7 +80,7 @@ export default function ConceptDetailPage({
       if (res.ok) {
         const data = await res.json()
         setConcept(data)
-        setReviewNotes(data.notes || '')
+        setReviewNotes(data.review_notes || '')
         const rootId = data.parent_version_id || data.id
         loadVersionHistory(rootId)
       } else {
@@ -106,7 +106,7 @@ export default function ConceptDetailPage({
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           status: newStatus,
-          notes: reviewNotes || null
+          review_notes: reviewNotes || null
         })
       })
 

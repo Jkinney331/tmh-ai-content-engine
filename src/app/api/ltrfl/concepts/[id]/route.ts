@@ -58,7 +58,7 @@ export async function PUT(
     if (body.images !== undefined) updateData.images = body.images
     if (body.selected_image_index !== undefined) updateData.selected_image_index = body.selected_image_index
     if (body.status !== undefined) updateData.status = body.status
-    if (body.notes !== undefined) updateData.notes = body.notes
+    if (body.review_notes !== undefined) updateData.review_notes = body.review_notes
     if (body.version !== undefined) updateData.version = body.version
     if (body.parent_version_id !== undefined) updateData.parent_version_id = body.parent_version_id
 
